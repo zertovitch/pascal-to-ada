@@ -1,0 +1,309 @@
+Enhancement list from 1997 version
+==================================
+
+-------------------------------------------------
+--  (s): "standard" Pascal, general feature    --
+--  (B): Borland Pascal and compatibles only   --
+--  (C): CodeWarrior Pascal only               --
+--  (F): FreePascal only                       --
+--  (I): ISO Extended Pascal only              --
+--  (PO): Pascal Object only                   --
+-------------------------------------------------
+
+-- 7-Jan-2007 [GdM]
+-- (B) TRY ... FINALLY ... END translated
+
+-- 26-Dec-2006 [GdM]
+--   * Corrected error when type inherited from not defined / imported
+--   * Added possibility of setting an output file instead of Standard_output
+--       NB: to that purpose, AFLEX's Templates_Manager was updated
+--   * GNAT-style error messages with line and column numbers;
+--       you can use P2Ada from GPS or AdaGIDE as a tool (import P2Ada.tdf)
+
+-- 15-Nov-2006 [GdM]
+-- (B) Added //-style comments
+-- (F) external clause: linker name (see link_name_directive)
+-- (F) variables with initialization (see assign_part)
+
+-- 17-June-2006 [PP]
+-- (B) add p2ada with list also in interface part
+-- (C) add comma separator for record aggregate
+-- (s) extra brackets when adding attributes are suppressed
+-- (B) add newline when tranlating @ operator to avoid too long line
+
+-- 18-May-2006 [PP]
+-- (s) translate operator set "in" by "and", the overloading of proper "and" body is let to user
+--     example :
+--     type TChar is array (Character) of Boolean;
+--     function "and" (Item : Character; Of_Set : TChar) return Boolean is
+--     begin
+--     return Of_Set(Item);
+--     end;
+-- (s) when translating readln(f); and writeln(f); additionnal put or get are suppressed
+
+-- 14-May-2006 [PP]
+-- (PO) Take advantage of Ada 2005 object.methode notation (with gnat add -gnat05 switch)
+
+-- 28-Dec-2003 / 20-Dec-2003 / 01-Oct-2003 [PP - GdM]
+-- (PO) Added Pascal Object syntax, methods, inheritance, ...
+--      To do: 1/ Add methods as fields (see MethProc, MethFunc)
+--             2/ non-prefixed translation of methods
+--             3/ nicer "with self"
+
+-- 14-Dec-2003 [GdM]
+-- (B) modified assignment_statement to accept also prefixed procedure
+--     calls (unit.proc, variable.proc) -> (65/77)
+--     NB: simple_procedure_call & pointed_procedure_call become
+--     superfluous, but kept because of a nicer ';' placement...
+
+--  9-Nov-2003 [CC - GdM]
+-- (s) removed empty choice (wrong!) in
+--     any_declaration (104/78) -> (74/71)
+--     and any_heading_declaration (74/71) -> (64/67)
+
+-- 31-May-2003 [GdM]
+-- (s) figures like "1.e-5" translated to "1.0e-5".
+
+-- 27-Apr-2003 [GdM - PP]
+-- (s) MOD translated by MOD (ISO Pascal) or REM (Think Pascal)
+
+-- 28-Feb-2003 [ GdM]
+-- (s) Read and Write to a file correctly translated (if file type visible).
+
+-- 11-Feb-2003 [GdM]
+-- (s) Bug for a..b as inner type denoter (e.g. record field) fixed.
+-- (s) Better treatment of "reserved words" that are used as identifiers.
+-- (s) NEW with discriminants
+
+-- 3,4..9-Feb-2003 [GdM]
+
+-- 3,4-Feb-2003 [GdM]
+-- (B) Accepts special array mem[a:b].
+-- (s) When "alternative" bracketing used [a][b] <-> [a,b], corrects or
+--     issues a comment to correct it.
+
+-- 31-Jan-2003 [GdM]
+-- (s) - Export of definitions collected along a translation (-E option)
+--     - Import of definitions before a translation (-I option)
+--     Allows reflecting modularity in order to translate WITH and New.
+
+-- 30-Jan-2003 [GdM]
+-- (s) Prefixes identifiers that hit Ada identifiers.
+-- (B) Alternative and directly working translation for SHL/SHR
+
+-- 29-Jan-2003 [GdM]
+-- (s)   WITH translated (when type of variable available!).
+-- (B)   Exit pseudo-procedure better translated - and maskable (-> return)
+-- (I,B) Halt pseudo-procedure translated (-> raise Program_halted)
+-- (B)   Break pseudo-procedure translated (-> exit)
+
+-- 28-Jan-2003 [GdM]
+-- (s) Selectors followed on several levels, Adaliasing disabled
+--     when record field selected (identifier could be taken as a visible
+--     one of the same name!)
+
+-- 27-Jan-2003 [GdM]
+-- (s) Fixed: record fields can be empty.
+-- (B) Tag field can be several fields (case a,b of 1:...) !
+-- (s) New(p) translated if pointed type found.
+-- (s) 16 predefined types and functions from "standard" Pascal
+-- (B) 41 predefined types and functions from Delphi
+
+-- 25-Jan-2003 [GdM]
+-- (s) Correct translation of unmasked predefined Pascal
+--     identifiers (incl. Borland/Delphi ones) when it has
+--     another Ada name.
+-- (s/B) File [of a_type] correctly translated
+
+-- 23,24-Jan-2003 [GdM]
+-- (s) Partial identifier type recognition (aim: translate WITH and NEW)
+-- (s) ".." was missing in case_constant
+-- (s) [] -> (others=> False)
+-- (s) no ad-hoc type for variable of an anonymous array type (Ada accepts it)
+
+-- 21,22-Jan-2003 [GdM]
+-- (s) Write([Boolean]) supported
+-- (s) (. and .) recognized as [ and ].
+
+-- 19,20-Jan-2003 [GdM]
+-- (B) Str(123.0:3:5,s) supported
+-- (s) fixed bug introduced 18-Dec-2002 along "type T is NEW T2":
+--     type_denoter handles directly a subrange_type ("[type T=] m .. *")
+--     with an identifier as left part
+-- (B) case_constant: "constant" relaxed to "expression",
+--     effect on both "case" statements and variant records
+-- (s) fixed a bug (1997) for optional ';' in variant parts of records.
+-- (s) translation of variants improved
+--     (one just needs a cut-and-paste on variant selector)
+
+-- 14-Jan-2003 [GdM]
+-- (B) BP2P processes conditional compilation directives
+--     $ifdef, $ifopt, $else, $endif, $define, $undef
+-- (B) BP2P processes boolean switches ($B+/-,BOOLEVAL ON/OFF)
+-- (B) "var X: T absolute Y;" translated by "X: T renames Y;"
+
+-- 13-Jan-2003 [GdM]
+-- (s) ordinal_type fixed ("array[a..b]" works again, bug introduced 9-Jan-2003)
+-- (I) Extended Pascal ISO 10206:1990: and_then, or_else translated
+-- (s) set_type now translates correcty to "array( ordinal_type ) of Boolean" 
+-- (B) ASM..END blocks fully supported (i.e. cleanly commented out
+--      with remarks) by BP2P. Partial solution removed from P2Ada itself.
+-- (B) INLINE(...) instructions fully supported (i.e. cleanly commented out
+--      with remarks) by BP2P.
+
+-- 10-Jan-2003 [GdM]
+-- (s) "begin end." added to unfinished Pascal sources (BP2P preprocessor)
+-- (s) Bug in string and char litterals with doubled ['] removed
+-- (s) Bug in string litterals with not doubled ["] removed
+
+-- 9-Jan-2003 [GdM]
+-- (B) Inc(x[,y]), Dec(x[,y]) translated
+-- (C) & and | translated by "and then" and "or else" (CW Pascal)
+-- (B) "Hat characters" like "^M" (Borland) translated (via BP2P preprocessor)
+-- (s) Adds "range" to type definitions (type T is RANGE a .. b;)
+-- (s) Bug in calls of recursive procedures fixed
+
+-- 2,7,8-Jan-2003 [GdM]
+-- (s) Str can be an identifier
+-- (s) clauses with EXTERNAL
+-- (B) ParamCount, ParamStr, UpCase translated by
+--      Argument_Count, Argument, To_Upper
+-- (s) bounds for subrange_type: constant relaxed to expression.
+-- (B) Labels with identifier supported (via BP2P preprocessor)
+
+-- 28-Dec-2002 [GdM]
+-- (B) '_' allowed as a 1st letter of an identifier (Borland!)
+-- (C) Support for passing options (CW Pascal): procedure P(x: univ integer);
+-- (s) Translation of "EXTERNAL" (import) and export directives
+-- (s) WITH improved
+
+-- 22-Dec-2002 [GdM]
+-- (s) Avoids commenting out outputs after comment on same line
+
+-- 21-Dec-2002 [GdM]
+-- (s) A[i,j] translated by A(i,j) (commas were missing!)
+-- (s) Support for Sqr, Odd, Eof, Eoln and type Double
+
+-- 20-Dec-2002 [GdM]
+-- (B) Turbo Pascal 7's CONST parameters translated
+-- (B) Warning on translation of "Exit" that is a (maskable) procedure
+--      in Turbo Pascal!
+-- (s) Set expressions better translated (in form of array of Boolean).
+
+-- 18-Dec-2002 [GdM]
+-- (s) A procedure Dispose is created for each access type.
+-- (s) "type a=b" correctly translated by "type a is NEW b"
+
+-- 17-Dec-2002 [GdM]
+-- (s) For variables of a structured type, P2Ada creates
+--      an ad-hoc type for them (a complete solution would
+--      create a translation for structures of structures, too)
+-- (s) Option to translate a "var" parameter (wrongly)
+--      by "var" instead of "in out". See P2Ada_Options.
+-- (s) New(pointer) is translated by pointer:= new ...
+
+-- 15-Dec-2002 [GdM]
+-- * Zero parameters for Writeln fixed.
+-- * Support for Read, ReadLn, Ord, Chr
+-- * Useless (and harmful in case of name conflict) extra
+--   "declare..begin..end" removed in functions.
+-- * Nested functions correclty translated.
+-- * Name of procedures and functions put after "end".
+
+-- 13-Dec-2002 [GdM]
+--   Downto -> reverse bug fixed (interval must be reversed)
+--   Treatement of empty statement sequences in fat_statement_part
+
+-- 1-Dec-2002 [GdM]
+--   Treatement of empty statement sequences 
+
+-------------------------------------------------------------------------------
+--  30-November-2002 [GACC]
+--
+--  Problems Fixed:
+--
+--  * A file not containing both an interface part and and implementation
+--     part, is accepted.
+--  * Spaces added around all ".."s.
+--  * 'statement_sequence_fat' appears. It reduces the trailing "null;" for
+--     code: between BEGIN & END, between REPEAT & UNTIL.
+--     The "Null;" was changed to "null;".
+--  * A bug with appearance of goto labels was fixed.
+--  * A general name with a value can now be a record field component that
+--     itself is a component of an array or a call to function. I.e. A general
+--     name (i.e. variable_access) can be: name "." name. E.g. A[2].B(3) := 1.
+--  * A multiplied 'factor' can now be a general name.
+--  * A space was removed before "ARRAY" & the "LOOP" of a WHILE loop and a
+--     FOR loop.
+--  * The variable naming the return value of a function, had an "_" added
+--     to it.
+--  * A space after "FUNCTION" & GOTO & EXIT WHEN & WHILE & FOR & labels,
+--     was removed
+--  * The buffer size in "PATEMFIL.ADB" was increased from 300 to 3000. That
+--     allows parsing of larger "IF .. THEN ... ELSE IF ..." regions.
+--  * File PASCAL.L was altered to allow "**" in comments: "(* ... ** ... *)".
+--  * Multiple USES clauses now possible (facilitates using "Pascal" as an
+--     intermediate language)
+--
+--  Notes: (1) NewP2Ada processed output from Mod2P (a Modula to Pascal
+--   converter from  http://cs.ru.ac.za/homes/cspt/ ). (2) Prettifying was
+--   done using code cut from Adagide. Parsers alternatives might be Adagoop,
+--    ASF+SDF. This parser ports code well. Some defects that remain are:
+--    (a) Newp2ada can't handle dots in calls to procedures but it can handle
+--        dotted names in functions. E.g. (Pascal code)
+--           DCGBopt : record
+--                TraceLevel : INTEGER; UpdateProc : PROCP1V2;
+--              end record;
+--           DCGBopt.TraceLevel := 3;    <--  Parser accepts this
+--           DCGBopt.UpdateProc (A,B);   <--  Not accepted by parser
+--    (b) Nested (*...*) comments are not handled.
+--
+-------------------------------------------------------------------------------
+
+-- 20-Nov-2002 [GdM]
+--   General decimal numbers (integer/float,with optional exponent)
+
+-- 19-Nov-2002 [GdM]
+-- otherwise/else part in case statement correctly processed:
+--   any sequence of statements, not just 0 or 1
+
+-- 15-Nov-2002 [GACC]
+-- - Resolved (* .... ** ....*) bug
+-- - Added some exponent litterals (1.2345e7)
+
+-- 19-Jan-2002 [GdM]
+-- new_procedure_type and new_function_type correct - spotted by Craig Carey
+
+-- 16-Jan-2002 [GdM]
+-- Added casing of Ada keywords (upper/lower/neutral) - see P2Ada_options
+-- EXIT_t exit statement (is Ada's return) - spotted by Craig Carey
+
+xi.1999 [GdM]
+
+- XOR operator
+
+26.viii.1999 [GdM]
+
+a) Borland-ish add-ons:
+
+- Str translated ( bug: should be put(s,123) instead of put(123,s) )
+- ' character, written ''
+- arbitrary order of declaration kinds, instead of label-const-type-var-proc
+- typeless var parameters
+- DIV becomes /
+- SHL & SHR operators ( bug: translated by "a Shift_left( ; ) b" )
+- programs not beginning with 'Program' !
+- global initialized VARiables - in the CONSTant parts - ; aggregates
+- strings with contraints
+- typeless files
+- else part in case..of
+- asm...end blocks ( bug: not complete)
+- special directives in proc/func decl. (like near/far/assembler)
+- characters with explicit ascii (#223)
+- borland string constants ('aaa'#123'bbb')
+
+b) Improvements or bugfixes (any Pascal)
+- begin/end simplified when safe (then/else/do/case)
+- outputs "Null;" for empty statement
+- outputs "WHEN others=> Null;" when no else part
+

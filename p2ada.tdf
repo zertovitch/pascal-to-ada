@@ -1,0 +1,6 @@
+Tool definitions V1.00A00
+Toolname=P2Ada
+Programname=p2ada
+Parameters=<fullname> -o<filename>.ada
+Tooltype=INTERNALCOMMAND
+Toolinvocation=INVOKE_MANUALLY

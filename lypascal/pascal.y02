@@ -1,0 +1,1741 @@
+--  Files YYPARSE.ADB, YYLEX.ADB, are automatically generated from this file.
+
+-- 28-Dec-2002 [GdM]
+-- * Support for passing options (CW Pascal): procedure P(x: univ integer);
+-- * Translation of "EXTERNAL" (import) and export directives
+-- * WITH improved
+
+-- 21-Dec-2002 [GdM]
+-- * A[i,j] translated by A(i,j) (commas were missing!)
+-- * Support for Sqr, Odd, Eof, Eoln and type Double
+
+-- 20-Dec-2002 [GdM]
+-- * Turbo Pascal 7's CONST parameters translated
+-- * Warning on translation of "Exit" that is a (maskable) procedure
+--    in Turbo Pascal!
+-- * Set expressions better translated (in form of array of Boolean).
+
+-- 18-Dec-2002 [GdM]
+-- * a procedure Dispose is created for each access type
+-- * "type a=b" correctly translated by "type a is NEW b"
+
+-- 17-Dec-2002 [GdM]
+-- * For variables of a structured type, P2Ada creates
+--    an ad-hoc type for them (a complete solution would
+--    create a translation for structures of structures, too)
+-- * Option to translate a "var" parameter (wrongly)
+--    by "var" instead of "in out". See P2Ada_Options.
+-- * New(pointer) is translated by pointer:= new ...
+
+-- 15-Dec-2002 [GdM]
+-- * Zero parameters for Writeln fixed.
+-- * Support for Read, ReadLn, Ord, Chr
+-- * Useless (and harmful in case of name conflict) extra
+--   "declare..begin..end" removed in functions.
+-- * Nested functions correclty translated.
+-- * Name of procedures and functions put after "end".
+
+-- 13-Dec-2002 [GdM]
+--   Downto -> reverse bug fixed (interval must be reversed)
+--   Treatement of empty statement sequences in fat_statement_part
+
+-- 1-Dec-2002 [GdM]
+--   Treatement of empty statement sequences 
+
+-------------------------------------------------------------------------------
+--  30-November-2002 [GACC]
+--
+--  Problems Fixed:
+--
+--  * A file not containing both an interface part and and implementation
+--     part, is accepted.
+--  * Spaces added around all ".."s.
+--  * 'statement_sequence_fat' appears. It reduces the trailing "null;" for
+--     code: between BEGIN & END, between REPEAT & UNTIL.
+--     The "Null;" was changed to "null;".
+--  * A bug with appearance of goto labels was fixed.
+--  * A general name with a value can now be a record field component that
+--     itself is a component of an array or a call to function. I.e. A general
+--     name (i.e. variable_access) can be: name "." name. E.g. A[2].B(3) := 1.
+--  * A multiplied 'factor' can now be a general name.
+--  * A space was removed before "ARRAY" & the "LOOP" of a WHILE loop and a
+--     FOR loop.
+--  * The variable naming the return value of a function, had an "_" added
+--     to it.
+--  * A space after "FUNCTION" & GOTO & EXIT WHEN & WHILE & FOR & labels,
+--     was removed
+--  * The buffer size in "PATEMFIL.ADB" was increased from 300 to 3000. That
+--     allows parsing of larger "IF .. THEN ... ELSE IF ..." regions.
+--  * File PASCAL.L was altered to allow "**" in comments: "(* ... ** ... *)".
+--  * Multiple USES clauses now possible (facilitates using "Pascal" as an
+--     intermediate language)
+--
+--  Notes: (1) NewP2Ada processed output from Mod2P (a Modula to Pascal
+--   converter from  http://cs.ru.ac.za/homes/cspt/ ). (2) Prettifying was
+--   done using code cut from Adagide. Parsers alternatives might be Adagoop,
+--    ASF+SDF. This parser ports code well. Some defects that remain are:
+--    (a) Newp2ada can't handle dots in calls to procedures but it can handle
+--        dotted names in functions. E.g. (Pascal code)
+--           DCGBopt : record
+--                TraceLevel : INTEGER; UpdateProc : PROCP1V2;
+--              end record;
+--           DCGBopt.TraceLevel := 3;    <--  Parser accepts this
+--           DCGBopt.UpdateProc (A,B);   <--  Not accepted by parser
+--    (b) Nested (*...*) comments are not handled.
+--
+-------------------------------------------------------------------------------
+
+-- 19-Nov-2002 [GdM]
+-- otherwise/else part in case statement correctly processed:
+--   any sequence of statements, not just 0 or 1
+
+-- 19-Jan-2002 [GdM]
+-- new_procedure_type and new_function_type correct - spotted by Craig Carey
+
+-- 16-Jan-2002 [GdM]
+-- Added casing of Ada keywords (upper/lower/neutral) - see P2Ada_options
+-- EXIT_t exit statement (is Ada's return) - spotted by Craig Carey
+
+-- 26.xi.1999 [GdM]
+-- XOR operator
+
+-- 26.viii.1999 [GdM]
+--
+-- Str translated ( bug: should be put(s,123) instead of put(123,s) )
+-- ' character, written '' ( bug: should trash the 2nd ' )
+-- arbitrary order of declaration kinds, instead of label-const-type-var-proc
+-- typeless var parameters
+-- DIV becomes /
+-- SHL & SHR operators ( bug: translated by "a Shift_left( ; ) b" )
+-- programs not beginning by 'Program' !
+-- global initialized VARiables - in the CONSTant parts -
+-- aggregates
+-- strings with contraints
+-- typeless files
+-- else part in case..of
+-- asm...end blocks (not complete)
+-- special directives in proc/func decl. (like near/far/assembler)
+-- characters with explicit ascii (#223)
+--
+-- begin/end simplified when safe (then/else/do/case)
+-- outputs "Null;" for empty statement
+-- outputs "WHEN others=> Null;" when no else part
+--
+-- $Id: Pascal.y,v 2.1 1997/08/23 18:59:33 nestor Rel $
+-- $Locker:  $
+-- $Log: Pascal.y,v $
+-- Revision 2.1  1997/08/23 18:59:33  nestor
+-- Laurent Gasser's correction for MacOS extended Pascal
+-- added MacOS Pascal tokens: unit, interface, implementation, uses
+-- allow module/units to become packages
+-- transform Pascal uses list in Ada with list
+-- accepts @ operator
+-- corrected Pascal record statement (especially variant ones)
+-- accepts hexadecimal constants
+-- accepts procedures and functions as types
+-- accepts procedure pointers as statements
+-- reorder tokens in alphabetically
+-- notify empty rules with comment
+-- regroup rules with titles in comments
+--
+-- Revision 1.1  1997/08/22  21:06:07  nestor
+-- Martin C. Carlisle's original version, standard Pascal
+--
+-- ayacc specification for Pascal
+--
+-- Martin C. Carlisle, US Air Force Academy
+-- mcc@cs.usafa.af.mil
+-- http://www.usafa.af.mil/dfcs/bios/carlisle.html
+-- November 26, 1996
+--
+-- Laurent Gasser, Hirondelle Lumineuse
+-- lga@sma.ch
+-- June 21, 1997
+--
+-- Adaptation to extended MacOS Pascal
+-- Based on the syntax diagrams of:
+--   Language Reference chapter
+--   in THINK Pascal, User Manual, Symantech 1991
+--
+--   CodeWarrior Pascal Language Reference CW10
+--   Metrowerks 1996
+--
+-- added MacOS Pascal tokens: unit, interface, implementation, uses
+-- allow module/units to become packages
+-- transform Pascal uses list in Ada with list
+-- accepts @ operator
+-- corrected Pascal record statement (especially variant ones)
+-- accepts hexadecimal constants
+-- accepts procedures and functions as types
+-- accepts procedure pointers as statements
+--
+-- usage: ayacc Pascal.y
+
+-- Declarations
+%token    AND_t
+%token    AMPERSAND_t
+%token    ARRAY_t
+%token    ARROW_t
+%token    ASCII_t
+%token    ASM_t
+%token    ASSIGN_t
+%token    AT_t
+%token    BEGIN_t
+%token    CASE_t
+%token    CHAR_t
+%token    CHAR_CONST_t
+%token    CHR_t
+%token    COLON_t
+%token    CONST_t
+%token    CONSTANT_t
+%token    COMMA_t
+%token    DIV_t
+%token    DIVIDE_t
+%token    DO_t
+%token    DOUBLE_t
+%token    DOUBLEDOT_t
+%token    DOUBLESTAR_t
+%token    DOWNTO_t
+%token    ELSE_t
+%token    END_t
+%token    EOF_t
+%token    EOLN_t
+%token    EQUAL_t
+%token    EXTERNAL_t
+%token    EXIT_t
+%token    FALSE_t
+%token    FILE_t
+%token    FOR_t
+%token    FORWARD_t
+%token    FUNCTION_t
+%token    GE_t
+%token    GOTO_t
+%token    GT_t
+%token    HEXADECIMAL_t
+%token    ID_t
+%token    IF_t
+%token    IMPLEMENTATION_t
+%token    IN_t
+%token    INTERFACE_t
+%token    LABEL_t
+%token    LBRACK_t
+%token    LE_t
+%token    LPAREN_t
+%token    LT_t
+%token    MINUS_t
+%token    MOD_t
+%token    NE_t
+%token    NIL_t
+%token    NEW_t
+%token    NOT_t
+%token    OF_t
+%token    OR_t
+%token    ODD_t
+%token    ORD_t
+%token    OTHERWISE_t
+%token    PACKED_t
+%token    PERIOD_t
+%token    PLUS_t
+%token    PROCEDURE_t
+%token    PROGRAM_t
+%token    RBRACK_t
+%token    REAL_t
+%token    RECORD_t
+%token    READ_t
+%token    READLN_t
+%token    REPEAT_t
+%token    RPAREN_t
+%token    SEMICOLON_t
+%token    SET_t
+%token    SHL_t
+%token    SHR_t
+%token    SQR_t
+%token    STR_t
+%token    STRING_t
+%token    THEN_t
+%token    TIMES_t
+%token    TO_t
+%token    TRUE_t
+%token    TYPE_t
+%token    UNIT_t
+%token    UNTIL_t
+%token    UPARROW_t
+%token    USES_t
+%token    VAR_t
+%token    WHILE_t
+%token    WITH_t
+%token    WRITE_t
+%token    WRITELN_t
+%token    XOR_t
+
+%start    entity
+
+{
+  type const_type is (string_type,character_type,boolean_type,other_type);
+  type YYSType is record
+     text    : String(1..80);
+     length  : Natural := 0;
+     vartype : const_type;
+  end record;
+}
+
+%%
+-- Rules
+
+entity : unit | program ;
+
+unit : unit_heading unit_contents unit_end_part;
+
+unit_contents :
+    implementation_part
+  | interface_part
+  | interface_and_implementation_part
+   ;
+
+unit_heading : UNIT_t
+    mute_identifier {PascalHelp.package_name(1..$2.length) := $2.text(1..$2.length);
+    PascalHelp.package_name_length := $2.length;}
+    SEMICOLON_t
+    ;
+
+unit_end_part : END_t PERIOD_t
+    { PascalHelp.put_keyword("END ");
+      PascalHelp.put(PascalHelp.package_name(1..PascalHelp.package_name_length));
+      PascalHelp.put_line(";");
+      PascalHelp.put_line(PascalHelp.blurb);
+    }
+    ;
+
+interface_and_implementation_part :
+    interface_part
+    { PascalHelp.put_keyword("END ");
+      PascalHelp.put(PascalHelp.package_name(1..PascalHelp.package_name_length));
+      PascalHelp.put_line(";");
+      PascalHelp.put_line(PascalHelp.blurb);
+    }
+    implementation_part
+    ;
+
+interface_part : INTERFACE_t
+    uses_clause_part
+    {
+    PascalHelp.put_keyword("PACKAGE ");
+    PascalHelp.put(PascalHelp.package_name(1..PascalHelp.package_name_length));
+    PascalHelp.put_keyword(" IS");
+    PascalHelp.put_line("");
+    }
+    heading_declaration_part
+    ;
+
+implementation_part : IMPLEMENTATION_t
+    {PascalHelp.Default_withs;}
+    uses_clause_part
+    { PascalHelp.put_line("");
+    PascalHelp.put_keyword("PACKAGE BODY ");
+    PascalHelp.put(PascalHelp.package_name(1..PascalHelp.package_name_length));
+    PascalHelp.put_keyword(" IS");
+    PascalHelp.put_line("");
+    }
+    declaration_part
+    implementation_body_part
+    ;
+
+implementation_body_part : initialization_of_unit | ; -- EMPTY: no init.
+
+initialization_of_unit:
+    BEGIN_t {PascalHelp.put_keyword("BEGIN");}
+      statement_sequence_fat
+    ; -- END put with name
+
+uses_clause_part : uses_clause_list
+    | -- EMPTY
+    ;
+
+uses_clause_list : uses_clause_list uses_clause
+    | uses_clause
+    ;
+
+uses_clause : USES_t {PascalHelp.put_keyword("WITH");}
+    identifier_list
+    SEMICOLON_t {PascalHelp.put(';');}
+    -- 28-Dec-2002: we can assume uses_clause non-empty since
+    -- uses_clause_part can be empty. Conflicts: (86/89) <- (91/130)
+    ;
+
+mute_identifier : ID_t {$$.length := YYLength;
+    $$.text(1..YYLength) := YYText;}
+    ;
+
+heading_declaration_part : heading_declaration_list
+    | -- EMPTY
+    ;
+
+heading_declaration_list : heading_declaration_list any_heading_declaration
+    | any_heading_declaration
+    ;
+
+any_heading_declaration :
+    | constant_declaration_part
+    | type_definition_part
+    | variable_declaration_part
+    | procedure_and_function_heading_part
+    ;
+
+declaration_part : declaration_list
+    | -- EMPTY
+    ;
+
+declaration_list : declaration_list any_declaration
+    | any_declaration
+    ;
+
+any_declaration :
+    | label_declaration_part
+    | constant_declaration_part
+    | type_definition_part
+    | variable_declaration_part
+    | procedure_and_function_declaration_part
+    ;
+
+procedure_and_function_heading_part :
+    procedure_heading_only | function_heading_only ;
+
+procedure_heading_only : procedure_heading
+    SEMICOLON_t {PascalHelp.put(';'); PascalHelp.De_stack;}
+    ;
+    
+function_heading_only : function_heading
+    SEMICOLON_t {PascalHelp.put(';'); PascalHelp.De_stack;}
+    ;
+
+program : correct_program | borland_program ;
+    
+correct_program : PROGRAM_t
+    {PascalHelp.Default_withs;
+     PascalHelp.put_keyword("PROCEDURE ");}
+    identifier
+    {PascalHelp.Stack( $3.text(1..$3.length), is_function=> False );
+     PascalHelp.put_keyword_line(" IS");}
+    file_list SEMICOLON_t
+    program_tail
+    ;
+
+borland_program : -- <<-- Nothing!
+    {PascalHelp.Default_withs;
+     PascalHelp.put_keyword("PROCEDURE ");
+     PascalHelp.Stack("I_love_Borland", is_function=> False);
+     PascalHelp.Put_last_name;
+     PascalHelp.put_keyword_line(" IS");
+    }
+    program_tail
+    ;
+
+program_tail : -- 20-Dec-2002: less conflicts (79/126) <- (85/128)
+    uses_clause_part
+    block
+    {PascalHelp.put_keyword("END ");
+     PascalHelp.put_last_name;
+     PascalHelp.put(';');
+     PascalHelp.De_stack;
+     PascalHelp.New_line;
+     PascalHelp.put_line(PascalHelp.blurb);}
+    PERIOD_t
+    ;
+
+file_list : LPAREN_t file_identifier_list RPAREN_t
+    |  -- EMPTY
+    ;
+
+file_identifier_list : file_identifier_list COMMA_t
+    identifier
+    {PascalHelp.put_line(": Ada.Text_IO.File_Type;");}
+    | identifier
+    {PascalHelp.put_line(": Ada.Text_IO.File_Type;");}
+    ;
+
+identifier_list : identifier_list COMMA_t {PascalHelp.put(',');} identifier
+    | identifier
+    ;
+
+block :
+    declaration_part
+    compound_statement
+    ;
+
+label_declaration_part : LABEL_t label_list SEMICOLON_t
+    ;
+
+label_list : label_list comma label
+    | label
+    ;
+
+label : CONSTANT_t
+    ;
+
+emitted_label : CONSTANT_t
+    {PascalHelp.Put("<<LABEL_"); PascalHelp.put(YYText); PascalHelp.put(">>");}
+    ;
+
+emitted_goto_label : CONSTANT_t
+    {PascalHelp.Put("LABEL_"); PascalHelp.put(YYText);}
+    ;
+
+-----------------------------------------------
+--  C O N S T A N T   D E C L A R A T I O N  --
+-----------------------------------------------
+
+constant_declaration_part : CONST_t constant_declaration_list
+    ;
+
+constant_declaration_list : constant_declaration_list constant_declaration
+    | constant_declaration
+    ;
+
+constant_declaration :
+    {PascalHelp.DirectIO:= False;
+     PascalHelp.Maybe_must_create_type:= True;}
+    identifier
+    constant_declaration_ending
+    {PascalHelp.put(';');}
+    ;
+
+constant_declaration_ending : 
+    -- Classic Pascal constant declaration: "CONST a=9" etc.
+    EQUAL_t
+    -- No risk of creating a type here
+    { PascalHelp.Maybe_must_create_type:= False;
+      PascalHelp.DirectIO:= True;
+      PascalHelp.Flush;
+      PascalHelp.Empty;
+      PascalHelp.put_keyword(": CONSTANT");
+      PascalHelp.DirectIO := False;}
+    cexpression SEMICOLON_t
+    -- 17-Dec-2002: had to change $4.vartype to $3.vartype .
+    {
+     PascalHelp.DirectIO := True;
+     IF $3.vartype = boolean_type THEN
+       PascalHelp.put(" Boolean := ");
+     ELSIF $3.vartype = character_type THEN
+       PascalHelp.put(" Character := ");
+     ELSIF $3.vartype = string_type THEN
+       PascalHelp.put(" String := ");
+     ELSE
+       PascalHelp.put(":= ");
+     END IF;
+     PascalHelp.flush;
+     PascalHelp.empty;
+    }
+    |
+    -- Borland's initialized variables, also in CONST part :-( !!
+    COLON_t {PascalHelp.put(':');}
+    type_denoter
+    {PascalHelp.Maybe_must_create_type:= False;}
+    EQUAL_t {PascalHelp.put(":=");}
+    expr_or_agg SEMICOLON_t
+    ;
+
+expr_or_agg : expression | aggregate;
+
+aggregate : -- Turbo Pascal use them for initialized variables
+    LPAREN_t {PascalHelp.put('(');} aggregate_contents RPAREN_t {PascalHelp.put(')');} ;
+
+aggregate_contents : record_agg | array_agg ; -- this lowers r/r conflicts 123 <- 126
+
+array_agg : array_agg COMMA_t {PascalHelp.put(',');} expr_or_agg
+          | expr_or_agg ;
+record_agg : record_agg SEMICOLON_t {PascalHelp.put(',');} named_field
+           | named_field ;
+named_field : identifier COLON_t {PascalHelp.put("=>");} expr_or_agg;
+
+cexpression : csimple_expression {$$.vartype := $1.vartype;}
+    | csimple_expression relop csimple_expression {$$.vartype:=boolean_type;}
+    ;
+
+csimple_expression : unsigned_csimple_expression {$$.vartype := $1.vartype;}
+    | sign unsigned_csimple_expression {$$.vartype := other_type;}
+    ;
+
+unsigned_csimple_expression : constant_term
+    | unsigned_csimple_expression PLUS_t {PascalHelp.put('+');} constant_term
+    | unsigned_csimple_expression MINUS_t {PascalHelp.put('-');} constant_term
+    | unsigned_csimple_expression OR_t {PascalHelp.put_keyword("OR");} constant_term
+--    | unsigned_csimple_expression BOR_t constant_term
+    ;
+
+constant_term : constant_term mulop constant_factor {$$.vartype := other_type;}
+    | constant_factor
+    ;
+
+-- remove "unsigned_constant : identifier" so explicit reduction to identifier
+constant_factor : unsigned_constant
+    | identifier
+    | function_call
+    | set_constructor
+    | LPAREN_t {PascalHelp.put('(');}
+      cexpression
+      RPAREN_t {PascalHelp.put(')'); $$.vartype := $3.vartype;}
+    | NOT_t {PascalHelp.put_keyword("NOT");} constant_factor
+    ;
+
+-- 28-Dec-2002: For ^J etc. unused for the moment: confuses ayacc
+hat_ascii : UPARROW_t ID_t
+    {if YYLength > 0 then
+       declare
+         asc: Integer:= Character'Pos(YYtext(1));
+       begin
+         case YYtext(1) is
+           when 'a'..'z' => asc:= asc - 96;
+           when 'A'..'Z' => asc:= asc - 64;
+           when others => asc:= -1;
+         end case;
+         if asc >= 0 then
+           PascalHelp.Put("Character'Val(" & Integer'image(asc) & ')');
+         else
+           PascalHelp.Put("<something wrong ?>");
+         end if;
+       end;
+     end if;
+    }
+  ;
+
+explicit_ascii : ASCII_t
+        {DECLARE the_number : string := YYText;
+         BEGIN
+           PascalHelp.Put("Character'Val(" & the_number(2..
+           the_number'last) & ")");
+         END;}
+    ;
+
+borland_substring :
+      STRING_t {PascalHelp.printstring(YYText);}
+      | explicit_ascii ;
+
+borland_string :
+      borland_substring |
+      borland_string {PascalHelp.put('&');} borland_substring
+      ;
+
+-- add rules because TRUE_t and FALSE_t are not identifiers
+-- remove reduction to identifier to avoid conflict with variable_access
+
+unsigned_constant : unsigned_number {$$.vartype := other_type;}
+    | CHAR_CONST_t {PascalHelp.put(YYText); $$.vartype := character_type;}
+    | explicit_ascii {$$.vartype := character_type;}
+    | borland_string {$$.vartype := string_type;}
+--    | identifier
+    | NIL_t {PascalHelp.put_keyword("NULL"); $$.vartype := other_type;}
+    | TRUE_t {PascalHelp.put("True"); $$.vartype := boolean_type;}
+    | FALSE_t {PascalHelp.put("False"); $$.vartype := boolean_type;}
+    ;
+
+-- csimple_expression : cterm {$$.vartype := $1.vartype;}
+--     | csimple_expression addop cterm {$$.vartype := other_type;}
+--     ;
+--
+-- cterm : cfactor {$$.vartype := $1.vartype;}
+--     | cterm mulop cfactor {$$.vartype := other_type;}
+--     ;
+--
+-- cfactor : sign cfactor {$$.vartype := other_type;}
+--     | cexponentiation {$$.vartype := $1.vartype;}
+--     ;
+--
+-- cexponentiation : cprimary {$$.vartype := $1.vartype;}
+--     | cprimary DOUBLESTAR_t {PascalHelp.put("**");} cexponentiation
+--       {$$.vartype := other_type;}
+--     ;
+--
+-- cprimary : identifier {$$.vartype := other_type;}
+--     | LPAREN_t {PascalHelp.put('(');}
+--       cexpression
+--       RPAREN_t {PascalHelp.put(')'); $$.vartype := $3.vartype;}
+--     | unsigned_constant {$$.vartype := $1.vartype;}
+--     | NOT_t {PascalHelp.put_keyword(" NOT ");} cprimary {$$.vartype := boolean_type;}
+--     ;
+
+constant : non_string {$$.vartype := $1.vartype;}
+    | sign non_string {$$.vartype := other_type;}
+    | CHAR_CONST_t {PascalHelp.put(YYText); $$.vartype := character_type;}
+    | explicit_ascii {$$.vartype := character_type;}
+    | borland_string {$$.vartype := string_type;}
+    ;
+
+sign : PLUS_t {PascalHelp.put('+');}
+    | MINUS_t {PascalHelp.put('-');}
+    ;
+
+non_string : CONSTANT_t {PascalHelp.put(YYText); $$.vartype := other_type;}
+    | HEXADECIMAL_t
+      {
+       DECLARE
+         the_number : string := YYText;
+       BEGIN
+         PascalHelp.Put("16#" & the_number(2..the_number'last) & "#");
+         $$.vartype := other_type;
+       END;
+       }
+    | identifier  {$$.vartype := other_type;}
+    | TRUE_t {PascalHelp.put(" True "); $$.vartype := boolean_type;}
+    | FALSE_t {PascalHelp.put(" False "); $$.vartype := boolean_type;}
+    ;
+
+
+---------------------------------------
+--  T Y P E   D E C L A R A T I O N  --
+---------------------------------------
+type_definition_part : TYPE_t type_definition_list
+    ;
+
+type_definition_list : type_definition_list type_definition
+    | type_definition
+    ;
+
+type_definition :
+    {PascalHelp.put_keyword("TYPE ");
+     PascalHelp.Maybe_must_add_new_to_type:= True; -- *only* here
+    }
+    identifier EQUAL_t
+    {PascalHelp.put_keyword(" IS ");PascalHelp.DirectIO:= False;}
+    type_denoter SEMICOLON_t
+    {PascalHelp.Maybe_must_add_new_to_type:= False;
+     PascalHelp.put(';');}
+    ;
+
+string_constraint : -- we know that the identifier is "string"...
+    identifier LBRACK_t {PascalHelp.put("(1 ..");}
+    constant {PascalHelp.put(")");} RBRACK_t ;
+
+type_denoter :
+      identifier
+      {-- Maybe must add NEW (ex: "type t is NEW Integer")
+       if PascalHelp.Maybe_must_add_new_to_type then
+         PascalHelp.DirectIO:= True;
+         PascalHelp.Put_keyword(" NEW ");
+         PascalHelp.Flush;
+         PascalHelp.Empty;
+       -- No worry about creating a type here (VAR or CONST)
+       elsif PascalHelp.Maybe_must_create_type then
+         PascalHelp.DirectIO:= True;
+         PascalHelp.Flush;
+         PascalHelp.Empty;
+       end if;}         
+    | string_constraint
+      {-- "type t is NEW String(1..200)"
+       if PascalHelp.Maybe_must_add_new_to_type then
+         PascalHelp.DirectIO:= True;
+         PascalHelp.Put_keyword(" NEW ");
+         PascalHelp.Flush;
+         PascalHelp.Empty;
+       -- No worry about creating a type here (VAR or CONST)
+       elsif PascalHelp.Maybe_must_create_type then
+         PascalHelp.DirectIO:= True;
+         PascalHelp.Flush;
+         PascalHelp.Empty;
+       end if;}         
+    |
+      {if PascalHelp.Maybe_must_add_new_to_type then
+         PascalHelp.DirectIO:= True;
+         PascalHelp.Flush;
+         PascalHelp.Empty;
+       elsif PascalHelp.Maybe_must_create_type then
+         PascalHelp.Add_ad_hoc_type;
+         PascalHelp.DirectIO:= True;
+         -- But the buffer is kept.
+         PascalHelp.Put_keyword("type ");
+         PascalHelp.Put_last_ad_hoc_type;
+         PascalHelp.Put_keyword(" is ");
+       end if;}
+      new_type
+      {if PascalHelp.Maybe_must_create_type then
+         PascalHelp.Put(';');
+         PascalHelp.Put_translation_comment("type definition needed in Ada");
+         PascalHelp.New_Line;
+         PascalHelp.Flush; -- The variable list comes now
+         PascalHelp.Empty; -- ':' included
+         PascalHelp.Put(' ');
+         PascalHelp.Put_last_ad_hoc_type;
+       end if;}
+    ;
+
+restricted_type_denoter : identifier | string_constraint | new_type ;
+
+new_type : new_ordinal_type
+    | new_structured_type
+    | new_pointer_type
+    | new_procedure_type
+    | new_function_type
+    ;
+
+new_ordinal_type : enumerated_type
+    | subrange_type
+    ;
+
+enumerated_type : LPAREN_t {PascalHelp.put('(');}
+    identifier_list RPAREN_t {PascalHelp.put(')');}
+    ;
+
+subrange_type : constant DOUBLEDOT_t {PascalHelp.put(" .. ");} constant
+    ;
+
+new_structured_type : structured_type
+    | PACKED_t structured_type
+    ;
+
+structured_type : array_type
+    | record_type
+    | set_type
+    | file_type
+    ;
+
+array_type : ARRAY_t {PascalHelp.put_keyword("ARRAY (");}
+    LBRACK_t index_list RBRACK_t OF_t
+    {PascalHelp.put_keyword(") OF ");}
+    component_type
+    ;
+
+index_list : index_list comma {PascalHelp.put(',');} index_type
+    | index_type
+    ;
+
+index_type : ordinal_type ;
+
+ordinal_type : new_ordinal_type
+    | identifier
+    ;
+
+component_type : restricted_type_denoter ;
+
+-- record_type : RECORD_t {PascalHelp.put_keyword(" RECORD ");}
+--     field_list optional_semicolon {PascalHelp.put(';');}
+--     END_t {PascalHelp.put_keyword("END RECORD");}
+--     ;
+--
+-- field_list : record_section_list
+--     | record_section_list SEMICOLON_t {PascalHelp.put(';');} variant_part
+--     | variant_part
+--     ;
+--
+-- record_section_list : record_section_list SEMICOLON_t {PascalHelp.put(';');}
+--     record_section
+--     | record_section
+--     ;
+--
+-- The SEMICOLON_t after record_section_list is raising a shift/reduce
+-- conflict: within record_section_list or transition to variant_part?
+-- So regroup the two rules
+--   record_section_list SEMICOLON_t record_section
+--   record_section_list SEMICOLON_t variant_part
+-- in record_section_list, eliminate left recursion, and left factor the
+-- resulting rule.
+--
+-- The persistent shift/reduce conflict is correctly resolved in favor
+-- of the shift: consume a SEMICOLON_t and iterate on record_section_list.
+-- But this very SEMICOLON_t could be interprated as the optional_semicolon
+-- in record_type.  This conflict was raising a syntax error exception on legal
+-- Pascal source.  It has been solve by removing optional_semicolon after
+-- field_list in the rule record_type, and using a boolean for closing
+-- the last statement of the record with a semicolon.
+
+record_type : RECORD_t {PascalHelp.put_keyword(" RECORD ");}
+    field_list
+    {
+    if not PascalHelp.has_optional_semicolon then
+      PascalHelp.put(';');
+    end if;
+    PascalHelp.has_optional_semicolon := FALSE;
+    }
+    END_t {PascalHelp.put_keyword("END RECORD");}
+    ;
+
+field_list : record_section_list
+    | variant_part
+    ;
+
+record_section_list : record_section_list SEMICOLON_t {PascalHelp.put(';');}
+    tail_record_section_list
+    | record_section
+    ;
+
+tail_record_section_list : record_section
+    | variant_part
+    | {PascalHelp.has_optional_semicolon := TRUE;}
+    ;
+
+record_section :
+    identifier_list
+    COLON_t {PascalHelp.put(':');}
+    restricted_type_denoter
+    ;
+
+variant_part :
+    CASE_t {PascalHelp.put_keyword("CASE");}
+    variant_selector
+    OF_t {PascalHelp.put_keyword_line("IS");}
+    {PascalHelp.put_keyword("WHEN ");} variant_list
+    optional_semicolon {PascalHelp.put_keyword("END CASE");}
+    ;
+
+variant_selector : tag_field COLON_t tag_type
+    | tag_type
+    ;
+
+variant_list : variant_list SEMICOLON_t
+     {PascalHelp.put_keyword("WHEN ");} variant
+    | variant
+    ;
+
+variant : case_constant_list COLON_t {PascalHelp.put(" => ");}
+    LPAREN_t
+    field_list optional_semicolon {PascalHelp.put(';');}
+    RPAREN_t
+    ;
+
+-- variant : case_constant_list COLON_t {PascalHelp.put(" => ");}
+--     LPAREN_t
+--     record_section_list RPAREN_t
+--     | case_constant_list COLON_t LPAREN_t record_section_list SEMICOLON_t
+--         variant_part RPAREN_t
+--     | case_constant_list COLON_t LPAREN_t variant_part RPAREN_t
+--     ;
+
+case_constant_list : case_constant_list
+      comma {PascalHelp.put(" | ");}
+      case_constant
+    | case_constant
+    ;
+
+case_constant : constant
+    | constant DOUBLEDOT_t constant
+    ;
+
+tag_field : identifier ;
+
+tag_type : identifier ;
+
+set_type : SET_t OF_t {PascalHelp.put("NEW Set(Of =>");} base_type
+    {PascalHelp.put(')');}
+    ;
+
+base_type : ordinal_type ;
+
+file_type :
+      FILE_t OF_t component_type
+       {PascalHelp.put("Ada.Text_IO.File_Type");}
+    | FILE_t
+       {PascalHelp.put("Byte_direct_IO.File_Type");}
+    ;
+
+new_pointer_type :
+      UPARROW_t 
+      {PascalHelp.put_keyword("ACCESS ");}
+      domain_type
+      {PascalHelp.Put_Line(";");
+       PascalHelp.Put( "procedure Dispose is new Ada.Unchecked_Deallocation(" &
+         PascalHelp.Recent_identifier(0) & ", " & 
+         PascalHelp.Recent_identifier(1) & ')');
+      }
+    ;
+
+domain_type : identifier ;
+
+new_procedure_type :
+    PROCEDURE_t {PascalHelp.put_keyword("ACCESS PROCEDURE");} new_procedure_type_tail;
+
+new_procedure_type_tail : | formal_parameter_list ;
+
+new_function_type :
+    FUNCTION_t {PascalHelp.put_keyword("ACCESS FUNCTION");} new_function_type_tail;
+    
+new_function_type_tail :
+      COLON_t {PascalHelp.put_keyword(" RETURN");} identifier
+    | formal_parameter_list
+      COLON_t {PascalHelp.put_keyword(" RETURN");} identifier
+    ;
+
+-----------------------------------------------
+--  V A R I A B L E   D E C L A R A T I O N  --
+-----------------------------------------------
+variable_declaration_part : VAR_t
+    variable_declaration_list
+    ;
+
+variable_declaration_list :
+      variable_declaration_list variable_declaration
+    | variable_declaration
+    ;
+
+variable_declaration :
+    -- We retain the list in case we have to create an ad-hoc type
+    {PascalHelp.DirectIO:= False;
+     PascalHelp.Maybe_must_create_type:= True;}
+    identifier_list
+    COLON_t {PascalHelp.put(':');}
+    type_denoter
+    SEMICOLON_t
+    {PascalHelp.Maybe_must_create_type:= False;
+     PascalHelp.put(';');}
+    ;
+
+---------------------------------------------------
+--  S U B R O U T I N E   D E C L A R A T I O N  --
+---------------------------------------------------
+procedure_and_function_declaration_part :
+        proc_or_func_declaration_list SEMICOLON_t
+    ;
+
+proc_or_func_declaration_list :
+      proc_or_func_declaration_list SEMICOLON_t
+      proc_or_func_declaration
+    | proc_or_func_declaration
+    ;
+
+proc_or_func_declaration : procedure_declaration
+    | function_declaration
+    ;
+
+procedure_declaration : procedure_heading SEMICOLON_t
+      {DECLARE
+         tok : Token;
+       BEGIN
+         tok := YYLex;
+         IF (tok = FORWARD_t) OR (tok=EXTERNAL_t) THEN
+           PascalHelp.put_line(";");
+         ELSE
+           PascalHelp.put_keyword_line(" IS");
+         END IF;
+         UnYYLex(tok);
+      END;}
+      directive_or_block
+    ;
+
+procedure_heading : procedure_identification
+    | procedure_identification formal_parameter_list
+    ;
+
+directive :
+   FORWARD_t
+ | EXTERNAL_t {PascalHelp.Put_Import_directive("C");}
+ ;
+
+
+code_format_directives : code_format_directives_nonzero | ; -- EMPTY
+code_format_directives_nonzero :
+   code_format_directives code_format_directive | code_format_directive ;
+code_format_directive :
+   ID_t -- ID_t suffices (was identifier) Conflicts: (78/89) <- (86/89)
+   {PascalHelp.Memorize_identifier( YYtext(1..YYLength) );
+    PascalHelp.Put_Export_directive;}
+   SEMICOLON_t ; -- near or far and/or assembler
+
+
+formal_parameter_list : LPAREN_t {PascalHelp.put('(');}
+     formal_parameter_section_list RPAREN_t {PascalHelp.put(')');} ;
+
+formal_parameter_section_list : formal_parameter_section_list SEMICOLON_t
+      {PascalHelp.put(';');} formal_parameter_section
+    | formal_parameter_section
+    ;
+
+formal_parameter_section : value_parameter_specification
+    | variable_parameter_specification
+    | constant_parameter_specification
+    | procedural_parameter_specification
+    | functional_parameter_specification
+    ;
+
+value_parameter_specification : identifier_list COLON_t {PascalHelp.put(':');}
+    type_with_passing_option
+    ;
+
+variable_parameter_specification :
+    VAR_t identifier_list variable_parameter_specification_tail ;
+
+-- GdM 28-Dec-2002 for CW Pascal: procedure P(x: univ integer);
+type_with_passing_option : identifier | passing_option identifier;
+    
+passing_option :
+    identifier
+    {PascalHelp.Put_translation_comment("passing option!");
+     PascalHelp.New_Line;}
+    ;
+    
+variable_parameter_specification_tail :
+      COLON_t {PascalHelp.Put_VAR_param;} type_with_passing_option
+    |
+      {PascalHelp.Put_VAR_param; PascalHelp.put(" [Help! Typeless VAR!]");}
+    ;
+
+constant_parameter_specification :
+    CONST_t identifier_list constant_parameter_specification_tail ;
+
+constant_parameter_specification_tail :
+      COLON_t {PascalHelp.Put_CONST_param;} type_with_passing_option
+    |
+      {PascalHelp.Put_CONST_param; PascalHelp.put(" [Help! Typeless CONST!]");}
+    ;
+procedural_parameter_specification : procedure_heading {PascalHelp.De_stack;};
+
+functional_parameter_specification : function_heading {PascalHelp.De_stack;};
+
+procedure_identification : PROCEDURE_t
+    {PascalHelp.put_keyword("PROCEDURE");}
+    possible_procedure_name
+    {PascalHelp.Stack( $3.text(1..$3.length), is_function=> False );}
+    ;
+
+-- Another Borland headache: Exit, Break, Continue are *procedures*
+-- and can be masked !! GdM 20-Dec-2002
+possible_procedure_name :
+      identifier
+    |
+      EXIT_t {PascalHelp.Put("Exit");}
+    ;
+
+function_declaration : function_heading SEMICOLON_t
+      {DECLARE
+         tok : Token;
+       BEGIN
+         tok := YYLex;
+         IF (tok = FORWARD_t) OR (tok=EXTERNAL_t) THEN
+           PascalHelp.put_line(";");
+         ELSE
+           PascalHelp.put_keyword_line(" IS");
+           PascalHelp.put("Result_");
+           PascalHelp.Put_last_name;
+           PascalHelp.put(" : ");
+           PascalHelp.put($1.text(1..$1.length));
+           PascalHelp.put_line(";");
+           PascalHelp.function_needs_goto:= False;
+         END IF;
+         UnYYLex(tok);
+      END;}
+    func_directive_or_block
+    ;
+
+func_directive_or_block :
+      directive {PascalHelp.De_stack;}
+    | code_format_directives block
+    {if PascalHelp.function_needs_goto then
+       PascalHelp.put("<<End_" & PascalHelp.Give_last_name & ">>");
+     end if;
+     PascalHelp.put_keyword(" RETURN");
+     PascalHelp.put(" Result_");
+     PascalHelp.Put_last_name;
+     PascalHelp.put_line(";");
+     PascalHelp.put_keyword("END ");
+     PascalHelp.Put_last_name;
+     PascalHelp.put(';');
+     PascalHelp.De_stack;}
+    ;
+
+directive_or_block :
+      directive {PascalHelp.De_stack;}
+    | code_format_directives block
+    {PascalHelp.put_keyword("END ");
+     PascalHelp.Put_last_name;
+     PascalHelp.put(';');
+     PascalHelp.De_stack;}
+    ;
+
+function_heading : FUNCTION_t {PascalHelp.put_keyword("FUNCTION");}
+    identifier
+      {PascalHelp.Stack( $3.text(1..$3.length), is_function=> True );}
+    possible_formals
+    COLON_t {PascalHelp.put_keyword(" RETURN ");} result_type
+    {$$.length := $8.length;
+     $$.text := $8.text;
+    }
+    ;
+
+possible_formals :
+    formal_parameter_list
+    | -- EMPTY
+    ;
+
+result_type : identifier {$$.length := $1.length; $$.text := $1.text;};
+
+---------------------------
+--  S T A T E M E N T S  --
+---------------------------
+
+statement_part : non_labeled_statement
+    | emitted_label COLON_t non_labeled_statement
+    | emitted_label COLON_t {PascalHelp.put_keyword(" null;");}
+    | {PascalHelp.put_keyword(" null; ");} -- EMPTY
+    ;
+
+non_labeled_statement : 
+      {PascalHelp.Clear_null_flag;}
+      {PascalHelp.function_result_flag:= True;} -- *Only on this place*
+      simple_statement
+    | {PascalHelp.Clear_null_flag;} structured_statement
+    ;
+
+simple_statement : assignment_statement
+    | procedure_statement
+    | goto_statement
+    ;
+
+--  ?    | variable_access PERIOD_t {PascalHelp.put('.');}
+--  ?        procedure_statement subr_assignment_right_side
+--  ? subr_assignment_right_side : ASSIGN_t
+--  ?     {PascalHelp.put(":=");} expression {PascalHelp.put(";");} | ;
+
+structured_statement : compound_statement {PascalHelp.put_keyword("END;");}
+    | if_statement
+    | case_statement
+    | repeat_statement
+    | while_statement
+    | for_statement
+    | with_statement
+    ;
+
+assignment_statement :
+    variable_access ASSIGN_t
+    {PascalHelp.function_result_flag:= False;}
+    {PascalHelp.put(":=");}
+    expression
+    {PascalHelp.put(';');}
+    ;
+
+junk_asm : junk_asm | identifier;  -- to be completed!
+
+-- 15-Dec-2002: no "end;" put on that place.
+--              Allows putting a function return and a subprogram name.
+
+compound_statement : pascal_compound_statement | assembler_compound_statement ;
+
+pascal_compound_statement :
+    BEGIN_t {PascalHelp.put_keyword("BEGIN"); PascalHelp.Set_null_flag;}
+       statement_sequence_fat
+    END_t {PascalHelp.Put_eventual_null;}
+    ;
+    
+assembler_compound_statement :
+    ASM_t
+       {PascalHelp.put_keyword_line("BEGIN");
+        PascalHelp.put_line("  ASM (");}
+       junk_asm
+    END_t
+       {PascalHelp.put(");");
+        PascalHelp.Put_translation_comment("end of ASM part");
+        PascalHelp.new_line;}
+    ;
+
+statement_sequence : statement_part
+    | statement_sequence SEMICOLON_t statement_part
+    ;
+
+statement_part_fat : non_labeled_statement
+    | emitted_label COLON_t non_labeled_statement
+    | emitted_label COLON_t {PascalHelp.put_keyword(" null; ");}
+    | -- EMPTY
+    ;
+
+statement_sequence_fat : statement_part_fat
+    | statement_sequence_fat SEMICOLON_t statement_part_fat
+    ;
+
+fat_statement_part : -- Trash the extra safely enclosed BEGIN...END
+    statement_part
+    | BEGIN_t {PascalHelp.Set_null_flag;}
+         statement_sequence_fat END_t {PascalHelp.Put_eventual_null;}
+    ;
+
+repeat_statement : REPEAT_t {PascalHelp.put_keyword("LOOP");}
+    statement_sequence_fat
+    UNTIL_t {PascalHelp.put_keyword("   EXIT WHEN");} boolean_expression
+    {PascalHelp.put_line(";"); PascalHelp.put_keyword("   END LOOP;");}
+    ;
+
+while_statement : WHILE_t {PascalHelp.put_keyword("WHILE");} boolean_expression
+    DO_t {PascalHelp.put_keyword("LOOP");}
+    fat_statement_part {PascalHelp.put_keyword("END LOOP;");}
+    ;
+
+for_statement : FOR_t {PascalHelp.put_keyword("FOR");} control_variable
+            ASSIGN_t {PascalHelp.put_keyword(" IN");
+              PascalHelp.DirectIO := False;
+            } initial_value direction
+            final_value DO_t
+            {PascalHelp.put_keyword("LOOP");}
+            fat_statement_part
+            {PascalHelp.put_keyword("END LOOP;");}
+    ;
+
+with_statement : WITH_t
+    {
+    PascalHelp.Put_translation_comment("!Help! WITH (add 'r.' to record fields)");
+    PascalHelp.New_Line;
+    PascalHelp.put_keyword_line("DECLARE");
+    PascalHelp.put("  r");
+    PascalHelp.put(" : <type> ");
+    PascalHelp.Put_keyword("RENAMES");
+    }
+    record_variable_list
+    DO_t
+    {
+    PascalHelp.put(';');
+    PascalHelp.Put_keyword("BEGIN");
+    }
+    fat_statement_part -- "fat_": instructions are safely enclosed
+    {
+    PascalHelp.New_Line;
+    PascalHelp.Put_keyword("END;");
+    PascalHelp.Put_translation_comment("end of WITH");
+    PascalHelp.New_Line;
+    }
+    ;
+
+if_statement :
+    IF_t {PascalHelp.put_keyword("IF ");} boolean_expression
+    THEN_t {PascalHelp.put_keyword("THEN");} fat_statement_part
+    else_part_possible
+    {PascalHelp.put_keyword("END IF;");}
+    ;
+
+else_part_possible : else_part | ; -- EMPTY
+
+else_part : ELSE_t {PascalHelp.put_keyword("ELSE");} fat_statement_part ;
+
+indexed_variable : variable_access LBRACK_t
+    {PascalHelp.put('(');}
+    index_expression_list RBRACK_t
+    {PascalHelp.put(')');}
+    ;
+
+index_expression_list :
+      index_expression_list comma {PascalHelp.put(',');} index_expression
+    | index_expression
+    ;
+
+index_expression : expression ;
+
+field_designator : variable_access PERIOD_t
+    {PascalHelp.put('.');}
+    identifier
+    ;
+
+procedure_statement :
+      simple_procedure_call
+    | pointed_procedure_call
+    | str_instruction
+    | NEW_t -- 17-Dec-2002 "New(p)" becomes "p:= new <type>"
+      LPAREN_t
+      variable_access
+      {PascalHelp.Put_keyword(":= new"); PascalHelp.Put(" !Help! <type>;");}
+      RPAREN_t
+    | EXIT_t
+      {PascalHelp.function_result_flag:= False;
+       if PascalHelp.Is_last_a_function then
+         PascalHelp.put_keyword("GOTO ");
+         PascalHelp.put("End_" & PascalHelp.Give_last_name & ';');
+         PascalHelp.function_needs_goto:= True;
+       else
+         PascalHelp.put_keyword("return;");
+       end if;
+       PascalHelp.Put_translation_comment("!Warning! Maybe a call to an ""Exit"" procedure!");
+       PascalHelp.New_Line;
+      }
+      exit_param -- CW Pascal
+    | WRITE_t
+      {PascalHelp.function_result_flag:= False;
+       PascalHelp.Read_Write_Maybe_to_file:= False;} write_params
+    | WRITELN_t
+      {PascalHelp.function_result_flag:= False;
+       PascalHelp.Read_Write_Maybe_to_file:= False;} write_params
+      {PascalHelp.Put("New_Line;");
+       if PascalHelp.Read_Write_Maybe_to_file then
+         PascalHelp.Put_translation_comment("!Help! Maybe (file)");
+       end if;
+       PascalHelp.New_Line;}
+    | READ_t
+      {PascalHelp.function_result_flag:= False;
+       PascalHelp.Read_Write_Maybe_to_file:= False;} read_params
+    | READLN_t
+      {PascalHelp.function_result_flag:= False;
+       PascalHelp.Read_Write_Maybe_to_file:= False;} read_params
+      {PascalHelp.put("Skip_Line;");
+       if PascalHelp.Read_Write_Maybe_to_file then
+         PascalHelp.Put_translation_comment("!Help! Maybe (file)");
+       end if;
+       PascalHelp.New_Line;}
+    ;
+
+simple_procedure_call : identifier
+      {PascalHelp.function_result_flag:= False;}
+      params {PascalHelp.put(';');}
+    ;
+
+pointed_procedure_call : pointer_dereference
+      {PascalHelp.function_result_flag:= False;}
+      params {PascalHelp.put(';');}
+    ;
+
+-- resolve conflict with non_empty_params by calling non_empty_params
+-- params : LPAREN_t {PascalHelp.put('(');}
+--     actual_parameter_list RPAREN_t {PascalHelp.put(')');}
+--     |  -- EMPTY
+--     ;
+
+params : non_empty_params
+    |  -- EMPTY
+    ;
+
+write_params : LPAREN_t {PascalHelp.put("Put(");}
+    write_actual_parameter_list RPAREN_t {PascalHelp.put_line(");");}
+    |  -- EMTPY
+    ;
+
+write_actual_parameter_list : write_actual_parameter_list comma
+    {PascalHelp.put(");");
+     if PascalHelp.Read_Write_Maybe_to_file then
+       PascalHelp.Put_translation_comment("!Help! Maybe (file,...) on next");
+     end if;
+     PascalHelp.New_Line;
+     PascalHelp.put("Put(");} write_actual_parameter
+    | write_actual_parameter
+    ;
+
+write_actual_parameter : expression
+    | expression COLON_t {PascalHelp.put(',');} another_colon
+    ;
+
+read_params : LPAREN_t {PascalHelp.put("Get(");}
+    read_actual_parameter_list RPAREN_t {PascalHelp.put_line(");");}
+    |  -- EMTPY
+    ;
+
+read_actual_parameter_list : read_actual_parameter_list comma
+    {PascalHelp.put(");");
+     if PascalHelp.Read_Write_Maybe_to_file then
+       PascalHelp.Put_translation_comment("!Help! Maybe (file,...) on next");
+     end if;
+     PascalHelp.New_Line;
+     PascalHelp.put("Get(");} read_actual_parameter
+    | read_actual_parameter
+    ;
+
+read_actual_parameter : expression ;
+
+another_colon : expression
+    | expression COLON_t {PascalHelp.put(',');} expression
+      {PascalHelp.put(",0");}
+    ;
+
+str_instruction : STR_t
+    {PascalHelp.function_result_flag:= False;
+     PascalHelp.Put("Put");} str_params {PascalHelp.put(';');}
+    ;
+
+str_params : LPAREN_t {PascalHelp.put('(');}
+    str_actual_parameter comma {PascalHelp.put(',');}
+    expression RPAREN_t {PascalHelp.put(')');}
+    ;
+
+str_actual_parameter : expression
+    | expression COLON_t {PascalHelp.put(',');} expression
+    ;
+
+non_empty_params : LPAREN_t {PascalHelp.put('(');}
+    actual_parameter_list
+    RPAREN_t {PascalHelp.put(')');}
+    ;
+
+actual_parameter_list : actual_parameter_list comma
+    {PascalHelp.put(',');} actual_parameter
+    | actual_parameter
+    ;
+
+-- completed according to the Metrowerks standard with
+-- variable_access, procedure_identifier, function_identifier
+
+actual_parameter : expression
+--    | variable_access
+    ;
+
+exit_param : non_empty_exit_param  -- CW Pascal
+    |  -- EMPTY
+    ;
+
+non_empty_exit_param : LPAREN_t
+    {PascalHelp.Put_keyword("return [from] ");}
+    expression
+    RPAREN_t
+    {PascalHelp.Put(';');
+     PascalHelp.Put_translation_comment("!Help! CWP's EXIT(...)");
+     PascalHelp.New_Line;
+     }
+    ;
+
+goto_statement : GOTO_t {PascalHelp.put_keyword("GOTO");}
+    emitted_goto_label {PascalHelp.put("; ");}
+    ;
+
+case_statement : CASE_t {PascalHelp.put_keyword("CASE ");} case_index
+    OF_t {PascalHelp.put_keyword_line(" IS ");}
+    {PascalHelp.put_keyword("WHEN ");} case_list_element_list
+    rest_of_case END_t {PascalHelp.put_keyword_line("END CASE;");}
+    ;
+
+rest_of_case : optional_semicolon otherwisepart_or_null optional_semicolon
+    ;
+
+optional_semicolon : SEMICOLON_t
+    |  -- EMPTY
+    ;
+
+otherwisepart_or_null : {PascalHelp.Set_null_flag;} otherwisepart {PascalHelp.Put_eventual_null;}
+    | {PascalHelp.Put_empty_otherwise;}   -- EMPTY
+    ;
+
+case_index : expression ;
+
+case_list_element_list : case_list_element_list SEMICOLON_t
+      {PascalHelp.put_keyword("WHEN ");} case_list_element
+    | case_list_element
+    ;
+
+case_list_element : case_constant_list COLON_t {PascalHelp.put("=>");}
+    fat_statement_part
+    ;
+
+otherwisepart : OTHERWISE_t {PascalHelp.put_keyword("WHEN OTHERS =>");} statement_sequence_fat
+    | OTHERWISE_t COLON_t {PascalHelp.put_keyword("WHEN OTHERS =>");} statement_sequence_fat
+    | ELSE_t {PascalHelp.put_keyword("WHEN OTHERS =>");} statement_sequence_fat
+    ;
+
+control_variable : identifier ;
+
+initial_value : expression ;
+
+direction : TO_t
+      { PascalHelp.DirectIO := True;
+        PascalHelp.flush;
+        PascalHelp.empty;
+        PascalHelp.put(" ..");
+        PascalHelp.downto:= False;
+      }
+    | DOWNTO_t
+      { PascalHelp.DirectIO := True;
+        PascalHelp.put_keyword("REVERSE"); -- Reversing fixed 13-Dec-2002
+        -- DirectIO = True, but we keep the Initial_value in the buffer.
+        PascalHelp.downto:= True;
+      }
+    ;
+
+final_value : expression
+      { if PascalHelp.downto then
+          PascalHelp.put(".. ");
+          PascalHelp.flush; -- Pascal's initial_value is right part
+          PascalHelp.empty; -- of Ada's interval
+          PascalHelp.put(' ');
+        end if;
+      }
+    ;
+
+record_variable_list : record_variable_list comma variable_access
+    | variable_access
+    ;
+
+boolean_expression : expression ;
+
+expression : simple_expression
+    | simple_expression relop simple_expression
+    ;
+
+-- according to Metrowerks Pascal description
+-- add sign to term
+-- simple_expression : term
+--     | simple_expression addop term
+--     ;
+
+simple_expression : unsigned_simple_expression
+    | sign unsigned_simple_expression
+    ;
+
+unsigned_simple_expression : term
+    | unsigned_simple_expression addop term
+    ;
+
+term : factor
+    | term mulop factor
+    ;
+
+-- factor : function_call is implicit with variable_access
+-- implicit identifier through unsigned_constant replaced by variable_access
+
+factor : AT_t
+      {PascalHelp.put("System.Address_To_Access_Conversions.To_Address(");}
+      variable_access {PascalHelp.put(')');}
+    | ORD_t LPAREN_t -- GdM 15-Dec-2002
+      {PascalHelp.Put("Character'Pos(");}
+      expression
+      RPAREN_t {PascalHelp.Put(')');}
+    | CHR_t LPAREN_t -- GdM 15-Dec-2002
+      {PascalHelp.Put("Character'Val(");}
+      expression
+      RPAREN_t {PascalHelp.Put(')');}
+    | SQR_t LPAREN_t -- GdM 21-Dec-2002
+      {PascalHelp.Put("((");}
+      expression
+      RPAREN_t {PascalHelp.Put(")**2)");}
+    | ODD_t LPAREN_t -- GdM 21-Dec-2002
+      {PascalHelp.Put("((");}
+      expression
+      RPAREN_t {PascalHelp.Put(") mod 2 /= 0)");}
+    | EOF_t LPAREN_t -- GdM 21-Dec-2002
+      {PascalHelp.Put("End_of_File(");}
+      expression
+      RPAREN_t {PascalHelp.Put(')');}
+    | EOF_t -- GdM 21-Dec-2002
+      {PascalHelp.Put("End_of_File ");}
+    | EOLN_t LPAREN_t -- GdM 21-Dec-2002
+      {PascalHelp.Put("End_of_Line(");}
+      expression
+      RPAREN_t {PascalHelp.Put(')');}
+    | EOLN_t -- GdM 21-Dec-2002
+      {PascalHelp.Put("End_of_Line ");}
+    | unsigned_constant
+    | variable_access
+    | variable_access PERIOD_t {PascalHelp.put('.');} variable_access
+    | set_constructor
+    | LPAREN_t {PascalHelp.put('(');}
+      expression
+      RPAREN_t {PascalHelp.put(')');}
+    | NOT_t {PascalHelp.put_keyword("NOT");} factor
+    ;
+
+function_call : variable_access non_empty_params
+    ;               -- A function_call could be an identifier, but this is
+                    -- always made available when function_call is called.
+
+-- split definition to avoid reduction conflicts
+
+variable_access : identifier {PascalHelp.Read_Write_Maybe_to_file:= True;}
+    | composed_variable_access
+    ;
+
+composed_variable_access : function_call
+    | pointer_dereference
+    | variable_access PERIOD_t {PascalHelp.put('.');} variable_access
+    | variable_access_with_brackets
+    ;
+
+variable_access_with_brackets :
+      variable_access
+      LBRACK_t {PascalHelp.put('(');}
+      index_expression_list
+      RBRACK_t {PascalHelp.put(')');}
+    ;
+    
+-- avoid shift/reduce conflict with procedure_statement; factor it out
+
+pointer_dereference : variable_access UPARROW_t {PascalHelp.put(".all");}
+    ;
+
+-- unsigned_constant : unsigned_number {$$.vartype := other_type;}
+--     | CHAR_CONST_t {PascalHelp.put(YYText); $$.vartype := character_type;}
+--     | STRING_t {PascalHelp.PrintString(YYText); $$.vartype := string_type;}
+--     | TRUE_t {PascalHelp.PrintString(" True "); $$.vartype := boolean_type;}
+--     | FALSE_t {PascalHelp.PrintString(" False "); $$.vartype := boolean_type;}
+--     | NIL_t {PascalHelp.put_keyword("NULL"); $$.vartype := other_type;}
+--     ;
+
+unsigned_number : CONSTANT_t {PascalHelp.Put(YYText);}
+       | HEXADECIMAL_t
+         {
+         DECLARE
+           the_number : string := YYText;
+         BEGIN
+           PascalHelp.Put("16#" & the_number(2..the_number'last) & "#");
+         END;
+         }
+       ;
+
+set_constructor :
+      LBRACK_t 
+      {PascalHelp.put("Set_of_ (");}
+      set_constructor_contents
+      {PascalHelp.put(" => True, ");
+       PascalHelp.put_keyword("OTHERS");
+       PascalHelp.put(" => False) ");}
+      RBRACK_t ;
+
+set_constructor_contents : member_designator_list | ;
+
+member_designator_list :
+      member_designator_list comma {PascalHelp.put('|');} member_designator
+    | member_designator
+    ;
+
+member_designator : member_designator DOUBLEDOT_t {PascalHelp.put("..");}
+    expression
+    | expression
+    ;
+
+addop: PLUS_t {PascalHelp.put('+');}
+    | MINUS_t {PascalHelp.put('-');}
+    | OR_t {PascalHelp.put_keyword(" OR ");}
+    | XOR_t {PascalHelp.put_keyword(" XOR ");}
+    ;
+
+mulop : TIMES_t {PascalHelp.put('*');}
+    | DIVIDE_t {PascalHelp.put('/');}
+    | DIV_t {PascalHelp.put("  /  ");}
+    | MOD_t {PascalHelp.put_keyword(" MOD ");}
+    | AND_t {PascalHelp.put_keyword(" AND ");}
+    | SHL_t {PascalHelp.put(" Shift_left( , ) ");}
+    | SHR_t {PascalHelp.put(" Shift_right( , ) ");}
+    | AMPERSAND_t {PascalHelp.put('&');}
+    | DOUBLESTAR_t {PascalHelp.put("**");}
+    ;
+
+relop : EQUAL_t {PascalHelp.put('=');}
+    | NE_t {PascalHelp.put("/=");}
+    | LT_t {PascalHelp.put('<');}
+    | GT_t {PascalHelp.put('>');}
+    | LE_t {PascalHelp.put("<=");}
+    | GE_t {PascalHelp.put(">=");}
+    | IN_t {PascalHelp.put_keyword(" IN ");}
+    ;
+
+identifier : ID_t {
+      PascalHelp.Memorize_identifier( YYtext(1..YYLength) );
+      IF PascalHelp.function_result_flag and then
+         PascalHelp.Function_in_stack( YYtext(1..YYLength) ) THEN
+         PascalHelp.put("Result_");
+      END IF;
+      $$.length:=YYLength; $$.text(1..YYLength):=YYText;
+      PascalHelp.put(YYText);
+      }
+    | CHAR_t {$$.length:=9; $$.text(1..9):="Character";
+              PascalHelp.put(" Character "); }
+    | REAL_t {$$.length:=5; $$.text(1..5):="Float";
+              PascalHelp.put("Float"); }
+    | DOUBLE_t {$$.length:=10; $$.text(1..10):="Long_Float";
+              PascalHelp.put("Long_Float"); }
+    | ODD_t  {PascalHelp.put(" odd "); }
+      -- 21-Dec-2002 if a declaration masks Odd
+    ;
+
+comma : COMMA_t
+    ;
+
+%%
+
+-- p2ada
+-- a source converter from Pascal MacOS to Ada
+-- original version Martin C. Carlisle (November 1996)
+-- mcc@cs.usafa.af.mil
+-- http://www.usafa.af.mil/dfcs/bios/carlisle.html
+
+-- extended for MacOS by Laurent Gasser (June 1997)
+-- lga@sma.ch
+
+with Pascal_Tokens, Pascal_Shift_Reduce, Pascal_Goto;
+use  Pascal_Tokens, Pascal_Shift_Reduce, Pascal_Goto;
+with Pascal_DFA, YYroutines, Text_IO, PascalHelp, YYerror;
+use  Pascal_DFA, YYroutines, Text_IO;
+
+##

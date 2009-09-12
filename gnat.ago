@@ -1,0 +1,51 @@
+-gnatwa -gnatVa -gnatecdebug.pra
+-i -aOACU
+
+
+WINDOWS_TARGET
+
+
+comment
+"p2ada
+p2ada
+p2ada:
+short-c
+unch
+
+
+
+
+-- Begin compiler switches
+DEBUG <- active (current) build mode
+FALSE <- are gcc/gnatmake/main/target-dir of Release := these from Debug mode ?
+debug o2 false
+debug inlining false
+debug unroll_loops false
+debug suppress_all_checks false
+debug debug_info true
+debug integer_overflow_check true
+debug stack_check false
+debug trace_back false
+debug strip_all_symbols false
+debug profiling false
+release o2 true
+release inlining true
+release unroll_loops true
+release suppress_all_checks true
+release debug_info false
+release integer_overflow_check false
+release stack_check false
+release trace_back false
+release strip_all_symbols true
+release profiling false
+-- End compiler switches
+-- Begin Release mode commands
+
+-i -aOACU
+
+
+-- End Release mode commands
+-- Begin run options
+prompt_arguments false
+ad_trace_back false
+-- End run options
