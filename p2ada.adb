@@ -42,6 +42,8 @@ PROCEDURE P2Ada IS
   end Syntax;
 
 BEGIN
+  P2Ada_Definition_info.Load_Alias ("alias.txt");
+
   for i in 1..Argument_Count loop
     declare
       arg: constant String:= Argument(i);
@@ -118,8 +120,6 @@ BEGIN
      Put(Standard_error, "Standard_Output");
    end if;
    New_Line(Standard_error);
-
-   P2Ada_Definition_info.Load_Alias ("alias.txt");
 
    YYParse;
 

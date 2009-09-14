@@ -1,7 +1,8 @@
 -- Started 23-Jan-2003 [GdM].
 
--- This pseudo-compiler construction was forseen just for
--- trying to translate the WITH instruction !
+-- This is a pseudo-compiler construction. It builds internal tables
+-- with type definitions and identifiers
+-- Initially, it was forseen just for translating the WITH instruction !
 
 -- Currently it helps P2Ada supporting :
 
@@ -10,9 +11,15 @@
 --     hidden by explicit identifiers in Pascal programs from other
 --     dialects.
 --
---  2/ Translation of New(...) : finds type for ":= new <type>".
+--  2/ Translation of New(...) : finds <type> for Ada's ":= new <type>".
 --
---  3/ Translation of WITH.
+--  3/ Translation of WITH: find <type> for the 'declare' part
+--
+--  4/ Translation of Read/Write[Ln]: if variable A is a Text (file), then
+--       Write(A,B,C,D) must be translated as Put(A,B); Put(A,C); Put(A,D);
+--       otherwise it must be translated as Put(A); Put(B); Put(C); Put(D);
+--
+--  5/ Give Pascal's untyped constants a type
 
 -- Parts inspired by Pascal_S, other not: this is more relax and less
 -- complete than for an actual Pascal compiler.

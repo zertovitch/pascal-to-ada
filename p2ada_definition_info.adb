@@ -848,7 +848,7 @@ package body P2Ada_Definition_info is
   -- Input / Output --
   --------------------
 
-  type Def_kind is (id,ty);
+  type Def_kind is (idents,types);
   type Def_stack_pointer is array(Def_kind) of Natural;
 
   -- Load items from a file. They are visible at top level.
@@ -888,41 +888,41 @@ package body P2Ada_Definition_info is
         raise;
     end;
     Skip_Line(f);
-    base(ty):= typ_top + 1;
-    base(id):= idt_top + 1;
+    base(types) := typ_top + 1;
+    base(idents):= idt_top + 1;
     for k in Def_kind loop
       Get(f,start_imports(k));Skip_Line(f);
       Get(f,stop_imports(k));Skip_Line(f);
       offset(k):= base(k) - start_imports(k);
     end loop;
     Skip_Line(f);
-    for t in start_imports(ty) .. stop_imports(ty) loop
+    for t in start_imports(types) .. stop_imports(types) loop
       Get(f,l); -- should be = t
-      l:= Get_ref(id);
+      l:= Get_ref(idents);
       Get(f,tk);
       Enter_type(l,tk);
       case tk is
         when Simple  =>  null;
-        when Arrays  =>  typ_stack(typ_top).Elemtip:= Get_ref(ty);
-        when Records =>  typ_stack(typ_top).Field1 := Get_ref(id);
-                         typ_stack(typ_top).parent := Get_ref(ty);
+        when Arrays  =>  typ_stack(typ_top).Elemtip:= Get_ref(types);
+        when Records =>  typ_stack(typ_top).Field1 := Get_ref(idents);
+                         typ_stack(typ_top).parent := Get_ref(types);
         when Pointer
-             | File  =>  typ_stack(typ_top).Pointed:= Get_ref(ty);
+             | File  =>  typ_stack(typ_top).Pointed:= Get_ref(types);
         when Incomplete => null;
-        when Method => typ_stack(typ_top).meth_id:= Get_ref(id);
+        when Method => typ_stack(typ_top).meth_id:= Get_ref(idents);
       end case;
       Skip_Line(f);
     end loop;
     Skip_Line(f);
-    for i in start_imports(id) .. stop_imports(id) loop
+    for i in start_imports(idents) .. stop_imports(idents) loop
       Get(f,l); -- should be = i
       Skip_Line(f);
       Get_Line(f,s,l);
       Get(f,ik);
       Enter( s(1..l), ik, no_type);
-      idt_stack(idt_top).typ:= Get_ref(ty);
-      idt_stack(idt_top).nxt:= Get_ref(id);
-      idt_stack(idt_top).Ada_alias:= Get_ref(id);
+      idt_stack(idt_top).typ:= Get_ref(types);
+      idt_stack(idt_top).nxt:= Get_ref(idents);
+      idt_stack(idt_top).Ada_alias:= Get_ref(idents);
       Skip_Line(f);
     end loop;
     Close(f);
@@ -956,11 +956,13 @@ package body P2Ada_Definition_info is
     Create(f, out_file, export_name.all);
     Put_Line(f,"-- Definition exports, file " & export_name.all);
     for k in Def_kind loop
-      Put(f,start_exports(k)); New_Line(f);
-      Put(f,stop_exports(k)); New_Line(f);
+      Put(f,start_exports(k));
+      Put_Line(f, " -- first item in " & Def_kind'Image(k));
+      Put(f,stop_exports(k));
+      Put_Line(f, " -- last  item in " & Def_kind'Image(k));
     end loop;
     Put_Line(f,"-- Types: ");
-    for t in start_exports(ty) .. stop_exports(ty) loop
+    for t in start_exports(types) .. stop_exports(types) loop
       Put(f,t); -- redundant info, for human readers of the file
       declare
         tt: Typ renames typ_stack(t).all;
@@ -979,7 +981,7 @@ package body P2Ada_Definition_info is
       end;
     end loop;
     Put_Line(f,"-- Identifiers: ");
-    for d in start_exports(id) .. stop_exports(id) loop
+    for d in start_exports(idents) .. stop_exports(idents) loop
       Put(f,d,0); -- redundant info, for human readers of the file
       declare
         dd: Idt renames idt_stack(d).all;
@@ -1037,6 +1039,20 @@ package body P2Ada_Definition_info is
     -- create an identifier associated to the type + alias
     Enter_with_alias(name, alias_name, "", Tipe, typ_top);
     typ_stack(typ_top).I:= id; -- associate the type to the identifier
+    --
+    -- If we have THE types Integer or Char, we remember that.
+    -- It's for getting the type of Pascal untyped constants with litterals
+    -- like CONST A='a'; B='Baaaa'; C=1234;
+    --
+    if name = "Integer" then
+      the_Integer_type:= typ_top;
+    elsif name= "Char" then
+      the_Char_type:= typ_top;
+    elsif name= "Boolean" then
+      the_Boolean_type:= typ_top;
+    elsif name= "Real" then
+      the_Real_type:=  typ_top;
+    end if;
   end Enter_Simple_Type;
 
   procedure Enter_Pointer_or_File_Type(
@@ -1062,26 +1078,25 @@ package body P2Ada_Definition_info is
     Enter_with_alias(name, alias_name, "", Tipe, typ_top);
     typ_stack(typ_top).I:= id; -- associate the type to the identifier
     typ_stack(typ_top).elemtip:= char_type;
+    if name= "String" then
+      the_String_type:=  typ_top;
+    end if;
   end Enter_String_Type;
 
   procedure Classic_predefined is
   begin
     Enter_Simple_Type("Integer");
-    the_Integer_type:= typ_top;
     Enter_with_Alias("Maxint", "Integer'last", "", Konst, the_Integer_type);
+
     Enter_Simple_Type("Char", "Character");
-    the_Char_type:= typ_top;
     Enter_String_Type("String", "", the_Char_type);   -- BP but quite common
-    the_String_type:= typ_top;
 
     Enter_Simple_Type("Boolean");
-    the_Boolean_type:= typ_top;
     Enter("False", Konst, the_Boolean_type);
     Enter("True", Konst, the_Boolean_type);
 
     Enter_with_Alias("NIL", "null", "", Konst, 0);
     Enter_Simple_Type("Real", "Float");
-    the_Real_type:=  typ_top;
     Enter_Pointer_or_File_Type("Text", "Ada.Text_IO.File_Type", the_Char_type, File);
 
     Enter_with_Alias("Chr",  "Character'Val", "", Funkt, the_Char_type);
@@ -1234,7 +1249,7 @@ package body P2Ada_Definition_info is
 
     Hep("--------[ End of predefined ]--------");
 
-    predef:=  (id=> idt_top+1, ty=> typ_top+1);
+    predef:=  (idents=> idt_top+1, types=> typ_top+1);
     start_exports:= predef;
 
   -- exception
@@ -1384,7 +1399,7 @@ package body P2Ada_Definition_info is
       F : File_Type;
    begin
       if Alias_File_Name = "" then
-         Put_Line( Standard_Error, "Intern aliases loaded." );
+         Put_Line( Standard_Error, "Internal aliases loaded." );
          Predefined_Pascal_Identifiers;
       else
          begin

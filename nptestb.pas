@@ -1,7 +1,7 @@
 { This is a test of the Import/Export of definitions }
 
-{ P2Ada NPTest2.pas -INPTest2.def >NPTest2.ada }
-{ P2Ada NPTestB.pas -DNPTest2.def >NPTestB.adb }
+{ P2Ada NPTest2.pas -ENPTest2.def >NPTest2.ada }
+{ P2Ada NPTestB.pas -INPTest2.def >NPTestB.adb }
 
 program NPTestB;
 
