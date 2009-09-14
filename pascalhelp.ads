@@ -1,3 +1,5 @@
+-- 31-Aug-2009 [PP]
+-- Added string list facility for default withs from config file
 -- 26-Dec-2006 [GdM]
 --    Added eol_in_comment and the Line_number function
 
@@ -21,7 +23,7 @@
 --   Downto -> reverse bug fixed (interval must be reversed)
 
 -- 1-Dec-2002 [GdM]
---   Treatement of empty statement sequences 
+--   Treatement of empty statement sequences
 
 -- 19-Nov-2002 [GdM]
 -- Added blurb string
@@ -50,6 +52,8 @@
 -- June 21, 1997
 -- Adaptation to extended MacOS Pascal
 
+with Ada.Containers.Doubly_Linked_Lists;
+with Ada.Strings.Unbounded;
 PACKAGE PascalHelp IS
 
   blurb: String:= "-- Translated by (New) P2Ada v. 15-Nov-2006";
@@ -84,7 +88,7 @@ PACKAGE PascalHelp IS
   -- FunctionName : NameType;
   -- FnNameLength : Integer := 0;
   -- FunctionReturn : Boolean := False; -- <- Never used
-  
+
   DirectIO : Boolean := True;
   Downto: Boolean; -- GdM 13-Dec-2002
 
@@ -94,7 +98,7 @@ PACKAGE PascalHelp IS
 
   Maybe_must_create_type: Boolean:= False; -- inside a VAR or CONST decl.
   Maybe_must_add_NEW_to_type: Boolean:= False; -- inside a TYPE decl.
-  Just_after_TYPE_X_IS : Boolean; -- in this context, maybe "RANGE" must be added.  
+  Just_after_TYPE_X_IS : Boolean; -- in this context, maybe "RANGE" must be added.
 
   -- prints this text as an Ada comment (possibly multiple lines)
   PROCEDURE Comment (text : IN String);
@@ -117,7 +121,7 @@ PACKAGE PascalHelp IS
 
   -- Treatement of empty statement sequences GdM 1-Dec-2002
   procedure Set_null_flag;
-  procedure Clear_null_flag;  
+  procedure Clear_null_flag;
   procedure Put_eventual_null;
 
   -- clear text buffer (erase contents)
@@ -130,6 +134,10 @@ PACKAGE PascalHelp IS
   -- Writes With/Use for Text_IO
   procedure Default_withs;
   procedure Default_instanciations;
+  package String_List is new Ada.Containers.Doubly_Linked_Lists
+     (Ada.Strings.Unbounded.Unbounded_String,
+      Ada.Strings.Unbounded."=");
+  Default_With_List : String_List.List;
 
   -- Writes translation of "var" in subprogram parameters (TP7's "const" too)
   procedure Put_VAR_param;
@@ -138,7 +146,7 @@ PACKAGE PascalHelp IS
   -- Automatic creation of ad-hoc types for variables GdM 17-Dec-2002
   -- Generalized 22-Jan-2003
   type ad_hoc_item is ( tzpe, var );
-  
+
   function Last(a: ad_hoc_item) return String;
   procedure Add(a: ad_hoc_item);
   procedure Put_Last(a: ad_hoc_item);
@@ -183,9 +191,9 @@ PACKAGE PascalHelp IS
   procedure Close_WITH;
 
   procedure Give_last_function_its_type;
-    
+
   -- Around declarations.
-  --   VAR and parameters: remember to give them a type 
+  --   VAR and parameters: remember to give them a type
   procedure Set_variable_mark;
   -- After type denoter is read:
   procedure Give_variables_a_type;
@@ -208,13 +216,13 @@ PACKAGE PascalHelp IS
   procedure Close_type_declaration;
 
   procedure Open_eventual_type_creation;
-  procedure No_need_of_type_creation;  
+  procedure No_need_of_type_creation;
   procedure Close_eventual_type_creation;
 
   --   TYPE - ARRAY
   procedure Open_array_dim( is_first: Boolean );  -- one dimension
   procedure Close_array_def; -- all dimensions
-  
+
   --   TYPE - RECORD
   procedure Enter_field_name;
   procedure Open_record_def;
@@ -226,12 +234,12 @@ PACKAGE PascalHelp IS
   procedure Close_pointer_def;
 
   --   TYPE - FILE
-  procedure Open_file_def;  
+  procedure Open_file_def;
   procedure Close_file_def;
 
   -- Find the eventual Ada alias of a predefined Pascal identifier
   function Find_alias( Pascal: String ) return String;
-  
+
   procedure Stack_Postfixed_alias;
   procedure Recall_Postfixed_alias;
 
@@ -241,7 +249,7 @@ PACKAGE PascalHelp IS
 
   --   TYPE - OBJECT
   procedure Remember_name_of_object( age: Natural );
-  procedure Link_parent_of_object;  
+  procedure Link_parent_of_object;
   procedure EnterObjectStruct;
   procedure LeaveObjectStruct;
   procedure Var_Self_If_Object( other_params: Boolean );
@@ -249,14 +257,14 @@ PACKAGE PascalHelp IS
   procedure End_Self_If_Object;
   procedure Enter_Methode_Name;
   procedure Set_Method_Type;
-  
+
   ---------------
   -- Selectors --
   ---------------
   -- Aims:
   -- 1/ find the type T4 in
-  --   Pascal: New(p6[v3a.i]^.a); 
-  --      Ada: p6(v3a.i).all.a:= new T4;    
+  --   Pascal: New(p6[v3a.i]^.a);
+  --      Ada: p6(v3a.i).all.a:= new T4;
   -- 2/ find the record types of v1,v2 in
   --   Pascal: with v1,v2 do ...
 
@@ -264,7 +272,7 @@ PACKAGE PascalHelp IS
   procedure Clear_Selection;   -- Clear selection on current level
   procedure Stack_selection;   -- Level -> +1
   procedure Destack_selection; -- Level -> -1
-  
+
   procedure Conclude_allocator;
 
   procedure Select_identifier( name: String );
@@ -282,14 +290,14 @@ PACKAGE PascalHelp IS
   ------------------------------------------
   -- Limit the exportation of definitions --
   ------------------------------------------
-  
+
   procedure Stop_Export; -- Freezes and save now the definitions.
 
   ---------------------------------------------------------
   -- Write[Ln] or Read[Ln]: resolve cases of I/O to file --
   -- Write(f,a,b,c) -> Put(f,a); Put(f,b); Put(f,c);     --
   ---------------------------------------------------------
-  
+
   package RW is
     parameter: Boolean;
     procedure Store_file_state;
@@ -300,5 +308,5 @@ PACKAGE PascalHelp IS
   end RW;
 
   procedure Put_masked_keyword( id: String );
-       
+
 END PascalHelp;

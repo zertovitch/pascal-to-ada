@@ -470,28 +470,36 @@ PACKAGE BODY PascalHelp IS
   --------------------------------------
 
   procedure Default_withs is
+      procedure Put_Line_With (Position : in String_List.Cursor) is
+      begin
+         Put_Line(Ada.Strings.Unbounded.To_String(String_List.Element(Position)));
+      end;
   begin
-    Put_Line(Blurb);
-    Put_Line("-- The following with/use clauses are put graciously by P2Ada.");
-    Put_Line("-- Some of them may be useless, your Ada compiler will tell it you.");
-    Put_Line("--   (GNAT: with '-gnatwa')");
-    Put_Line("with Ada.Text_IO;                       use Ada.Text_IO;");
-    Put_Line("with Ada.Integer_Text_IO;               use Ada.Integer_Text_IO;");
-    Put_Line("with Ada.Float_Text_IO;                 use Ada.Float_Text_IO;");
-    Put_Line("with Ada.Long_Float_Text_IO;            use Ada.Long_Float_Text_IO;");
-    Put_Line("with Ada.Direct_IO;");
-    Put_Line("with Ada.Command_Line;                  use Ada.Command_Line; -- ParamStr,...");
-    Put_Line("with Ada.Characters.Handling;           use Ada.Characters.Handling; -- UpCase");
-    Put_Line("with Interfaces;                        use Interfaces; -- For Shift_Left/Right");
-    Put_Line("-- This is for Pi :");
-    Put_Line("with Ada.Numerics;                      use Ada.Numerics;");
-    Put_Line("-- This is for Sqrt, Sin, Cos, etc. :");
-    Put_Line("with Ada.Numerics.Elementary_Functions; use Ada.Numerics.Elementary_Functions;");
-    Put_Line("with Ada.Numerics.Long_Elementary_Functions;");
-    Put_Line(" use Ada.Numerics.Long_Elementary_Functions;");
-    Put_Line("-- This is for Dispose. P2Ada writes automatically:");
-    Put_Line("--   ""Dispose is new Ada.Unchecked_Deallocation(<type>, <pointer type>)"".");
-    Put_Line("with Ada.Unchecked_Deallocation;");
+      Put_Line(Blurb);
+      Put_Line("-- The following with/use clauses are put graciously by P2Ada.");
+      Put_Line("-- Some of them may be useless, your Ada compiler will tell it you.");
+      Put_Line("--   (GNAT: with '-gnatwa')");
+      if String_List.Is_Empty (Default_With_List) then
+         Put_Line("with Ada.Text_IO;                       use Ada.Text_IO;");
+         Put_Line("with Ada.Integer_Text_IO;               use Ada.Integer_Text_IO;");
+         Put_Line("with Ada.Float_Text_IO;                 use Ada.Float_Text_IO;");
+         Put_Line("with Ada.Long_Float_Text_IO;            use Ada.Long_Float_Text_IO;");
+         Put_Line("with Ada.Direct_IO;");
+         Put_Line("with Ada.Command_Line;                  use Ada.Command_Line; -- ParamStr,...");
+         Put_Line("with Ada.Characters.Handling;           use Ada.Characters.Handling; -- UpCase");
+         Put_Line("with Interfaces;                        use Interfaces; -- For Shift_Left/Right");
+         Put_Line("-- This is for Pi :");
+         Put_Line("with Ada.Numerics;                      use Ada.Numerics;");
+         Put_Line("-- This is for Sqrt, Sin, Cos, etc. :");
+         Put_Line("with Ada.Numerics.Elementary_Functions; use Ada.Numerics.Elementary_Functions;");
+         Put_Line("with Ada.Numerics.Long_Elementary_Functions;");
+         Put_Line(" use Ada.Numerics.Long_Elementary_Functions;");
+         Put_Line("-- This is for Dispose. P2Ada writes automatically:");
+         Put_Line("--   ""Dispose is new Ada.Unchecked_Deallocation(<type>, <pointer type>)"".");
+         Put_Line("with Ada.Unchecked_Deallocation;");
+      else
+         String_List.Iterate (Default_With_List, Put_Line_With'Access);
+      end if;
 
     New_Line;
   end Default_withs;

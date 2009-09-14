@@ -30,7 +30,7 @@ with P2Ada_Definition_info;
 PROCEDURE P2Ada IS
    Inp_Opened  : Boolean := False;
    Out_Opened  : Boolean := False;
-   
+
   procedure Syntax is
   begin
     Put_Line( Standard_Error, "Syntax: P2Ada [input_file] {-Iimports} [-Eexports] [-ooutput_file]" );
@@ -50,7 +50,7 @@ BEGIN
       if u_arg'length > 1 and then
         (u_arg(1) = '-' or u_arg(1) = '/') then
         case u_arg(2) is
-          when 'I' => 
+          when 'I' =>
             begin
               P2Ada_Definition_info.Load( arg(3..arg'last) );
             exception
@@ -110,14 +110,16 @@ BEGIN
      Put(Standard_error, ''' & P2Ada_Definition_info.Get_Pascal_source & ''');
    else
      Put(Standard_error, "Standard_Input");
-   end if;   
+   end if;
    Put(Standard_error, " to ");
    if Out_opened then
      Put(Standard_error, ''' & P2Ada_Definition_info.Get_Ada_output & ''');
    else
      Put(Standard_error, "Standard_Output");
-   end if;   
+   end if;
    New_Line(Standard_error);
+
+   P2Ada_Definition_info.Load_Alias ("alias.txt");
 
    YYParse;
 
@@ -127,5 +129,5 @@ BEGIN
    if Out_Opened then
      pascal_io.Close_Output;
    end if;
-   
+
 END p2ada;

@@ -6,8 +6,8 @@ with Ada.Characters.Handling;           use Ada.Characters.Handling;
 with Ada.Strings.Unbounded;             use Ada.Strings.Unbounded;
 with Ada.Unchecked_Deallocation;
 
-with P2Ada_options;
-with PascalHelp;
+with P2Ada_options;                     use P2Ada_options;
+with PascalHelp;                        use PascalHelp;
 
 package body P2Ada_Definition_info is
 
@@ -36,11 +36,11 @@ package body P2Ada_Definition_info is
   end;
 
   trace: constant Boolean:= False;
-  
+
   procedure Hep( what: String ) is
   pragma Inline(Hep);
   begin
-    if trace then 
+    if trace then
       Put_Line( Standard_Error, "[DI]: " & what );
     end if;
   end Hep;
@@ -49,7 +49,7 @@ package body P2Ada_Definition_info is
   begin
     Put_Line( Standard_Error, "p2ada DI internal error: " & what );
   end;
-  
+
   procedure Warning( what: String ) is
     ln: constant String:= Integer'Image(PascalHelp.Current_line);
     cn: constant String:= Integer'Image(PascalHelp.Current_column);
@@ -69,15 +69,15 @@ package body P2Ada_Definition_info is
     Ada_alias: Natural:= 0;
     -- another identifer, hidden, with the Ada name of a simple type
   end record;
-  
+
   type p_Idt is access Idt;
-  procedure Dispose is new Ada.Unchecked_Deallocation(Idt, p_Idt);  
+  procedure Dispose is new Ada.Unchecked_Deallocation(Idt, p_Idt);
 
   no_ident: constant:= 0;
   idt_stack: array(1..10000) of p_Idt;
   idt_top: Natural:= 0;
-  
-  type Tpkind is 
+
+  type Tpkind is
     ( Simple, Arrays, Records, Pointer, Incomplete, File,
       Method -- OO
     );
@@ -104,9 +104,9 @@ package body P2Ada_Definition_info is
       when Method =>        meth_id: Natural:= no_ident;
     end case;
   end record;
-  
+
   type p_Typ is access Typ;
-  procedure Dispose is new Ada.Unchecked_Deallocation(Typ, p_Typ);  
+  procedure Dispose is new Ada.Unchecked_Deallocation(Typ, p_Typ);
 
   typ_stack: array(1..10000) of p_Typ;
   typ_top: Natural:= 0;
@@ -135,7 +135,7 @@ package body P2Ada_Definition_info is
     end if;
     return base;
   end Rich_Image_of_type;
-  
+
   type level_info is record
     idt, typ: Natural;
   end record;
@@ -173,9 +173,9 @@ package body P2Ada_Definition_info is
   end Enter_with_Alias;
 
   -- Search a definiton
-  
+
   type IdKind_set is array( IdKind ) of Boolean;
-  
+
   visible: constant IdKind_set:= ( Field| Alias => False, others=> True);
 
   function Position(id: String) return Integer is
@@ -253,7 +253,7 @@ package body P2Ada_Definition_info is
     i,t: Natural;
   begin
     incompletes:= start;
-    if start then 
+    if start then
       type_mark:= typ_top;
     else -- scan for still incomplete types
       for pt in type_mark .. typ_top loop
@@ -295,7 +295,7 @@ package body P2Ada_Definition_info is
     T            : Natural; -- The type
     Array_1st_dim: Boolean; -- Is it the first dimension of an array ?
     ident_mark   : Mark_pair;
-    -- ^ To recall the previous identifier mark in nested records                            
+    -- ^ To recall the previous identifier mark in nested records
   end record;
 
   zero_denoter: constant denoter_info:= (no_type,False,(0,0));
@@ -310,7 +310,7 @@ package body P2Ada_Definition_info is
   begin
     denoter_stack( denoter_top ) := zero_denoter;
   end;
-  
+
   procedure Type_identifier( name: String; incomplete_found: out Boolean; is_method: Boolean:= False ) is
     I,T: Natural;
   begin
@@ -337,14 +337,14 @@ package body P2Ada_Definition_info is
     else
       T:= idt_stack(I).typ;
     end if;
-    
+
     denoter_stack( denoter_top ).T := T;
 
   end Type_identifier;
 
   the_Boolean_type, the_Char_type, the_String_type,
   the_Integer_type, the_Real_type: Natural;
-  
+
   procedure Denoter_is_String is
   begin
     Enter_Type( no_ident, arrays );
@@ -371,7 +371,7 @@ package body P2Ada_Definition_info is
       denoter_top:= denoter_top - 1;
     end if;
   end;
-  
+
   procedure Open_array_dim( is_first: Boolean ) is
   begin
     Enter_Type( no_ident, arrays );
@@ -379,7 +379,7 @@ package body P2Ada_Definition_info is
     denoter_stack( denoter_top ):= (typ_top, is_first, (0,0));
     Nest_denoter;
   end Open_array_dim;
-  
+
   procedure Close_array_def is
     a,e: Natural;
   begin
@@ -402,7 +402,7 @@ package body P2Ada_Definition_info is
     denoter_stack( denoter_top ):= (typ_top, False, (0,0));
     Nest_denoter;
   end Open_record_def;
-  
+
   procedure Close_record_def is
     f,r: Natural;
   begin
@@ -427,7 +427,7 @@ package body P2Ada_Definition_info is
     Nest_denoter;
     in_pointer_def:= True;
   end Open_pointer_def;
-  
+
   procedure Close_pointer_def is
     ptr,ptd: Natural;
   begin
@@ -446,14 +446,14 @@ package body P2Ada_Definition_info is
   end Close_pointer_def;
 
   -- +/- a copy of the pointer stuff.
-  
+
   procedure Open_file_def is
   begin
     Enter_Type( no_ident, file );
     denoter_stack( denoter_top ):= (typ_top, False, (0,0));
     Nest_denoter;
   end Open_file_def;
-  
+
   procedure Close_file_def is
     ptr,ptd: Natural;
   begin
@@ -469,7 +469,7 @@ package body P2Ada_Definition_info is
           " is a FILE of " & Rich_Image_of_type(ptd));
     end if;
   end Close_file_def;
-  
+
   ----
 
   identifier_mark: Natural:= 0;
@@ -489,7 +489,7 @@ package body P2Ada_Definition_info is
   -- For both VARiables and RECORD fields
 
   procedure Give_variables_a_type is
-    T: constant Natural:= denoter_stack( denoter_top ).T; 
+    T: constant Natural:= denoter_stack( denoter_top ).T;
     R: p_Typ;
     start, stop : Natural;
     in_record: constant Boolean:= denoter_top > denoter_stack'first;
@@ -513,7 +513,7 @@ package body P2Ada_Definition_info is
           idt_stack(i).name &
           " is given " & Rich_Image_of_type(T));
       idt_stack(i).typ:= T;
-      
+
       if in_record then
         if R.kind /= records then
           Internal_Error("Not a record, but a " & tpkind'image(R.kind));
@@ -537,7 +537,7 @@ package body P2Ada_Definition_info is
           idt_stack(i).nxt:= no_ident;
         end if;
       end if; -- in_record
-      
+
     end loop;
   end Give_variables_a_type;
 
@@ -571,12 +571,12 @@ package body P2Ada_Definition_info is
     identifier_count: Natural:= 0;
     type_selected: Natural:= No_Type;
   end record;
-  
+
   selector_stack: array(0..100) of Selector_info;
   selector_top: Natural:= 0;
 
   -- OO: "TYPE Y = OBJECT(X)" :
-  
+
   procedure Link_parent_of_object is
     s: Selector_info renames selector_stack(selector_top);
     tparent: constant Natural:= s.type_selected;
@@ -597,18 +597,18 @@ package body P2Ada_Definition_info is
 
   -- Inside record fields, "Adalias" are wrong but the fields
   -- not caught as visible identifiers !
-  
+
   function Alias_meaningful return Boolean is
   begin
     return selector_stack(selector_top).identifier_count <= 1;
   end;
-  
+
   procedure Clear_Selection is
   begin
     selector_stack(selector_top):= (0, No_Type);
     Hep("Clear_selection");
   end;
-  
+
   procedure Reset_selection is
   begin
     selector_top:= 0;
@@ -627,12 +627,12 @@ package body P2Ada_Definition_info is
     Hep("Destacked_selection, now back to " &
         Rich_Image_of_type( selector_stack(selector_top).type_selected ) );
   end;
-  
+
   function Lost_in_selection return Boolean is -- at least one undefined type
   begin
     return selector_stack(selector_top).type_selected = no_type;
   end;
-  
+
   procedure Give_last_function_its_type is
     I: constant Natural:= level_stack(lev).idt;   -- identifier of the function
     T: constant Natural:= selector_stack(selector_top).type_selected; -- the type
@@ -672,7 +672,7 @@ package body P2Ada_Definition_info is
       return is_no_file;
     end if;
   end Is_type_selected_a_file;
-  
+
   procedure Add_WITH_variables( prefix: String; is_record: out Boolean ) is
     t: Natural:= selector_stack(selector_top).type_selected;
     f: Natural;
@@ -691,7 +691,7 @@ package body P2Ada_Definition_info is
             t:= typ_stack(t).parent; -- OO : Go on with the parent type
             f:= typ_stack(t).field1;
           end loop;
-          exit when f = no_ident; 
+          exit when f = no_ident;
           while f /= no_ident loop
             -- We open the direct visibility of each field
             -- by adding a fake variable with its name !
@@ -752,7 +752,7 @@ package body P2Ada_Definition_info is
             t:= typ_stack(t).parent; -- OO : Go on with the parent type
             f:= typ_stack(t).field1;
           end loop;
-          exit when f = no_ident; 
+          exit when f = no_ident;
           while f /= no_ident loop
             if idt_stack( f ).name = uid then
               t:= idt_stack( f ).typ;
@@ -822,12 +822,12 @@ package body P2Ada_Definition_info is
   begin
     return last_was_a_1st_dim;
   end;
- 
+
   procedure Close_one_dimension is
   begin
     Destack_selection;
   end;
-  
+
   procedure Select_litteral( sort: Character ) is
     s: Selector_info renames selector_stack(selector_top);
   begin
@@ -843,11 +843,11 @@ package body P2Ada_Definition_info is
       Hep("Type denoter takes type of litteral"); -- whose type is determined
     end if;                                       -- by the litteral
   end;
-  
+
   --------------------
   -- Input / Output --
   --------------------
-  
+
   type Def_kind is (id,ty);
   type Def_stack_pointer is array(Def_kind) of Natural;
 
@@ -861,7 +861,7 @@ package body P2Ada_Definition_info is
     start_imports, stop_imports, base, offset: Def_stack_pointer;
     tk: TpKind;
     ik: IdKind;
-    
+
     procedure Relocate(k: Def_kind; idx: in out Natural) is
     begin
       if idx < start_imports(k) then -- reference to someth. before the imports
@@ -870,15 +870,15 @@ package body P2Ada_Definition_info is
         end if;
       else
         idx:= idx + offset(k);
-      end if;         
+      end if;
     end Relocate;
-    
+
     function Get_ref(k: Def_kind) return Natural is
       n: Natural;
     begin
       Get(f,n); Relocate(k,n); return n;
     end;
-    
+
   begin
     begin
       Open(f, In_File, file_name);
@@ -933,7 +933,7 @@ package body P2Ada_Definition_info is
   type p_String is access String;
   export_name: p_String:= null;
   export_done: Boolean:= False;
-  
+
   procedure Will_save (file_name: String) is
   begin
     export_name:= new String'(file_name);
@@ -965,7 +965,7 @@ package body P2Ada_Definition_info is
       declare
         tt: Typ renames typ_stack(t).all;
       begin
-        Put(f,' '); Put(f,tt.i,0); Put(f,' '); Put(f,tt.kind); Put(f,' '); 
+        Put(f,' '); Put(f,tt.i,0); Put(f,' '); Put(f,tt.kind); Put(f,' ');
         case tt.kind is
           when Simple  =>  null;
           when Arrays  =>  Put(f,tt.Elemtip,0);
@@ -995,7 +995,7 @@ package body P2Ada_Definition_info is
     Close(f);
     export_done:= True;
   end Stop_export;
-  
+
   -- Sets a "marker" before new, more local definitions,
   -- inside a subprogram.
   procedure Mark is
@@ -1009,7 +1009,7 @@ package body P2Ada_Definition_info is
     end if;
   end Mark;
 
-  -- Forget the definitions created after latest unreleased "Mark".  
+  -- Forget the definitions created after latest unreleased "Mark".
   procedure Release is
   begin
     if lev = 0 then
@@ -1043,7 +1043,7 @@ package body P2Ada_Definition_info is
     name, alias_name: String;
     T: Natural;
     K: TpKind)  is
-    
+
     id: constant Natural:= idt_top + 1; -- place of the Pascal identifier
   begin
     Enter_type( no_ident, K ); -- create a type without associated ident.
@@ -1073,12 +1073,12 @@ package body P2Ada_Definition_info is
     the_Char_type:= typ_top;
     Enter_String_Type("String", "", the_Char_type);   -- BP but quite common
     the_String_type:= typ_top;
-    
+
     Enter_Simple_Type("Boolean");
-    the_Boolean_type:= typ_top;    
+    the_Boolean_type:= typ_top;
     Enter("False", Konst, the_Boolean_type);
     Enter("True", Konst, the_Boolean_type);
-    
+
     Enter_with_Alias("NIL", "null", "", Konst, 0);
     Enter_Simple_Type("Real", "Float");
     the_Real_type:=  typ_top;
@@ -1105,7 +1105,7 @@ package body P2Ada_Definition_info is
     Enter_Simple_Type("Longint",  "Integer_32");  -- BP
     Enter_with_Alias("MaxLongint", "Integer_32'last", "", Konst, 0);
     Enter_Simple_Type("Int64",    "Integer_64");  -- Delphi 6
-    
+
     Enter_Simple_Type("Byte",     "Unsigned_8");   -- BP
     Enter_Simple_Type("Word",     "Unsigned_16");  -- BP
     Enter_Simple_Type("Cardinal", "Unsigned_32");  -- Delphi 6
@@ -1124,7 +1124,7 @@ package body P2Ada_Definition_info is
     Enter_Simple_Type("Double", "Long_Float"); -- BP and "Standard"
     Enter_Simple_Type("Extended"); -- FPU type in BP
     Enter_Simple_Type("Comp");     -- FPU type in BP
-    
+
     -- * Fixed point types
     Enter_Simple_Type("Currency"); -- Delphi 6
 
@@ -1144,13 +1144,13 @@ package body P2Ada_Definition_info is
     Enter_String_Type("WideString", "Wide_String", wc);
 
     -- * Subprograms
-    
+
     Enter_with_Alias("Break", "exit", "", Funkt, 0);
     Enter_with_Alias("Exit", "return", "", Funkt, 0);
 
     Enter_with_Alias("ParamStr", "Argument", "", Funkt, the_String_type);
     Enter_with_Alias("ParamCount", "Argument_Count", "", Funkt, the_Integer_type);
-    
+
     Enter_with_Alias("Hi",   "((", "/256) mod 256)", Funkt, the_Integer_type);
     Enter_with_Alias("High", "(", "'last)", Funkt, 0);
     Enter_with_Alias("Int",  "Float'Floor", "", Funkt, the_Real_type);
@@ -1215,7 +1215,7 @@ package body P2Ada_Definition_info is
     Enter_with_Alias("Bell", "ASCII.BEL", "", Konst, the_Char_type);
     Enter_with_Alias("Tab",  "ASCII.HT", "", Konst, the_Char_type);
   end Berkeley_predefined;
-   
+
   procedure Predefined_Pascal_Identifiers is
   begin
     Classic_predefined;
@@ -1225,13 +1225,13 @@ package body P2Ada_Definition_info is
     -- if an identifier is not predefined in X-Pascal,
     -- a correct program for X-Pascal will define it and
     -- mask our predefined types and their Ada aliases.
-    -- 
+    --
     -- So, we put a maximum of predefined items.
 
     Borland_predefined;
     CodeWarrior_predefined;
     Berkeley_predefined;
-    
+
     Hep("--------[ End of predefined ]--------");
 
     predef:=  (id=> idt_top+1, ty=> typ_top+1);
@@ -1249,6 +1249,158 @@ package body P2Ada_Definition_info is
   --     Put_Line( GNAT.Traceback.Symbolic.Symbolic_Traceback(E) );
   end Predefined_Pascal_Identifiers;
 
-begin
-  Predefined_Pascal_Identifiers;
+  function Typ_Position(id: String) return Integer is
+    u_id: constant String:= To_Upper(id);
+  begin
+    for i in reverse 1..typ_top loop
+      if visible(idt_stack(typ_stack(i).i).kind) and then
+           idt_stack(typ_stack(i).i).name = u_id then
+        return i;
+      end if;
+    end loop;
+    return no_type;
+  end Typ_Position;
+
+   procedure Load_Alias (Alias_File_Name : String := "") is
+      procedure Analyse (Line : String) is
+         IndLine : Natural := Line'First;
+         type Item is (Name, Tipe, Pascal, Ada, AdaPost);
+         type Indexes is record
+            First, Last : Natural:= 0;
+         end record;
+         Items : array (Item) of Indexes;
+         IndItem : Item := Item'First;
+         Stop, Text : Boolean := False;
+         function Match_Line (From : Natural; Pat : String) return Boolean is
+         begin
+            if From = 0 then
+               return False;
+            end if;
+            if From + Pat'Length - 1 > Line'Last then
+               return False;
+            end if;
+            return To_Lower (Line(From .. From + Pat'Length - 1)) = Pat;
+         end;
+         function Slice_Line (From, To : Natural) return String is
+         begin
+            if From = 0 then
+               return "";
+            end if;
+            return Line(From..To);
+         end;
+      begin
+         if Line'Length /= 0 then
+            loop
+               case Line(IndLine) is
+               when '-' =>
+                  if IndLine < Line'last and then Line(Positive'Succ(IndLine)) = '-' then
+                     if Items(IndItem).Last = 0 then Items(IndItem).Last := Positive'Pred(IndLine); end if;
+                     Stop := True;
+                  end if;
+               when ',' =>
+                  if Items(IndItem).Last = 0 then Items(IndItem).Last := Positive'Pred(IndLine); end if;
+                  IndItem := Item'Succ(IndItem);
+                  Text := false;
+               when ' ' =>
+                  if Text and then Items(IndItem).Last = 0 then Items(IndItem).Last := Positive'Pred(IndLine); end if;
+               when others =>
+                  Text := True;
+                  Items(IndItem).Last := 0;
+                  if Items(IndItem).First = 0 then Items(IndItem).First := IndLine; end if;
+               end case;
+               exit when Stop or else IndLine >= Line'Last;
+               IndLine := Positive'Succ(IndLine);
+            end loop;
+            if Items(IndItem).Last = 0 then Items(IndItem).Last := IndLine; end if;
+            if Match_Line (Items(Tipe).First, "simple") then
+               Enter_Simple_Type (Slice_Line(Items(Name).First,Items(Name).Last),
+                                  Slice_Line(Items(Pascal).First,Items(Pascal).Last));
+            end if;
+            if Match_Line (Items(Tipe).First, "arrays") then
+               Enter_String_Type (Slice_Line(Items(Name).First,Items(Name).Last),
+                                  Slice_Line(Items(Ada).First,Items(Ada).Last),
+                                  Typ_Position (Slice_Line(Items(Pascal).First,Items(Pascal).Last)));
+            end if;
+            if Match_Line (Items(Tipe).First, "pointer") then
+               Enter_Pointer_or_File_Type (Slice_Line(Items(Name).First,Items(Name).Last),
+                                           Slice_Line(Items(Ada).First,Items(Ada).Last),
+                                           Typ_Position (Slice_Line(Items(Pascal).First,Items(Pascal).Last)),
+                                           Pointer);
+            end if;
+            if Match_Line (Items(Tipe).First, "file") then
+               Enter_Pointer_or_File_Type (Slice_Line(Items(Name).First,Items(Name).Last),
+                                           Slice_Line(Items(Ada).First,Items(Ada).Last),
+                                           Typ_Position (Slice_Line(Items(Pascal).First,Items(Pascal).Last)),
+                                           File);
+            end if;
+            if Match_Line (Items(Tipe).First, "konst") then
+               Enter_with_Alias (Slice_Line(Items(Name).First,Items(Name).Last),
+                                 Slice_Line(Items(Ada).First,Items(Ada).Last),
+                                 Slice_Line(Items(AdaPost).First,Items(AdaPost).Last),
+                                 Konst,
+                                 Typ_Position (Slice_Line(Items(Pascal).First,Items(Pascal).Last)));
+            end if;
+            if Match_Line (Items(Tipe).First, "funkt") then
+               Enter_with_Alias (Slice_Line(Items(Name).First,Items(Name).Last),
+                                 Slice_Line(Items(Ada).First,Items(Ada).Last),
+                                 Slice_Line(Items(AdaPost).First,Items(AdaPost).Last),
+                                 Funkt,
+                                 Typ_Position (Slice_Line(Items(Pascal).First,Items(Pascal).Last)));
+            end if;
+            if Match_Line (Items(Tipe).First, "proc") then
+               Enter_with_Alias (Slice_Line(Items(Name).First,Items(Name).Last),
+                                 Slice_Line(Items(Pascal).First,Items(Pascal).Last),
+                                 "",
+                                 Funkt,
+                                 no_type);
+            end if;
+            if Match_Line(Items(Tipe).First, "with") and then
+              not Match_Line(Items(Tipe).First, "withuse") then
+               String_List.Append (Default_With_List, "with "
+                                   & To_Unbounded_String(Line(Items(Name).First..Items(Name).Last))
+                                   & ";");
+            end if;
+            if Match_Line(Items(Tipe).First, "withuse") then
+               String_List.Append (Default_With_List, "with "
+                                   & To_Unbounded_String(Line(Items(Name).First..Items(Name).Last))
+                                   & ";");
+               String_List.Append (Default_With_List, "use "
+                                   & To_Unbounded_String(Line(Items(Name).First..Items(Name).Last))
+                                   & ";");
+            end if;
+            if Match_Line(Items(Tipe).First, "option") then
+               if Match_Line (Items(Name).First, "var") then
+                  translation_of_VAR := VAR_wording'Value (Line(Items(Pascal).First..Items(Pascal).Last));
+               end if;
+               if Match_Line (Items(Name).First, "eol") then
+                  new_line_endings := Line_endings'Value (Line(Items(Pascal).First..Items(Pascal).Last));
+               end if;
+               if Match_Line (Items(Name).First, "mod") then
+                  translation_of_MOD := Mod_Rem'Value(Line(Items(Pascal).First..Items(Pascal).Last));
+               end if;
+            end if;
+         end if;
+      end Analyse;
+      F : File_Type;
+   begin
+      if Alias_File_Name = "" then
+         Put_Line( Standard_Error, "Intern aliases loaded." );
+         Predefined_Pascal_Identifiers;
+      else
+         begin
+            Open (F, In_File, Alias_File_Name);
+         exception
+            when Name_Error =>
+               Put_Line( Standard_Error, "Alias file '" & Alias_File_Name & "' not found, intern aliases loaded." );
+               Predefined_Pascal_Identifiers;
+               return;
+         end;
+         Put_Line( Standard_Error, "Aliases loaded from file '" & Alias_File_Name & "'.");
+         while not End_Of_File (F) loop
+            Analyse (Get_Line (F));
+         end loop;
+         close (F);
+      end if;
+   end Load_Alias;
+
 end P2Ada_Definition_info;

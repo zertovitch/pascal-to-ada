@@ -10,6 +10,10 @@ Enhancement list from 1997 version
 --  (PO): Pascal Object only                   --
 -------------------------------------------------
 
+-- 31-Aug-2009 [PP]
+-- Added facility for default withs and aliases from config file alias.txt
+-- If alias.txt doesn't exist previous intern aliases are loaded for compatibility
+
 -- 7-Jan-2007 [GdM]
 -- (B) TRY ... FINALLY ... END translated
 
@@ -145,7 +149,7 @@ Enhancement list from 1997 version
 -- 13-Jan-2003 [GdM]
 -- (s) ordinal_type fixed ("array[a..b]" works again, bug introduced 9-Jan-2003)
 -- (I) Extended Pascal ISO 10206:1990: and_then, or_else translated
--- (s) set_type now translates correcty to "array( ordinal_type ) of Boolean" 
+-- (s) set_type now translates correcty to "array( ordinal_type ) of Boolean"
 -- (B) ASM..END blocks fully supported (i.e. cleanly commented out
 --      with remarks) by BP2P. Partial solution removed from P2Ada itself.
 -- (B) INLINE(...) instructions fully supported (i.e. cleanly commented out
@@ -215,7 +219,7 @@ Enhancement list from 1997 version
 --   Treatement of empty statement sequences in fat_statement_part
 
 -- 1-Dec-2002 [GdM]
---   Treatement of empty statement sequences 
+--   Treatement of empty statement sequences
 
 -------------------------------------------------------------------------------
 --  30-November-2002 [GACC]

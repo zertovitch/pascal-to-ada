@@ -1,0 +1,109 @@
+-- Pascal entity Name, Entity Type[, Pascal type Name][, Ada alias Name][, Ada postfix alias]
+-- Entity Type are :
+--   Simple, Arrays, Pointer, File, Konst, Funkt, Proc (Funkt with no return type ;-),
+--   with, withuse, option
+-- Type Name are valid for Konst and Funkt entities
+
+-- Options
+var, option, in_out
+EOL, option, Unix
+MOD, option, is_rem
+
+-- Withs and uses
+Ada.Text_IO, withuse
+Ada.Integer_Text_IO, withuse
+Ada.Float_Text_IO, withuse
+Ada.Long_Float_Text_IO, withuse
+Ada.Command_Line, withuse
+Ada.Characters.Handling, withuse
+Interfaces, withuse
+Ada.Numerics, withuse
+Ada.Numerics.Elementary_Functions, withuse
+Ada.Numerics.Long_Elementary_Functions, withuse
+
+-- withs
+Ada.Direct_IO, with
+Ada.Unchecked_Deallocation, with
+
+-- Classic_predefined
+
+Integer, Simple -- 1
+Maxint, Konst, Integer, Integer'Last -- 1
+Char, Simple, Character -- 2
+String, Arrays, Char -- 3
+Boolean, Simple -- 4
+False, Konst, Boolean
+True, Konst, Boolean
+Pointer, Pointer -- 5
+Nil, Konst, Pointer, null
+Real, Simple, Float -- 6
+Text, File, Char, Ada.Text_IO.File_Type -- 7
+Chr, Funkt, Integer, Character'Val
+Ord, Funkt, Integer, Character'Pos
+EoF, Funkt, Boolean, End_of_File
+EoLn, Funkt, Boolean, End_of_Line
+Sqr, Funkt, Real, (, **2)
+Ln, Funkt, Real, Log
+Odd, Funkt, Boolean, (, mod 2 /= 0) -- take care of space before mod, no pb if par are kept
+Halt, Proc, raise Program_halted
+Concat, Funkt, String, "" & "", "" -- ???
+
+-- Borland_predefined
+Shortint, Simple, Integer_8
+Smallint, Simple, Integer_16
+Longint, Simple, Integer_32
+MaxLongint, Konst, Longint, Integer_32'last
+Int64, Simple, Integer_64
+Byte, Simple, Unsigned_8
+Word, Simple, Unsigned_16
+Cardinal, Simple, Unsigned_32
+Longword, Simple, Unsigned_32
+DWord, Simple, Unsigned_32
+QWord, Simple, Unsigned_64
+ByteBool, Simple, Boolean
+WordBool, Simple, Boolean
+LongBool, Simple, Boolean
+Real48, Simple
+Single, Simple
+Double, Simple, Long_Float
+Extended, Simple
+Comp, Simple
+Currency, Simple
+PChar, Pointer, Char
+AnsiChar, Simple, Character
+WideChar, Simple, Wide_Character
+ShortString, Arrays, Char, String
+AnsiString, Arrays, AnsiChar, ing
+WideString, Arrays, WideChar, Wide_String
+Break, Proc, exit
+Exit, Proc, return
+ParamStr, Funkt, String, Argument
+ParamCount, Funkt, Integer, Argument_Count
+Hi, Funkt, Integer, ((, /256) mod 256)
+High, Funkt, Integer, (, 'Last)
+Int, Funkt, Real, Float'Floor
+Length, Funkt, Integer, (, 'length)
+Lo, Funkt, Integer, (, mod 256)
+Low, Funkt, Integer, (, 'first)
+LowerCase, Funkt, Char, To_Lower
+Pred, Funkt, Integer, Integer'Pred
+SizeOf, Funkt, Integer, (, 'size / 8)
+Succ, Funkt, Integer, Integer'Succ
+Trunc, Funkt, Integer, Integer
+UpCase, Funkt, Char, To_Upper
+UpperCase, Funkt, Char, To_Upper
+StrUpper, Funkt, Char, To_Upper
+
+-- CodeWarrior_predefined
+UnsignedByte, Simple, Unsigned_8
+UnsignedWord, Simple, Unsigned_16
+UnsignedLong, Simple, Unsigned_32
+Str255, Arrays, Char, String
+
+-- Berkeley_predefined
+Minint, Konst, Integer, Integer'first
+Alfa, Arrays, Char, String
+Minchar, Konst, Char, Character'first
+Maxchar, Konst, Char, Character'last
+Bell, Konst, Char, ASCII.BEL
+Tab, Konst, Char, ASCII.HT
