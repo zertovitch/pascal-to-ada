@@ -20,48 +20,48 @@
 -- TITLE DFA construction routines
 -- AUTHOR: John Self (UCI)
 -- DESCRIPTION converts non-deterministic finite automatons to finite ones.
--- $Header: /co/ua/self/arcadia/aflex/ada/src/RCS/dfaS.a,v 1.4 90/01/12 15:19:52 self Exp Locker: self $ 
+-- $Header: /co/ua/self/arcadia/aflex/ada/src/RCS/dfaS.a,v 1.4 90/01/12 15:19:52 self Exp Locker: self $
 
-with MISC_DEFS; 
-with TEXT_IO; 
-package DFA is 
-  use MISC_DEFS, TEXT_IO; 
-  procedure CHECK_FOR_BACKTRACKING(DS    : in INTEGER; 
-                                   STATE : in UNBOUNDED_INT_ARRAY); 
-  procedure CHECK_TRAILING_CONTEXT(NFA_STATES : in INT_PTR; 
-                                   NUM_STATES : in INTEGER; 
-                                   ACCSET     : in INT_PTR; 
-                                   NACC       : in INTEGER); 
+with MISC_DEFS;
+with TEXT_IO;
+package DFA is
+  use MISC_DEFS, TEXT_IO;
+  procedure CHECK_FOR_BACKTRACKING(DS    : in INTEGER;
+                                   STATE : in UNBOUNDED_INT_ARRAY);
+  procedure CHECK_TRAILING_CONTEXT(NFA_STATES : in INT_PTR;
+                                   NUM_STATES : in INTEGER;
+                                   ACCSET     : in INT_PTR;
+                                   NACC       : in INTEGER);
 
-  procedure DUMP_ASSOCIATED_RULES(F  : in FILE_TYPE; 
-                                  DS : in INTEGER); 
+  procedure DUMP_ASSOCIATED_RULES(F  : in FILE_TYPE;
+                                  DS : in INTEGER);
 
-  procedure DUMP_TRANSITIONS(F     : in FILE_TYPE; 
-                             STATE : in UNBOUNDED_INT_ARRAY); 
+  procedure DUMP_TRANSITIONS(F     : in FILE_TYPE;
+                             STATE : in UNBOUNDED_INT_ARRAY);
 
-  procedure EPSCLOSURE(T                  : in out INT_PTR; 
-                       NS_ADDR            : in out INTEGER; 
-                       ACCSET             : in out INT_PTR; 
-                       NACC_ADDR, HV_ADDR : out INTEGER; 
-                       RESULT             : out INT_PTR); 
+  procedure EPSCLOSURE(T                  : in out INT_PTR;
+                       NS_ADDR            : in out INTEGER;
+                       ACCSET             : in     INT_PTR;
+                       NACC_ADDR, HV_ADDR : out INTEGER;
+                       RESULT             : out INT_PTR);
 
-  procedure INCREASE_MAX_DFAS; 
+  procedure INCREASE_MAX_DFAS;
 
-  procedure NTOD; 
+  procedure NTOD;
 
-  procedure SNSTODS(SNS           : in INT_PTR; 
-                    NUMSTATES     : in INTEGER; 
-                    ACCSET        : in INT_PTR; 
-                    NACC, HASHVAL : in INTEGER; 
-                    NEWDS_ADDR    : out INTEGER; 
-                    RESULT        : out BOOLEAN); 
+  procedure SNSTODS(SNS           : in INT_PTR;
+                    NUMSTATES     : in INTEGER;
+                    ACCSET        : in INT_PTR;
+                    NACC, HASHVAL : in INTEGER;
+                    NEWDS_ADDR    : out INTEGER;
+                    RESULT        : out BOOLEAN);
 
-  function SYMFOLLOWSET(DS              : in INT_PTR; 
-                        DSIZE, TRANSSYM : in INTEGER; 
-                        NSET            : in INT_PTR) return INTEGER; 
+  function SYMFOLLOWSET(DS              : in INT_PTR;
+                        DSIZE, TRANSSYM : in INTEGER;
+                        NSET            : in INT_PTR) return INTEGER;
 
-  procedure SYMPARTITION(DS        : in INT_PTR; 
-                         NUMSTATES : in INTEGER; 
-                         SYMLIST   : in out C_SIZE_BOOL_ARRAY; 
-                         DUPLIST   : in out C_SIZE_ARRAY); 
-end DFA; 
+  procedure SYMPARTITION(DS        : in INT_PTR;
+                         NUMSTATES : in INTEGER;
+                         SYMLIST   : in out C_SIZE_BOOL_ARRAY;
+                         DUPLIST   : in out C_SIZE_ARRAY);
+end DFA;

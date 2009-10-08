@@ -33,7 +33,7 @@ begin
 end build_eof_action;
 
 --  yyerror - eat up an error message from the parser
--- 
+--
 --  synopsis
 --     char msg[];
 --     yyerror( msg );
@@ -51,18 +51,8 @@ use  Parse_Goto, Parse_Shift_Reduce, tstring;
 procedure YYParse is
 
    -- Rename User Defined Packages to Internal Names.
-    package yy_goto_tables         renames
-      Parse_Goto;
-    package yy_shift_reduce_tables renames
-      Parse_Shift_Reduce;
-    package yy_tokens              renames
-      Parse_Tokens;
-
-   use yy_tokens, yy_goto_tables, yy_shift_reduce_tables;
-
-   -- procedure yyerrok;
-   -- procedure yyclearin;
-
+   package yy_tokens renames Parse_Tokens;
+   use yy_tokens;
 
    package yy is
 
@@ -360,19 +350,19 @@ when  7 =>
 
 when  8 =>
 --#line  97
- xcluflg := true; 
+ xcluflg := true;
 
 when  9 =>
 --#line  101
- sym.scinstal( nmstr, xcluflg ); 
+ sym.scinstal( nmstr, xcluflg );
 
 when  10 =>
 --#line  104
- sym.scinstal( nmstr, xcluflg ); 
+ sym.scinstal( nmstr, xcluflg );
 
 when  11 =>
 --#line  107
- misc.synerr( "bad start condition list" ); 
+ misc.synerr( "bad start condition list" );
 
 when  14 =>
 --#line  115
@@ -392,8 +382,8 @@ when  14 =>
 when  15 =>
 --#line  130
 
-			pat := nfa.link_machines( 
-yy.value_stack(yy.tos-1), 
+			pat := nfa.link_machines(
+yy.value_stack(yy.tos-1),
 yy.value_stack(yy.tos) );
 			nfa.finish_rule( pat, variable_trail_rule,
 				     headcnt, trailcnt );
@@ -401,7 +391,7 @@ yy.value_stack(yy.tos) );
 			for i in 1 .. actvp loop
 			    scbol(actvsc(i)) :=
 				nfa.mkbranch( scbol(actvsc(i)), pat );
-			end loop;       
+			end loop;
 				
 			if ( not bol_needed ) then
 			    bol_needed := true;
@@ -417,14 +407,14 @@ yy.value_stack(yy.tos) );
 when  16 =>
 --#line  152
 
-			pat := nfa.link_machines( 
-yy.value_stack(yy.tos-1), 
+			pat := nfa.link_machines(
+yy.value_stack(yy.tos-1),
 yy.value_stack(yy.tos) );
 			nfa.finish_rule( pat, variable_trail_rule,
 				     headcnt, trailcnt );
 
 			for i in 1 .. actvp loop
-			    scset(actvsc(i)) := 
+			    scset(actvsc(i)) :=
 				nfa.mkbranch( scset(actvsc(i)), pat );
 			end loop;
 			
@@ -432,8 +422,8 @@ yy.value_stack(yy.tos) );
 when  17 =>
 --#line  163
 
-			pat := nfa.link_machines( 
-yy.value_stack(yy.tos-1), 
+			pat := nfa.link_machines(
+yy.value_stack(yy.tos-1),
 yy.value_stack(yy.tos) );
 			nfa.finish_rule( pat, variable_trail_rule,
 				     headcnt, trailcnt );
@@ -444,7 +434,7 @@ yy.value_stack(yy.tos) );
 			for i in 1 .. lastsc loop
 			    if ( not scxclu(i) ) then
 				scbol(i) := nfa.mkbranch( scbol(i), pat );
-			    end if;     
+			    end if;
 			end loop;
 
 			if ( not bol_needed ) then
@@ -461,8 +451,8 @@ yy.value_stack(yy.tos) );
 when  18 =>
 --#line  188
 
-			pat := nfa.link_machines( 
-yy.value_stack(yy.tos-1), 
+			pat := nfa.link_machines(
+yy.value_stack(yy.tos-1),
 yy.value_stack(yy.tos) );
 			nfa.finish_rule( pat, variable_trail_rule,
 				     headcnt, trailcnt );
@@ -476,7 +466,7 @@ yy.value_stack(yy.tos) );
 
 when  19 =>
 --#line  201
- build_eof_action; 
+ build_eof_action;
 
 when  20 =>
 --#line  204
@@ -489,7 +479,7 @@ when  20 =>
 
 when  21 =>
 --#line  212
- misc.synerr( "unrecognized rule" ); 
+ misc.synerr( "unrecognized rule" );
 
 when  23 =>
 --#line  219
@@ -523,14 +513,14 @@ when  24 =>
 
 when  25 =>
 --#line  247
- misc.synerr( "bad start condition list" ); 
+ misc.synerr( "bad start condition list" );
 
 when  26 =>
 --#line  251
 
 			if trlcontxt then
 			    misc.synerr( "trailing context used twice" );
-			    
+			
 yyval := nfa.mkstate( SYM_EPSILON );
 			else
 			    trlcontxt := true;
@@ -543,7 +533,7 @@ yyval := nfa.mkstate( SYM_EPSILON );
 			    trailcnt := 1;
 
 			    eps := nfa.mkstate( SYM_EPSILON );
-			    
+			
 yyval := nfa.link_machines( eps,
 					  nfa.mkstate( CHARACTER'POS(ASCII.LF) ) );
 			end if;
@@ -571,8 +561,8 @@ when  28 =>
 			varlength := true;
 
 			
-yyval := nfa.mkor( 
-yy.value_stack(yy.tos-2), 
+yyval := nfa.mkor(
+yy.value_stack(yy.tos-2),
 yy.value_stack(yy.tos) );
 			
 
@@ -585,12 +575,12 @@ yy.value_stack(yy.tos))) /= SYM_EPSILON ) then
 			    -- will be marked as a trailing context
 			    -- state
 
-			    
-yy.value_stack(yy.tos) := nfa.link_machines( 
+			
+yy.value_stack(yy.tos) := nfa.link_machines(
 yy.value_stack(yy.tos), nfa.mkstate( SYM_EPSILON ) );
 			end if;
 
-			nfa.mark_beginning_as_normal( 
+			nfa.mark_beginning_as_normal(
 yy.value_stack(yy.tos) );
 			current_state_enum := STATE_NORMAL;
 
@@ -628,22 +618,22 @@ yy.value_stack(yy.tos) );
 			    -- rule, and add_accept() can create a new
 			    -- state ...
 
-			    nfa.add_accept( 
+			    nfa.add_accept(
 yy.value_stack(yy.tos-1),
 				   misc.set_yy_trailing_head_mask(num_rules) );
 			end if;
 
 			
-yyval := nfa.link_machines( 
-yy.value_stack(yy.tos-1), 
+yyval := nfa.link_machines(
+yy.value_stack(yy.tos-1),
 yy.value_stack(yy.tos) );
 			
 
 when  30 =>
 --#line  348
- 
-yyval := 
-yy.value_stack(yy.tos); 
+
+yyval :=
+yy.value_stack(yy.tos);
 
 when  31 =>
 --#line  353
@@ -656,20 +646,20 @@ when  31 =>
 			    misc.synerr( "trailing context used twice" );
 			else
 			    trlcontxt := true;
-			end if;    
+			end if;
 
 			if ( varlength ) then
 			    -- we hope the trailing context is fixed-length
 			    varlength := false;
 			else
 			    headcnt := rulelen;
-			end if;    
+			end if;
 
 			rulelen := 0;
 
 			current_state_enum := STATE_TRAILING_CONTEXT;
 			
-yyval := 
+yyval :=
 yy.value_stack(yy.tos-1);
 			
 
@@ -680,16 +670,16 @@ when  32 =>
 			-- gets done
 
 			
-yyval := nfa.link_machines( 
-yy.value_stack(yy.tos-1), 
+yyval := nfa.link_machines(
+yy.value_stack(yy.tos-1),
 yy.value_stack(yy.tos) );
 			
 
 when  33 =>
 --#line  387
- 
-yyval := 
-yy.value_stack(yy.tos); 
+
+yyval :=
+yy.value_stack(yy.tos);
 
 when  34 =>
 --#line  391
@@ -697,7 +687,7 @@ when  34 =>
 			varlength := true;
 
 			
-yyval := nfa.mkclos( 
+yyval := nfa.mkclos(
 yy.value_stack(yy.tos-1) );
 			
 
@@ -707,7 +697,7 @@ when  35 =>
 			varlength := true;
 
 			
-yyval := nfa.mkposcl( 
+yyval := nfa.mkposcl(
 yy.value_stack(yy.tos-1) );
 			
 
@@ -717,7 +707,7 @@ when  36 =>
 			varlength := true;
 
 			
-yyval := nfa.mkopt( 
+yyval := nfa.mkopt(
 yy.value_stack(yy.tos-1) );
 			
 
@@ -727,26 +717,26 @@ when  37 =>
 			varlength := true;
 
 			if ( (
-yy.value_stack(yy.tos-3) > 
+yy.value_stack(yy.tos-3) >
 yy.value_stack(yy.tos-1)) or (
 yy.value_stack(yy.tos-3) < 0) ) then
 			    misc.synerr( "bad iteration values" );
-			    
-yyval := 
+			
+yyval :=
 yy.value_stack(yy.tos-5);
 			else
-			    if ( 
+			    if (
 yy.value_stack(yy.tos-3) = 0 ) then
 				
-yyval := nfa.mkopt( nfa.mkrep( 
-yy.value_stack(yy.tos-5), 
-yy.value_stack(yy.tos-3), 
+yyval := nfa.mkopt( nfa.mkrep(
+yy.value_stack(yy.tos-5),
+yy.value_stack(yy.tos-3),
 yy.value_stack(yy.tos-1) ) );
 			    else
 				
-yyval := nfa.mkrep( 
-yy.value_stack(yy.tos-5), 
-yy.value_stack(yy.tos-3), 
+yyval := nfa.mkrep(
+yy.value_stack(yy.tos-5),
+yy.value_stack(yy.tos-3),
 yy.value_stack(yy.tos-1) );
 			    end if;
 			end if;
@@ -757,18 +747,18 @@ when  38 =>
 
 			varlength := true;
 
-			if ( 
+			if (
 yy.value_stack(yy.tos-2) <= 0 ) then
 			    misc.synerr( "iteration value must be positive" );
-			    
-yyval := 
+			
+yyval :=
 yy.value_stack(yy.tos-4);
 			else
-			    
-yyval := nfa.mkrep( 
-yy.value_stack(yy.tos-4), 
+			
+yyval := nfa.mkrep(
+yy.value_stack(yy.tos-4),
 yy.value_stack(yy.tos-2), INFINITY );
-			end if;    
+			end if;
 			
 
 when  39 =>
@@ -780,19 +770,19 @@ when  39 =>
 
 			varlength := true;
 
-			if ( 
+			if (
 yy.value_stack(yy.tos-1) <= 0 ) then
 			    misc.synerr( "iteration value must be positive" );
-			    
-yyval := 
+			
+yyval :=
 yy.value_stack(yy.tos-3);
 			else
-			    
-yyval := nfa.link_machines( 
-yy.value_stack(yy.tos-3), nfa.copysingl( 
-yy.value_stack(yy.tos-3), 
+			
+yyval := nfa.link_machines(
+yy.value_stack(yy.tos-3), nfa.copysingl(
+yy.value_stack(yy.tos-3),
 yy.value_stack(yy.tos-1) - 1 ) );
-			end if;    
+			end if;
 			
 
 when  40 =>
@@ -843,7 +833,7 @@ yy.value_stack(yy.tos))),
 				ccllen(
 yy.value_stack(yy.tos)),nextecm, ecgroup, CSIZE );
 			end if;
-				     
+				
 			rulelen := rulelen + 1;
 
 			
@@ -863,62 +853,62 @@ yy.value_stack(yy.tos) );
 
 when  43 =>
 --#line  506
- 
-yyval := 
-yy.value_stack(yy.tos-1); 
+
+yyval :=
+yy.value_stack(yy.tos-1);
 
 when  44 =>
 --#line  509
- 
-yyval := 
-yy.value_stack(yy.tos-1); 
+
+yyval :=
+yy.value_stack(yy.tos-1);
 
 when  45 =>
 --#line  512
 
 			rulelen := rulelen + 1;
 
-			if ( 
+			if (
 yy.value_stack(yy.tos) = CHARACTER'POS(ASCII.NUL) ) then
 			    misc.synerr( "null in rule" );
-			end if;    
+			end if;
 
 			if ( caseins and (
 yy.value_stack(yy.tos) >= CHARACTER'POS('A')) and (
 yy.value_stack(yy.tos) <= CHARACTER'POS('Z')) ) then
-			    
-yy.value_stack(yy.tos) := misc.clower( 
+			
+yy.value_stack(yy.tos) := misc.clower(
 yy.value_stack(yy.tos) );
 			end if;
 
 			
-yyval := nfa.mkstate( 
+yyval := nfa.mkstate(
 yy.value_stack(yy.tos) );
 			
 
 when  46 =>
 --#line  528
- 
-yyval := 
-yy.value_stack(yy.tos-1); 
+
+yyval :=
+yy.value_stack(yy.tos-1);
 
 when  47 =>
 --#line  531
 
 			-- *Sigh* - to be compatible Unix lex, negated ccls
 			-- match newlines
-			ccl.cclnegate( 
+			ccl.cclnegate(
 yy.value_stack(yy.tos-1) );
 			
-yyval := 
+yyval :=
 yy.value_stack(yy.tos-1);
 			
 
 when  48 =>
 --#line  540
 
-			if ( 
-yy.value_stack(yy.tos-2) > 
+			if (
+yy.value_stack(yy.tos-2) >
 yy.value_stack(yy.tos) ) then
 			    misc.synerr( "negative range in character class" );
 			else
@@ -926,37 +916,37 @@ yy.value_stack(yy.tos) ) then
 				if ( (
 yy.value_stack(yy.tos-2) >= CHARACTER'POS('A')) and (
 yy.value_stack(yy.tos-2) <= CHARACTER'POS('Z')) ) then
-				    
-yy.value_stack(yy.tos-2) := misc.clower( 
+				
+yy.value_stack(yy.tos-2) := misc.clower(
 yy.value_stack(yy.tos-2) );
-				end if;                                     
+				end if;
 				if ( (
 yy.value_stack(yy.tos) >= CHARACTER'POS('A')) and (
 yy.value_stack(yy.tos) <= CHARACTER'POS('Z')) ) then
-				    
-yy.value_stack(yy.tos) := misc.clower( 
+				
+yy.value_stack(yy.tos) := misc.clower(
 yy.value_stack(yy.tos) );
-				end if;    
+				end if;
 			    end if;
 
-			    for i in 
-yy.value_stack(yy.tos-2) .. 
+			    for i in
+yy.value_stack(yy.tos-2) ..
 yy.value_stack(yy.tos) loop
-				ccl.ccladd( 
+				ccl.ccladd(
 yy.value_stack(yy.tos-3), CHARACTER'VAL(i) );
 			    end loop;
-			    
+			
 			    -- keep track if this ccl is staying in
 			    -- alphabetical order
 
 			    cclsorted := cclsorted and (
 yy.value_stack(yy.tos-2) > lastchar);
-			    lastchar := 
+			    lastchar :=
 yy.value_stack(yy.tos);
 			end if;
 			
 			
-yyval := 
+yyval :=
 yy.value_stack(yy.tos-3);
 			
 
@@ -968,19 +958,19 @@ when  49 =>
 yy.value_stack(yy.tos) >= CHARACTER'POS('A')) and (
 yy.value_stack(yy.tos) <= CHARACTER'POS('Z')) ) then
 				
-yy.value_stack(yy.tos) := misc.clower( 
+yy.value_stack(yy.tos) := misc.clower(
 yy.value_stack(yy.tos) );
 			    end if;
-			end if;    
-			ccl.ccladd( 
+			end if;
+			ccl.ccladd(
 yy.value_stack(yy.tos-1), CHARACTER'VAL(
 yy.value_stack(yy.tos)) );
 			cclsorted := cclsorted and (
 yy.value_stack(yy.tos) > lastchar);
-			lastchar := 
+			lastchar :=
 yy.value_stack(yy.tos);
 			
-yyval := 
+yyval :=
 yy.value_stack(yy.tos-1);
 			
 
@@ -1001,23 +991,23 @@ when  51 =>
 yy.value_stack(yy.tos) >= CHARACTER'POS('A')) and (
 yy.value_stack(yy.tos) <= CHARACTER'POS('Z')) ) then
 				
-yy.value_stack(yy.tos) := misc.clower( 
+yy.value_stack(yy.tos) := misc.clower(
 yy.value_stack(yy.tos) );
 			    end if;
-			end if;    
+			end if;
 
 			rulelen := rulelen + 1;
 
 			
-yyval := nfa.link_machines( 
-yy.value_stack(yy.tos-1), nfa.mkstate( 
+yyval := nfa.link_machines(
+yy.value_stack(yy.tos-1), nfa.mkstate(
 yy.value_stack(yy.tos) ) );
 			
 
 when  52 =>
 --#line  602
- 
-yyval := nfa.mkstate( SYM_EPSILON ); 
+
+yyval := nfa.mkstate( SYM_EPSILON );
 
 		    when others => null;
 		end case;
