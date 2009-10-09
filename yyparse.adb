@@ -126,12 +126,12 @@ procedure YYParse is
 
       if yy.error_flag = 3 then -- no shift yet, clobber input.
       if yy.debug then
-          text_io.put_line("Ayacc.YYParse: Error Recovery Clobbers " &
+          text_io.put_line("  -- Ayacc.YYParse: Error Recovery Clobbers " &
                    yy_tokens.token'image(yy.input_symbol));
       end if;
         if yy.input_symbol = yy_tokens.end_of_input then  -- don't discard,
         if yy.debug then
-            text_io.put_line("Ayacc.YYParse: Can't discard END_OF_INPUT, quiting...");
+            text_io.put_line("  -- Ayacc.YYParse: Can't discard END_OF_INPUT, quiting...");
         end if;
         raise yy_tokens.syntax_error;
         end if;
@@ -153,19 +153,19 @@ procedure YYParse is
     -- find state on stack where error is a valid shift --
 
     if yy.debug then
-        text_io.put_line("Ayacc.YYParse: Looking for state with error as valid shift");
+        text_io.put_line("  -- Ayacc.YYParse: Looking for state with error as valid shift");
     end if;
 
     loop
         if yy.debug then
-          text_io.put_line("Ayacc.YYParse: Examining State " &
+          text_io.put_line("  -- Ayacc.YYParse: Examining State " &
                yy.parse_state'image(yy.state_stack(yy.tos)));
         end if;
         temp_action := parse_action(yy.state_stack(yy.tos), error);
 
             if temp_action >= yy.first_shift_entry then
                 if yy.tos = yy.stack_size then
-                    text_io.put_line(" Stack size exceeded on state_stack");
+                    text_io.put_line("  -- Ayacc.YYParse: Stack size exceeded on state_stack");
                     raise yy_Tokens.syntax_error;
                 end if;
                 yy.tos := yy.tos + 1;
@@ -183,14 +183,14 @@ procedure YYParse is
 
         if yy.tos = 0 then
           if yy.debug then
-            text_io.put_line("Ayacc.YYParse: Error recovery popped entire stack, aborting...");
+            text_io.put_line("  -- Ayacc.YYParse: Error recovery popped entire stack, aborting...");
           end if;
           raise yy_tokens.syntax_error;
         end if;
     end loop;
 
     if yy.debug then
-        text_io.put_line("Ayacc.YYParse: Shifted error token in state " &
+        text_io.put_line("  -- Ayacc.YYParse: Shifted error token in state " &
               yy.parse_state'image(yy.state_stack(yy.tos)));
     end if;
 
@@ -199,14 +199,14 @@ procedure YYParse is
    -- print debugging information for a shift operation
    procedure shift_debug(state_id: yy.parse_state; lexeme: yy_tokens.token) is
    begin
-       text_io.put_line("Ayacc.YYParse: Shift "& yy.parse_state'image(state_id)&" on input symbol "&
+       text_io.put_line("  -- Ayacc.YYParse: Shift "& yy.parse_state'image(state_id)&" on input symbol "&
                yy_tokens.token'image(lexeme) );
    end;
 
    -- print debugging information for a reduce operation
    procedure reduce_debug(rule_id: rule; state_id: yy.parse_state) is
    begin
-       text_io.put_line("Ayacc.YYParse: Reduce by rule "&rule'image(rule_id)&" goto state "&
+       text_io.put_line("  -- Ayacc.YYParse: Reduce by rule "&rule'image(rule_id)&" goto state "&
                yy.parse_state'image(state_id));
    end;
 
@@ -274,7 +274,7 @@ begin
 
         elsif yy.action = yy.accept_code then
             if yy.debug then
-                text_io.put_line("Ayacc.YYParse: Accepting Grammar...");
+                text_io.put_line("  -- Ayacc.YYParse: Accepting Grammar...");
             end if;
             exit;
 
@@ -528,7 +528,7 @@ when 128 => -- #line 790
 PascalHelp.put_keyword("NOT");
 
 when 130 => -- #line 794
-DECLARE the_number : string := YYText;
+DECLARE the_number : constant String := YYText;
          BEGIN
            PascalHelp.Put("Character'Val(" & the_number(2..
            the_number'last) & ")");
@@ -653,7 +653,7 @@ when 163 => -- #line 896
            PascalHelp.Put_last(PascalHelp.tzpe);
            PascalHelp.Put_keyword(" IS RANGE ");
            declare
-             id: String:= PascalHelp.Recent_identifier(1);
+             id: constant String:= PascalHelp.Recent_identifier(1);
            begin
              PascalHelp.Put(id);
              PascalHelp.Shorten_buffer( id'length );
@@ -1676,7 +1676,7 @@ PascalHelp.DirectIO:= True;
 when 627 => -- #line 2185
 
       declare
-        id: String:= YYtext(1..YYLength);
+        id: constant String:= YYtext(1..YYLength);
       begin
         PascalHelp.Memorize_identifier( id, id );
         -- NB: no Ada alias, the programmer want THIS name!
@@ -1693,12 +1693,12 @@ yyval.text(1..id'length):=id;
 when 629 => -- #line 2201
 
       declare
-        Pascal_id: String:= YYtext(1..YYLength);
-        Up_Pas_id: String:= To_Upper(Pascal_id);
+        Pascal_id: constant String:= YYtext(1..YYLength);
+        Up_Pas_id: constant String:= To_Upper(Pascal_id);
       begin
         PascalHelp.Select_identifier( Pascal_id );
         declare
-          Ada_id : String:= PascalHelp.Find_alias( Pascal_id );
+          Ada_id : constant String:= PascalHelp.Find_alias( Pascal_id );
         begin
           PascalHelp.Memorize_identifier( Ada_id, Pascal_id );
           IF PascalHelp.function_result_flag and then

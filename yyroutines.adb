@@ -8,8 +8,7 @@
 -- Martin C. Carlisle's original version, standard Pascal
 --
 WITH pascalyylex;
-WITH pascal_tokens;
-USE pascal_tokens;
+
 PACKAGE BODY yyroutines IS
 
 Lookahead : Token;

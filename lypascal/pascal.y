@@ -791,7 +791,7 @@ constant_factor : unsigned_constant
     ;
 
 explicit_ascii : ASCII_t
-        {DECLARE the_number : string := YYText;
+        {DECLARE the_number : constant String := YYText;
          BEGIN
            PascalHelp.Put("Character'Val(" & the_number(2..
            the_number'last) & ")");
@@ -907,7 +907,7 @@ outer_type_denoter :
            PascalHelp.Put_last(PascalHelp.tzpe);
            PascalHelp.Put_keyword(" IS RANGE ");
            declare
-             id: String:= PascalHelp.Recent_identifier(1);
+             id: constant String:= PascalHelp.Recent_identifier(1);
            begin
              PascalHelp.Put(id);
              PascalHelp.Shorten_buffer( id'length );
@@ -2184,7 +2184,7 @@ the_relop :
 
 new_identifier : ID_t {
       declare
-        id: String:= YYtext(1..YYLength);
+        id: constant String:= YYtext(1..YYLength);
       begin
         PascalHelp.Memorize_identifier( id, id );
         -- NB: no Ada alias, the programmer want THIS name!
@@ -2200,12 +2200,12 @@ new_identifier : ID_t {
 
 identifier : ID_t {
       declare
-        Pascal_id: String:= YYtext(1..YYLength);
-        Up_Pas_id: String:= To_Upper(Pascal_id);
+        Pascal_id: constant String:= YYtext(1..YYLength);
+        Up_Pas_id: constant String:= To_Upper(Pascal_id);
       begin
         PascalHelp.Select_identifier( Pascal_id );
         declare
-          Ada_id : String:= PascalHelp.Find_alias( Pascal_id );
+          Ada_id : constant String:= PascalHelp.Find_alias( Pascal_id );
         begin
           PascalHelp.Memorize_identifier( Ada_id, Pascal_id );
           IF PascalHelp.function_result_flag and then

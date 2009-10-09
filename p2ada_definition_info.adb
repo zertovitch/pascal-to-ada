@@ -1406,7 +1406,7 @@ package body P2Ada_Definition_info is
             Open (F, In_File, Alias_File_Name);
          exception
             when Name_Error =>
-               Put_Line( Standard_Error, "Alias file '" & Alias_File_Name & "' not found, intern aliases loaded." );
+               Put_Line( Standard_Error, "Alias file '" & Alias_File_Name & "' not found, internal aliases loaded." );
                Predefined_Pascal_Identifiers;
                return;
          end;
