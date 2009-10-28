@@ -56,7 +56,7 @@ with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Strings.Unbounded;
 PACKAGE PascalHelp IS
 
-  blurb: String:= "-- Translated by (New) P2Ada v. 15-Nov-2006";
+  function Blurb return String;
 
   SUBTYPE NameType IS String(1..255); -- (was 80) - 15-Dec-2002
 
@@ -168,7 +168,8 @@ PACKAGE PascalHelp IS
   procedure Inc_dec_part_2( operator: String );
 
   -- SHL/SHR
-  procedure Open_Shift;
+  type Shift_direction is (left, right);
+  procedure Open_Shift(d: Shift_direction);
   procedure Close_Eventual_Shift;
 
   --------------------------------------------------------------

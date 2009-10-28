@@ -2158,8 +2158,8 @@ the_mulop :
     | MOD_t {PascalHelp.Put_MOD;}
     | AND_t {PascalHelp.put_keyword(" AND ");}
     | AND_THEN_t {PascalHelp.put_keyword(" AND THEN ");} -- 12-Jan-2003 (ISO Ext.)
-    | SHL_t {PascalHelp.put(" * (2 ** "); PascalHelp.Open_Shift;}
-    | SHR_t {PascalHelp.put(" / (2 ** "); PascalHelp.Open_Shift;}
+    | SHL_t {PascalHelp.put(" * (2 ** "); PascalHelp.Open_Shift(PascalHelp.left);}
+    | SHR_t {PascalHelp.put(" / (2 ** "); PascalHelp.Open_Shift(PascalHelp.right);}
     | AMPERSAND_t {PascalHelp.put_keyword(" AND THEN ");} -- Was '&' 9-Jan-2003 (CWP)
     | DOUBLESTAR_t {PascalHelp.put("**");}
     ;

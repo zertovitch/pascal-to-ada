@@ -1633,10 +1633,10 @@ when 613 => -- #line 2160
 PascalHelp.put_keyword(" AND THEN ");
 
 when 614 => -- #line 2161
-PascalHelp.put(" * (2 ** "); PascalHelp.Open_Shift;
+PascalHelp.put(" * (2 ** "); PascalHelp.Open_Shift(PascalHelp.left);
 
 when 615 => -- #line 2162
-PascalHelp.put(" / (2 ** "); PascalHelp.Open_Shift;
+PascalHelp.put(" / (2 ** "); PascalHelp.Open_Shift(PascalHelp.right);
 
 when 616 => -- #line 2163
 PascalHelp.put_keyword(" AND THEN ");

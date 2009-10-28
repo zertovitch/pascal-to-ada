@@ -52,6 +52,7 @@
 -- Revision 1.1  1997/08/23  08:20:27  nestor
 -- Martin C. Carlisle's original version, standard Pascal
 
+with Ada.Calendar;                      use Ada.Calendar;
 with Ada.Characters.Handling;
 with Ada.Strings.Fixed;                 use Ada.Strings, Ada.Strings.Fixed;
 
@@ -62,6 +63,33 @@ with P2Ada_Definition_info;             use P2Ada_Definition_info;
 with P2Ada_keywords;
 
 PACKAGE BODY PascalHelp IS
+
+  function Blurb return String is
+    c: constant Time:= Clock;
+    function Ze_month return String is
+    begin
+      case Month(c) is
+        when  1 => return "Jan";
+        when  2 => return "Feb";
+        when  3 => return "Mar";
+        when  4 => return "Apr";
+        when  5 => return "May";
+        when  6 => return "Jun";
+        when  7 => return "Jul";
+        when  8 => return "Aug";
+        when  9 => return "Sep";
+        when 10 => return "Oct";
+        when 11 => return "Nov";
+        when 12 => return "Dec";
+      end case;
+    end Ze_month;
+  begin
+    return
+      "-- Translated on" &
+      Integer'Image(Day(c)) & '-' & Ze_month & '-' &
+      Trim(Integer'Image(Year(c)),Both)
+      & " by (New) P2Ada v. 28-Oct-2009";
+  end;
 
   function Current_line return Natural is
   begin
@@ -232,7 +260,7 @@ PACKAGE BODY PascalHelp IS
     end case;
   END Put_keyword;
 
-  PROCEDURE Put_translation_comment(text : IN String) is
+  PROCEDURE Put_translation_comment(text : String) is
   begin
     if add_translation_comments then
       Put(" -- [P2Ada]: " & text);
@@ -680,17 +708,29 @@ PACKAGE BODY PascalHelp IS
   -- SHL/SHR
 
   shift_flag: Boolean:= False;
+  shift_dir:  Shift_direction;
 
-  procedure Open_Shift is
+  procedure Open_Shift(d: Shift_direction) is
   begin
     shift_flag:= True;
+    shift_dir:= d;
   end Open_Shift;
 
   procedure Close_Eventual_Shift is
+    function dir_img return String is
+    begin
+      case shift_dir is
+        when left => return "Left";
+        when right => return "Right";
+      end case;
+    end;
   begin
     if shift_flag then
       Put(')');
       shift_flag:= False;
+      Put_translation_comment(
+        "If modular type, better Shift_" & dir_img & "(,)"
+      );
     end if;
   end Close_Eventual_Shift;
 
