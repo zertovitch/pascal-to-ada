@@ -1,0 +1,105 @@
+                            OBJP2ADA
+
+## ObjP2Ada is a tool for translating Object Pascal source files to Ada.
+
+The core translator is in a grammar-based form.
+
+  pascal.l : lexer file (for (af)Lex)
+  pascal.y : grammar file (for (a)Yacc).
+
+For making changes in P2Ada, you need three programs: ayacc, aflex and an Ada compiler.
+If ayacc or aflex are not present in your toolbox, you can
+build them from the sources (see aflex and ayacc README).
+
+## BUILD
+
+     - go to p2ada directory
+     - create acu directory for object files
+     - run "make"
+     - move the executables in a reachable directory
+
+## USAGE
+
+The syntax is, as "p2ada -h" will tell you:
+
+Syntax: P2Ada [input_file] {-Iimports} [-Eexports] [-ooutput_file]
+
+The file 'exports' is produced with the definitions of:
+  - the 'interface' part of Borland/UCSD Pascal 'unit'
+  - the 'export' part of an ISO Pascal 'module' (not yet implemented)
+  - the top-level definitions of a program, considered as a code snippet.
+
+As you see, both input (Pascal) and output file (Ada) are optional.
+The default files are the standard input and standard output respectively.
+So, you can type the Pascal programs directly ;-), use the BP2P preprocessor
+or, on the Ada side, chain with another program, e.g. an Ada pretty-printer.
+
+The options -E,-I serve to export and import Pascal definitions,
+allowing an accurate translation across modules of the WITH instruction.
+Use .adb files translated from Pascal units with interface and implementation parts
+in GNAT with gnatchop.
+
+As a demo, please run "make test.ada". It will translate all nptest?.pas files.
+Note that the translation usually doesn't compile without rework.
+Still, in the test set, the following are translated *and* run in
+Ada *immediately*, *without rework*:
+  nptest0.pas -> nptest0.adb
+  nptesta.pas -> nptesta.adb
+
+BP2P is there, mainly but not exclusively, to convert
+Borland Pascal sources into a slightly changed Pascal equivalent
+which is easier to translate for P2Ada. Here is what it does:
+
+  1/ Labels: identifiers are translated into numbers
+  2/ (no more necessary)
+  3/ Comment out with remarks the ASM and INLINE parts
+  4/ Process Boolean evaluation switches ($B+/$B-) and translate short circuits
+     into ISO Extended Pascal's 'and_else' and 'or_else'
+  5/ Process conditional defines: $ifdef, $ifopt, $else, $endif, $define, $undef
+
+Point 4 is especially important since the behaviour of a Borland Pascal
+program changes upon the values of the $B switch...
+
+The syntax is compatible with the Borland command-line compiler:
+
+  BP2P [options] [infile [outfile]] [options]
+
+Options:
+
+      -D<syms> = Define conditionals
+      -$B+    Complete boolean evaluation (default)
+      -$B-    Short-circuit boolean evaluation (Ada's "and then", "or else")
+      -$<letter><state>   Any other switch has default '-' state
+
+## DOC
+
+None.
+Get help from http://sourceforge.net/projects/p2ada
+
+## REALEASE NOTES
+
+- release svn revision 11 (2009 Dec 13):
+. pascalhelp.adb and .ads:
+. pascal.l (1.1a):
+. pascal.y (1.1a):
+	- fgsgsg
+	- inside function local result variable and return has been added
+	- parameters of main program have been added with type Ada.Text_IO.File_Type
+	- reserved Ada words are finished by _k and double, heading, trailing underscores
+	  are replaced by u_
+	- put with and use units before main program or package
+	- add pragma import for external and inline sub-programs
+	- translate shl and shr by Shift_Left and Shift_Right functions from Interface package
+	- add ; after raise statement
+	- add others=>false in set constructor
+	- Mem, MemW and MemL aren't reserved words any more
+
+- release svn revision 10 (2009 Nov 27):
+. pascal.y (1.0d):
+	- initial SVN release of objp2ada
+
+## LICENCE
+
+P2Ada is a free software, some parts are under GPL V3, you are free to redistribute and modify it.
+(http://www.gnu.org/licenses/gpl.html)
+

@@ -1,0 +1,183 @@
+What is P2Ada ?
+===============
+
+P2Ada is a tool for translating Pascal source files to Ada.
+
+Copyright:
+---------
+
+P2Ada is a free software, you are free to redistribute and modify it.
+
+Authors:
+-------
+
+  Martin Carlisle : main
+  
+  Laurent Gasser : Think Pascal (MacOS) syntax enhancements
+  
+  Gautier de Montmollin : Turbo/Borland Pascal/Delphi syntax
+      enhancements (except OO), BP2P preprocessor, memorization of
+      identifiers and types to improve translation
+      
+  Craig Carey : Part of development, interoperability with Mod2Pas,
+      bash scripts
+      
+  Pascal Pignard : Object-oriented extensions to Pascal,
+      Unix makefile
+
+Thanks to:
+---------
+
+  Bill Findlay, John Murdie, Roman V. Isaev, Andreas K. Foerster
+
+
+How to make P2Ada translator work ?
+===================================
+
+You need an Ada compiler to build P2Ada (and also BP2P).
+
+* With GNAT from command line, type "gnatmake p2ada", "compile"
+  (DOS/Windows batch file), or use the makefile.
+  If you have a case-sensitive file system, you have to unzip newp2ada.zip
+  with the lowercase option (unzip -L newp2ada.zip).
+  Here are commands to unpack and build on UNIX:
+$ cd <download directory>
+$ mkdir newp2ada
+$ cd newp2ada
+$ unzip -aaLL ../newp2ada.zip
+$ cd newp2ada
+$ make
+
+* With GNAT and AdaGIDE, open p2ada.adb and press F3.
+
+* With ObjectAda, open p2ada.prj and press F7, or try "adamake p2ada.adb".
+
+Now, P2Ada is built (DOS/Windows: p2ada.exe).
+The syntax is, as "p2ada -h" will tell you:
+
+Syntax: P2Ada [input_file] {-Iimports} [-Eexports] [-ooutput_file]
+
+The file 'exports' is produced with the definitions of:
+  - the 'interface' part of Borland/UCSD Pascal 'unit'
+  - the 'export' part of an ISO Pascal 'module' (not yet implemented)
+  - the top-level definitions of a program, considered as a code snippet.
+
+As you see, both input (Pascal) and output file (Ada) are optional.
+The default files are the standard input and standard output respectively.
+So, you can type the Pascal programs directly ;-), use the BP2P preprocessor
+or, on the Ada side, chain with another program, e.g. an Ada pretty-printer.
+
+The options -E,-I serve to export and import Pascal definitions,
+allowing an accurate translation across modules of the WITH
+instruction, the New procedure and the Text I/O (Write(f,a1,a2,a3,...)).
+
+As a demo, please run "test" ((DOS/Windows batch file), or do
+it with the makefile. It will translate all nptest?.pas files.
+Note that the translation usually doesn't compile without rework.
+Still, in the test set, the following are translated *and* run in
+Ada *immediately*, *without rework*:
+  nptest0.pas -> nptest0.adb
+  nptesta.pas -> nptesta.adb
+
+What is the BP2P preprocessor for ?
+===================================
+
+BP2P is there, mainly but not exclusively, to convert
+Borland Pascal sources into a slightly changed Pascal equivalent
+which is easier to translate for P2Ada. Here is what it does:
+
+  1/ Labels: identifiers are translated into numbers
+  2/ Characters like ^M are transformed into their #xxx form
+  3/ Comment out with remarks the ASM and INLINE parts
+  4/ Process Boolean evaluation switches ($B+/$B-) and translate short circuits
+     into ISO Extended Pascal's 'and_else' and 'or_else'
+  5/ Process conditional defines: $ifdef, $ifopt, $else, $endif, $define, $undef
+
+Point 4 is especially important since the behaviour of a Borland Pascal
+program changes upon the values of the $B switch...
+
+The syntax is compatible with the Borland command-line compiler:
+
+  BP2P [options] [infile [outfile]] [options]
+
+Options:
+  
+      -D<syms> = Define conditionals
+      -$B+    Complete boolean evaluation (default)
+      -$B-    Short-circuit boolean evaluation (Ada's "and then", "or else")
+      -$<letter><state>   Any other switch has default '-' state
+
+
+How to change P2Ada for yet another Pascal dialect ?
+====================================================
+
+The core translator is in a grammar-based form. The files
+are in the LYPascal directory:
+
+  pascal.l : lexer file (for (af)Lex)
+  pascal.y : grammar file (for (a)Yacc).
+
+For making changes in P2Ada, you need three programs:
+ayacc, aflex and an Ada compiler.
+If ayacc or aflex are not present in your toolbox, you can
+build them from the sources (included in newp2ada.zip) so:
+
+  1. building AYACC :
+     - go to directory ayacc95
+     - run "gnatmake ayacc"
+     - move the executable in a reachable directory (see: path)
+         
+  2. building AFLEX :
+     - go to directory aflex95
+     - run "gnatmake aflex"
+     - move the executable in a reachable directory (see: path)
+
+Now, we assume you have ayacc, aflex and an Ada compiler.
+
+If you have GNAT, just type "make_p2a -f" or use the makefile.
+You may want to modify the file 'make_p2a.bat' or to do it manually:
+  - go to directory lypascal
+  - type "ayacc pascal.y"
+  - type "aflex -i -E pascal.l"
+  - change the file extensions (.a) of new Ada files if needed
+    (e.g. for GNAT) and move them to upper directory
+  - build P2Ada ("gnatmake p2ada").
+
+When you change pascal.y, please take care not to increase the shift/reduce
+conflicts - it's very difficult to decrease them and very easy to make
+the grammar fall apart...
+To control that you didn't break down the grammar, you'd better to run the
+test often and compare the "t.txt" files (all translations to Ada
+glued together) before and after your changes.
+If by chance you have an enhancement that is compatible with all the
+Pascal dialect parts already existing in P2Ada, I'll be happy to include
+it in the next release!
+
+Last but important remarks :
+===========================
+
+* The current changes are in "whatsnew.txt".
+
+* An help: use the package BorStrings, that provides a type 'BorString'
+  which is exactly the 'String' from Turbo/Borland Pascal,
+  with two points better: the Ada unconstrained type solves the poor design
+  from Borland ("strict var checking" on/off), and you can program it - you
+  couldn't in (Turbo-)Pascal! See "strings" subdirectory.
+
+* Combining Mod2Pas to P2Ada has been experienced with success to
+  translate Modula-2 to Ada. Mod2Pas is available at
+  ftp://cs.ru.ac.za/pub/coco/MOD2PAS.ZIP or
+  http://www.scifac.ru.ac.za/cspt/
+
+* Some success stories:
+  - MAS, Modula-2 Algebra System, 73 kSlocs
+  - Unzip from Info-Zip
+  - Numerical Recipes in Pascal
+      whose sources can be downloaded in the nrpas13.zip archive -
+      check http://www.google.com/search?q=nrpas13.zip
+  - TeXCAD - http://www.mysunrise.ch/users/gdm/texcad.htm
+
+______________________________________________________________________
+Gautier de Montmollin, 3-Dec-2006                       gdm@dplanet.ch
+
+                     http://www.mysunrise.ch/users/gdm/gsoft.htm#p2ada

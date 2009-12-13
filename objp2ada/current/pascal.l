@@ -2,8 +2,8 @@
 -- Name        : pascal.l
 -- Description : Object Pascal lexical items for objp2ada
 -- Author      : P2Ada team
--- Version     : 1.0c
--- Last update : 2009-11-21
+-- Version     : 1.1a
+-- Last update : 2009-12-12
 -- Licence     : GPL V3 (http://www.gnu.org/licenses/gpl.html)
 -- Contact     : http://sourceforge.net/projects/p2ada
 -- Notes       :
@@ -185,12 +185,6 @@ xor { return XOR_t; }
 write { return WRITE_t; }
 writeln { return WRITELN_t; }
 str { return STR_t; }
-
--- mem, memw and meml tables are declared as keywords
--- in order to catch the specific syntax like Mem[Seg:Ofs];
-mem { return MEM_t; }
-memw { return MEMW_t; }
-meml { return MEML_t; }
 
 -- THP 1.1 reserved words
 otherwise { return OTHERWISE_t; }

@@ -52,6 +52,7 @@
 -- Revision 1.1  1997/08/23  08:20:27  nestor
 -- Martin C. Carlisle's original version, standard Pascal
 
+with Ada.Calendar;                      use Ada.Calendar;
 with Ada.Characters.Handling;
 with Ada.Strings.Fixed;                 use Ada.Strings, Ada.Strings.Fixed;
 
@@ -62,6 +63,33 @@ with P2Ada_Definition_info;             use P2Ada_Definition_info;
 with P2Ada_keywords;
 
 PACKAGE BODY PascalHelp IS
+
+  function Blurb return String is
+    c: constant Time:= Clock;
+    function Ze_month return String is
+    begin
+      case Month(c) is
+        when  1 => return "Jan";
+        when  2 => return "Feb";
+        when  3 => return "Mar";
+        when  4 => return "Apr";
+        when  5 => return "May";
+        when  6 => return "Jun";
+        when  7 => return "Jul";
+        when  8 => return "Aug";
+        when  9 => return "Sep";
+        when 10 => return "Oct";
+        when 11 => return "Nov";
+        when 12 => return "Dec";
+      end case;
+    end Ze_month;
+  begin
+    return
+      "-- Translated on" &
+      Integer'Image(Day(c)) & '-' & Ze_month & '-' &
+      Trim(Integer'Image(Year(c)),Both)
+      & " by (New) P2Ada v. 28-Oct-2009";
+  end;
 
   function Current_line return Natural is
   begin
@@ -232,7 +260,7 @@ PACKAGE BODY PascalHelp IS
     end case;
   END Put_keyword;
 
-  PROCEDURE Put_translation_comment(text : IN String) is
+  PROCEDURE Put_translation_comment(text : String) is
   begin
     if add_translation_comments then
       Put(" -- [P2Ada]: " & text);
@@ -680,17 +708,29 @@ PACKAGE BODY PascalHelp IS
   -- SHL/SHR
 
   shift_flag: Boolean:= False;
+  shift_dir:  Shift_direction;
 
-  procedure Open_Shift is
+  procedure Open_Shift(d: Shift_direction) is
   begin
     shift_flag:= True;
+    shift_dir:= d;
   end Open_Shift;
 
   procedure Close_Eventual_Shift is
+    function dir_img return String is
+    begin
+      case shift_dir is
+        when left => return "Left";
+        when right => return "Right";
+      end case;
+    end;
   begin
     if shift_flag then
       Put(')');
       shift_flag:= False;
+      Put_translation_comment(
+        "If modular type, better Shift_" & dir_img & "(,)"
+      );
     end if;
   end Close_Eventual_Shift;
 
@@ -1239,10 +1279,20 @@ PACKAGE BODY PascalHelp IS
   -- Routines specific for objp2ada       --
   ------------------------------------------
 
+   Block_Flag : Boolean := False;
+   procedure Set_Block_Flag is
+   begin
+      Block_Flag := True;
+   end;
    function Replace_SC_by_IS (Source : Unbounded_String) return Unbounded_String is
       From : constant Positive := Positive(Index (Source, ";", Length(Source), Backward));
    begin
-      return Replace_Slice (Source, From, From, " is");
+      if Block_Flag then
+         Block_Flag := False;
+         return Replace_Slice (Source, From, From, " is");
+      else
+         return Source;
+      end if;
    end;
 
    function To_Ada_String (Source : String) return Unbounded_String is
@@ -1375,25 +1425,108 @@ Ada_Reserved_Word_List : constant Strings := (
 "type        ", "until       ", "use         ", "when        ", "while       ",
 "with        ", "xor         "
 );
-      Result                                : Unbounded_String :=
-        Null_Unbounded_String;
-Ind_UU : Positive := Index(Source, "__");
-begin
-if Source(Source'First) = '_' or Ind_UU /= 0 then
-	if Source(Source'First) = '_' then
-		Append(Result, 'u' & source);
-	end if;
-	if Ind_UU /= 0 then
-		Append(Result, Source(Source'First..Ind_UU-1) & "_u_" & To_Ada_Identifier(Source(Ind_UU+2..Source'Last)));
-	end if;
-	return Result;
-end if;
-for Ind in Ada_Reserved_Word_List'Range loop
-	if Ada.Characters.Handling.To_Lower(Source) = Ada_Reserved_Word_List(Ind) then
-		return To_Unbounded_String (Source & "_k");
-	end if;
-end loop;
-return To_Unbounded_String (Source);
-end;
+      Result : Unbounded_String := To_Unbounded_String (Source);
+      Underscore : Boolean := False;
+      Ind_UU : Natural := Index(Result, "__");
+   begin
+      while Ind_UU /= 0 loop
+         Underscore := True;
+         Insert(Result, Ind_UU + 1, "u");
+         Ind_UU := Index(Result, "__");
+      end loop;
+      if Element(Result, 1) = '_' then
+         Underscore := True;
+         Insert(Result, 1, "u");
+      end if;
+      if Element(Result, Length(Result)) = '_' then
+         Underscore := True;
+         Append(Result, "u");
+      end if;
+      if Underscore then
+         return Result;
+      else
+         for Ind in Ada_Reserved_Word_List'Range loop
+            if Trim(Ada_Reserved_Word_List(Ind), Right) = Ada.Characters.Handling.To_Lower(Source) then
+               return Result & "_k";
+            end if;
+         end loop;
+         return Result;
+      end if;
+   end;
+
+   function Result_Declaration return Unbounded_String is
+   begin
+      return "P2Ada_Result_" & Subprog_List.Last_Element & ';' & NL;
+   end;
+
+   function Return_If_function return Unbounded_String is
+   begin
+      if Subprog_List.Is_Empty then
+         return Null_Unbounded_String;
+      else
+         declare
+            Ind : constant Natural := Index(Subprog_List.Last_Element, ":");
+         begin
+            if Ind = 0 then
+               return Null_Unbounded_String;
+               else
+               return "return P2Ada_Result_" &
+               Unbounded_Slice(Subprog_List.Last_Element, 1, Ind-1) & ';' & NL;
+            end if;
+         end;
+      end if;
+   end;
+
+   function Null_Or_Return_If_function return Unbounded_String is
+   begin
+      if Subprog_List.Is_Empty then
+         return "null;" & NL;
+      else
+         declare
+            Ind : constant Natural := Index(Subprog_List.Last_Element, ":");
+         begin
+            if Ind = 0 then
+               return "null;" & NL;
+               else
+               return "return P2Ada_Result_" &
+               Unbounded_Slice(Subprog_List.Last_Element, 1, Ind-1) & ';' & NL;
+            end if;
+         end;
+      end if;
+   end;
+
+   function Add_Result_If_Function (Source : Unbounded_String) return Unbounded_String is
+      Found : Boolean := False;
+      procedure Find (Pos : String_List.Cursor) is
+         Ind : constant Natural := Index(String_List.Element(Pos), ":");
+      begin
+         if not Found then
+            if Ind /= 0 and then Source = Unbounded_Slice (String_List.Element(Pos), 1, Ind-1) then
+               Found := True;
+            end if;
+         end if;
+      end;
+   begin
+      if Subprog_List.Is_Empty then
+         return Source;
+      else
+         Subprog_List.Iterate(Find'Access);
+         if Found then
+            return "P2Ada_Result_" & Source;
+         else
+            return Source;
+         end if;
+      end if;
+   end;
+
+   function Get_Subprog_Name (Source : Unbounded_String) return Unbounded_String is
+      Ind : constant Natural := Index(Source, ":");
+   begin
+      if Ind = 0 then
+         return Source;
+      else
+         return Unbounded_Slice(Source, 1, Ind-1);
+      end if;
+   end;
 
 END PascalHelp;

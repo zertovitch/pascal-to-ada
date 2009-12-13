@@ -2,8 +2,8 @@
 -- Name        : pascal.y
 -- Description : Object Pascal grammar for objP2Ada
 -- Author      : P2Ada team
--- Version     : 1.0d
--- Last update : 2009-11-21
+-- Version     : 1.1a
+-- Last update : 2009-12-12
 -- Licence     : GPL V3 (http://www.gnu.org/licenses/gpl.html)
 -- Contact     : http://sourceforge.net/projects/P2Ada
 -- Notes       :
@@ -130,12 +130,6 @@
 %token WRITE_t
 %token WRITELN_t
 %token STR_t
-
--- mem, memw and meml tables are declared as keywords
--- in order to catch the specific syntax like Mem[Seg:Ofs];
-%token MEM_t
-%token MEMW_t
-%token MEML_t
 
 -- THP 1.1 reserved words
 %token OTHERWISE_t
@@ -278,7 +272,7 @@
 -- THP 1.2
 -- CWP 6.3
 identifier : ID_t
-   { $$ := To_Unbounded_String(YYText); }
+   { $$ := To_Ada_Identifier(YYText); }
    -- directives may be used as actual user defined identifiers
    -- TP directives used as identifiers in right place
    | ABSOLUTE_t
@@ -358,7 +352,7 @@ identifier : ID_t
    { $$ := To_Unbounded_String("published"); }
    | READ_t -- may mismatches with read procedure
    { $$ := To_Unbounded_String("read"); }
-   | READONLY_t -- usage not described in Delphi Manual, is it really used 
+   | READONLY_t -- usage not described in Delphi Manual, is it really used
    { $$ := To_Unbounded_String("readonly"); }
    | REGISTER_t
    { $$ := To_Unbounded_String("register"); }
@@ -414,12 +408,6 @@ identifier : ID_t
    { $$ := To_Unbounded_String("WriteLn"); }
    | STR_t
    { $$ := To_Unbounded_String("Str"); }
-   | MEM_t
-   { $$ := To_Unbounded_String("Mem"); }
-   | MEMW_t
-   { $$ := To_Unbounded_String("MemW"); }
-   | MEML_t
-   { $$ := To_Unbounded_String("MemL"); }
    ;
 identifier_list : identifier_list COMMA_t identifier
    { $$ := $1 & ", " & $3; }
@@ -508,7 +496,7 @@ constant : expression -- from TP, CWP and Delphi manual
 typed_constant_declaration : identifier COLON_t type EQUAL_t typed_constant hint_directive SEMICOLON_t -- without loop because it is done at const section
    { $$ := $1 & " : constant " & $3 & " := " & $5 & ';' & NL & $6; }
    ;
-typed_constant : constant 
+typed_constant : constant
    { $$ := $1; }
    -- | address_constant -- equivalent to constant definition
    | array_constant
@@ -575,7 +563,7 @@ type : simple_type
    { $$ := $1; }
 --   | generic_type
 --   { $$ := $1; }
-   | specialized_type 
+   | specialized_type
    { $$ := $1; }
 -- | identifier   -- type identifier is also declared in ordinal type
 -- | variant_type -- Variant types are equivalent to identifier
@@ -583,7 +571,7 @@ type : simple_type
 type_identifier : identifier -- type identifier
    { $$ := $1; }
    | STRING_t
-   { $$ := To_Unbounded_String("P2Ada_string"); }
+   { $$ := To_Unbounded_String("P2Ada_String"); }
    | FILE_t
    { $$ := To_Unbounded_String("P2Ada_no_type_file"); }
    | identifier -- unit identifier
@@ -647,9 +635,9 @@ ordinal_type_identifier : identifier -- type identifier
 -- THP 3.3
 -- CWP 7.4
 string_type : STRING_t LBRACK_t constant RBRACK_t
-   { $$ := "P2Ada_string" & '(' & $3 & ')'; }
+   { $$ := "P2Ada_String" & '(' & $3 & ')'; }
    | STRING_t
-   { $$ := To_Unbounded_String("P2Ada_string"); }
+   { $$ := To_Unbounded_String("P2Ada_String"); }
    ;
 
 -- FPC 3.3 Structured Types
@@ -838,7 +826,7 @@ var_mod_part : SEMICOLON_t variable_modifiers -- from FPC manual
 variable_modifiers : -- from FPC manual
    EXPORT_t
    { $$ := "-- P2Ada to do: export " & NL; }
-   | CVAR_t 
+   | CVAR_t
    { $$ := "-- P2Ada to do: cvar " & NL; }
    | EXTERNAL_t -- from CWP manual
    { $$ := "-- P2Ada to do: external " & NL; }
@@ -1043,7 +1031,7 @@ class_component_part : class_visibility_specifier
    { $$ := $1; }
    | field_definition
    { $$ := $1; }
-   | class_method_definition 
+   | class_method_definition
    { $$ := $1; }
    | class_property_definition
    { $$ := $1; }
@@ -1268,6 +1256,10 @@ add_op : PLUS_t
    ;
 term : term mul_op factor
    { $$ := $1 & $2 & $3; }
+   | term SHL_t factor -- put at this level to get both operands
+   { $$ := "Interfaces.Shift_Left(" & $1 & ", " & $3 & ')'; }
+   | term SHR_t factor -- put at this level to get both operands
+   { $$ := "Interfaces.Shift_Right(" & $1 & ", " & $3 & ')'; }
    | factor
    { $$ := $1; }
    ;
@@ -1281,10 +1273,8 @@ mul_op : TIMES_t
    { $$ := To_Unbounded_String(" rem "); }
    | AND_t
    { $$ := To_Unbounded_String(" and "); }
-   | SHL_t
-   { $$ := " -- P2Ada to do: shl " & NL; }
-   | SHR_t
-   { $$ := " -- P2Ada to do: shr " & NL; }
+-- | SHL_t -- put at upper level to get both operands
+-- | SHR_t -- put at upper level to get both operands
    | AS_t -- declared in relational operators in Delphi Manual
    { $$ := " -- P2Ada to do: as " & NL; }
    | AMPERSAND_t -- from CWP manual
@@ -1321,12 +1311,6 @@ variable_reference : function_call
    { $$ := $1; }
    | LPAREN_t expression RPAREN_t qualifier_list -- parents help ayacc
    { $$ := $2 & $4; }
-   | MEM_t mem_params
-   { $$ := $1 & $2; }
-   | MEMW_t mem_params
-   { $$ := $1 & $2; }
-   | MEML_t mem_params
-   { $$ := $1 & $2; }
    ;
 qualifier_list : qualifier_list qualifier
    { $$ := $1 & $2; }
@@ -1340,10 +1324,12 @@ qualifier : indice
    | UPARROW_t
    { $$ := To_Unbounded_String(".all "); }
    ;
-indice : LBRACK_t expression_list RBRACK_t
+indice : LBRACK_t index_list RBRACK_t
    { $$ := '(' & $2 & ')'; }
    ;
-expression_list : expression_list COMMA_t expression
+index_list : index_list COMMA_t expression
+   { $$ := $1 & ", " & $3; }
+   | index_list COLON_t expression -- catch specific syntax for MemX pseudo tables
    { $$ := $1 & ", " & $3; }
    | expression
    { $$ := $1; }
@@ -1378,13 +1364,18 @@ designator : identifier
 actual_parameter_list : LPAREN_t expression_list RPAREN_t
    { $$ := '(' & $2 & ')'; }
    ;
+expression_list : expression_list COMMA_t expression
+   { $$ := $1 & ", " & $3; }
+   | expression
+   { $$ := $1; }
+   ;
 
 -- FPC 9.3 Set constructors
 -- TP 6.4
 -- THP 5.3
 -- CWP 9.2
 set_constructor : LBRACK_t set_group_list RBRACK_t
-   { $$ := '(' & $2 & ')'; }
+   { $$ := '(' & $2 & ", others => False)"; }
    | LBRACK_t RBRACK_t
    { $$ := To_Unbounded_String("(others => False)"); }
    ;
@@ -1455,15 +1446,15 @@ simple_statement : assignment_statement
 -- THP 6.1.1
 -- CWP 10.2
 assignment_statement : variable_reference ASSIGN_t expression
-   { $$ := $1 & " := " & $3 & ';' & NL; }
+   { $$ := Add_Result_If_Function ($1) & " := " & $3 & ';' & NL; }
    | variable_reference PLUSASSIGN_t expression
-   { $$ := $1 & " := " & $1 & " + (" & $3 & ')' & ';' & NL; }
+   { $$ := Add_Result_If_Function ($1) & " := " & $1 & " + (" & $3 & ')' & ';' & NL; }
    | variable_reference MINUSASSIGN_t expression
-   { $$ := $1 & " := " & $1 & " - (" & $3 & ')' & ';' & NL; }
+   { $$ := Add_Result_If_Function ($1) & " := " & $1 & " - (" & $3 & ')' & ';' & NL; }
    | variable_reference TIMESASSIGN_t expression
-   { $$ := $1 & " := " & $1 & " * (" & $3 & ')' & ';' & NL; }
+   { $$ := Add_Result_If_Function ($1) & " := " & $1 & " * (" & $3 & ')' & ';' & NL; }
    | variable_reference DIVIDEASSIGN_t expression
-   { $$ := $1 & " := " & $1 & " / (" & $3 & ')' & ';' & NL; }
+   { $$ := Add_Result_If_Function ($1) & " := " & $1 & " / (" & $3 & ')' & ';' & NL; }
    ;
 
 -- FPC 10.1.2 Procedure statements
@@ -1504,9 +1495,6 @@ another_colon : expression
    { $$ := $1 & ", " & $3; }
    ;
 str_params : LPAREN_t write_actual_parameter COMMA_t variable_reference RPAREN_t
-   { $$ := '(' & $2 & ", " & $4 & ')'; }
-   ;
-mem_params : LBRACK_t expression COLON_t expression RBRACK_t
    { $$ := '(' & $2 & ", " & $4 & ')'; }
    ;
 
@@ -1554,6 +1542,11 @@ compound_statement : BEGIN_t statement_list END_t
    { $$ := "begin" & NL & $2 & "end;" & NL; }
    | BEGIN_t END_t
    { $$ := "begin" & NL & "null;" & NL & "end;" & NL; }
+   ;
+block_statement : BEGIN_t statement_list END_t
+   { $$ := "begin" & NL & $2 & Return_If_function & "end;" & NL; }
+   | BEGIN_t END_t
+   { $$ := "begin" & NL & Null_Or_Return_If_function & "end;" & NL; }
    ;
 statement_list : statement_list SEMICOLON_t statement
    { $$ := $1 & $3; }
@@ -1677,7 +1670,7 @@ exception_statement : try_except_statement
 -- CWP 16
 asm_statement : BEGIN_t -- ASM_t assembler_code -- free text convert to comment by bp2p!
    END_t register_list
-   { $$ := "begin null; end; -- P2Ada to do: assembler code with registers " & $3 & NL; }
+   { $$ := "begin" & NL & Null_Or_Return_If_function & "end; -- P2Ada to do: assembler code with registers " & $3 & NL; }
    ;
 register_list : LBRACK_t string_list RBRACK_t
    { $$ := $2; }
@@ -1729,12 +1722,15 @@ dep_list : dep_list sign constant
 -- THP 7.1
 -- CWP 11.1
 procedure_declaration : procedure_header modifiers hint_directive subroutine_block SEMICOLON_t
-   { $$ := Replace_SC_by_IS($1) & $2 & $3 & $4; }    -- P2Ada to do: process modifiers
+   { $$ := Replace_SC_by_IS($1) & $2 & $3 & $4;
+     Subprog_List.Delete_Last; }    -- P2Ada to do: process modifiers
    ;
 procedure_header : PROCEDURE_t proc_or_func_identifier formal_parameter_list SEMICOLON_t
-   { $$ := "procedure " & $2 & $3 & ';' & NL; }
+   { $$ := "procedure " & $2 & $3 & ';' & NL;
+     Subprog_List.Append($2); }
    | CLASS_t PROCEDURE_t proc_or_func_identifier formal_parameter_list SEMICOLON_t -- from FPC manual
-   { $$ := "procedure " & $3 & $4 & ';' & NL; }
+   { $$ := "procedure " & $3 & $4 & ';' & NL;
+     Subprog_List.Append($3); }
    ;
 proc_or_func_identifier : identifier
    { $$ := $1; }
@@ -1742,15 +1738,17 @@ proc_or_func_identifier : identifier
    { $$ := $1; }
    ;
 subroutine_block : block
-   { $$ := $1; }
+   { $$ := $1;
+     Set_Block_Flag; }
    | external_directive
-   { $$ := $1; }
+   { $$ := "pragma Import (C, " & Get_Subprog_Name(Subprog_List.Last_Element) & ");" & NL & $1; }
    | asm_block
-   { $$ := $1; }
+   { $$ := $1;
+     Set_Block_Flag; }
    | FORWARD_t
    { $$ := "-- P2Ada: forward" & NL; } -- an Ada declaration is basicly a "forward" declaration so nothing to do
    | inline_directive
-   { $$ := $1; }
+   { $$ := "pragma Import (C, " & Get_Subprog_Name(Subprog_List.Last_Element) & ");" & NL & $1; }
    ;
 
 -- FPC 11.2 Function declaration
@@ -1758,12 +1756,15 @@ subroutine_block : block
 -- THP 7.2
 -- CWP 11.2
 function_declaration : function_header modifiers hint_directive subroutine_block SEMICOLON_t
-   { $$ := Replace_SC_by_IS($1) & $2 & $3 & $4; }    -- P2Ada to do: process modifiers
+   { $$ := Replace_SC_by_IS($1) & $2 & $3 & Result_Declaration & $4;
+     Subprog_List.Delete_Last; }    -- P2Ada to do: process modifiers
    ;
 function_header : FUNCTION_t proc_or_func_identifier formal_parameter_list COLON_t result_type SEMICOLON_t
-   { $$ := "function " & $2 & $3 & " return " & $5 & ';' & NL; }
+   { $$ := "function " & $2 & $3 & " return " & $5 & ';' & NL;
+     Subprog_List.Append($2 & ':' & $5); }
    | CLASS_t FUNCTION_t proc_or_func_identifier formal_parameter_list COLON_t result_type SEMICOLON_t -- from FPC manual
-   { $$ := "function " & $3 & $4 & " return " & $6 & ';' & NL; }
+   { $$ := "function " & $3 & $4 & " return " & $6 & ';' & NL;
+     Subprog_List.Append($3 & ':' & $6); }
    ;
 
 -- FPC 11.4 Parameter lists
@@ -2008,24 +2009,24 @@ comp_ope : EQUAL_t
 -- THP 8.1 (program header always required)
 -- CWP 14.2 (program header always required)
 program : program_header uses_clause block PERIOD_t
-   { $$ := $1 & $2 & $3; }
+   { $$ := Unit_List & $1 & $3; }
    | uses_clause block PERIOD_t
-   { $$ := $1 & $2; }
+   { $$ := Unit_List & $1; }
    | program_header block PERIOD_t
    { $$ := $1 & $2; }
    | block PERIOD_t
    { $$ := $1; }
    ;
 program_header : PROGRAM_t identifier program_parameters_part SEMICOLON_t
-   { $$ := "procedure " & $2 & " is" & NL & $3; }
+   { $$ := "procedure " & $2 & $3 & " is" & NL; }
    | PROGRAM_t identifier SEMICOLON_t
    { $$ := "procedure " & $2 & " is" & NL; }
    ;
 program_parameters_part : LPAREN_t identifier_list RPAREN_t -- program parameters
-   { $$ := "-- " & $2 & NL; }
+   { $$ := '(' & $2 & " : Ada.Text_IO.File_Type)"; }
    ;
 uses_clause : USES_t identifier_list SEMICOLON_t
-   { $$ := "use " & $2 & ';' & NL; }
+   { Append (Unit_List, "with " & $2 & ';' & NL & "use  " & $2 & ';' & NL); }
    ;
 
 -- FPC 13.2 Units
@@ -2034,15 +2035,15 @@ uses_clause : USES_t identifier_list SEMICOLON_t
 -- CWP 14.3
 unit : unit_header hint_directive -- portability directive from Delphi manual
    interface_part implementation_part begin_init_final_part PERIOD_t
-   { $$ := $2 & $3 & $4 & $5; }
+   { $$ := Unit_List & $2 & $3 & Unit_List & $4 & $5; }
    ;
 unit_header : UNIT_t identifier SEMICOLON_t
    { Set_Unit_Name ($2); }
    ;
 interface_part : INTERFACE_t uses_clause unit_declaration_list
-   { $$ := "package " & Get_Unit_Name & " is" & NL & $2 & $3; }
+   { $$ := "package " & Get_Unit_Name & " is" & NL & $3; }
    | INTERFACE_t uses_clause
-   { $$ := "package " & Get_Unit_Name & " is" & NL & $2; }
+   { $$ := "package " & Get_Unit_Name & " is" & NL; }
    | INTERFACE_t unit_declaration_list
    { $$ := "package " & Get_Unit_Name & " is" & NL & $2; }
    | INTERFACE_t
@@ -2074,9 +2075,9 @@ procedure_headers_part : procedure_header call_modifiers
    { $$ := $1 & $2; }
    ;
 implementation_part : IMPLEMENTATION_t uses_clause declaration_list -- exports_statement from Delphi manual
-   { $$ := "end;" & NL & "package body " & Get_Unit_Name & " is" & NL & $2 & $3; }
+   { $$ := "end;" & NL & "package body " & Get_Unit_Name & " is" & NL & $3; }
    | IMPLEMENTATION_t uses_clause
-   { $$ := "end;" & NL & "package body " & Get_Unit_Name & " is" & NL & $2; }
+   { $$ := "end;" & NL & "package body " & Get_Unit_Name & " is" & NL; }
    | IMPLEMENTATION_t declaration_list
    { $$ := "end;" & NL & "package body " & Get_Unit_Name & " is" & NL & $2; }
    | IMPLEMENTATION_t
@@ -2103,9 +2104,9 @@ finalization_part : FINALIZATION_t statement_list
 -- THP 2.1
 -- CWP 13.1
 -- block : declaration_list exports_statement compound_statement exports_statement; -- from Delphi manual
-block : declaration_list compound_statement
+block : declaration_list block_statement
    { $$ := $1 & $2; }
-   | compound_statement
+   | block_statement
    { $$ := $1; }
    ;
 declaration_list : declaration_list declaration_part
@@ -2115,7 +2116,7 @@ declaration_list : declaration_list declaration_part
    ;
 declaration_part : label_declaration_part
    { $$ := $1; }
-   | constant_declaration_part 
+   | constant_declaration_part
    { $$ := $1; }
    | resourcestring_declaration_part -- from Delphi and FPC
    { $$ := $1; }
@@ -2227,7 +2228,7 @@ exports_item : identifier NAME_t expression -- string constant
 -- THP not defined
 -- CWP not defined
 library : library_header uses_clause block PERIOD_t
-   { $$ := $1 & $2 & $3; }
+   { $$ := Unit_List & $1 & $3; }
    | library_header block PERIOD_t
    { $$ := $1 & $2; }
    ;
@@ -2262,7 +2263,7 @@ contains_clause : CONTAINS_t identifier_list SEMICOLON_t
 -- THP not defined
 -- CWP not defined
 raise_statement : RAISE_t exception_instance
-   { $$ := "raise " & $2; }
+   { $$ := "raise " & $2 & ';' & NL; }
    ;
 exception_instance : expression
    { $$ := $1; }

@@ -54,10 +54,9 @@
 
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-with Ada.Characters.Handling;
 PACKAGE PascalHelp IS
 
-  blurb: String:= "-- Translated by (New) P2Ada v. 15-Nov-2006";
+  function Blurb return String;
 
   SUBTYPE NameType IS String(1..255); -- (was 80) - 15-Dec-2002
 
@@ -169,7 +168,8 @@ PACKAGE PascalHelp IS
   procedure Inc_dec_part_2( operator: String );
 
   -- SHL/SHR
-  procedure Open_Shift;
+  type Shift_direction is (left, right);
+  procedure Open_Shift(d: Shift_direction);
   procedure Close_Eventual_Shift;
 
   --------------------------------------------------------------
@@ -314,6 +314,8 @@ PACKAGE PascalHelp IS
   -- Routines specific for objp2ada       --
   ------------------------------------------
 
+-- Set block flag to catch when we have to replace ";" by " is "
+procedure Set_Block_Flag;
 -- When subroutine has got a body replace ";" by " is "
 function Replace_SC_by_IS (Source : Unbounded_String) return Unbounded_String;
 -- Newline separator in internal text buffer
@@ -330,5 +332,20 @@ function To_Ada_Float (Source : String) return Unbounded_String;
 function To_Ada_Integer (Source : String) return Unbounded_String;
 -- Translate Pascal identifiers which match Ada reserved word and replace __ by u_
 function To_Ada_Identifier (Source : String) return Unbounded_String;
+
+Subprog_List : String_List.List;
+-- Return Result variable local declaration for functions
+function Result_Declaration return Unbounded_String;
+-- Return Result variable local declaration for functions
+function Return_If_function return Unbounded_String;
+-- Return Result variable local declaration for functions
+function Null_Or_Return_If_function return Unbounded_String;
+-- Return Result variable local declaration for functions
+function Add_Result_If_Function (Source : Unbounded_String) return Unbounded_String;
+-- Return subprog name
+function Get_Subprog_Name (Source : Unbounded_String) return Unbounded_String;
+
+-- List of with and use units to be placed before main procedure
+Unit_List : Unbounded_String := Null_Unbounded_String;
 
 END PascalHelp;
