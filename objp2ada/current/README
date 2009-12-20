@@ -78,11 +78,21 @@ Get help from http://sourceforge.net/projects/p2ada
 
 ## REALEASE NOTES
 
-- release svn revision 11 (2009 Dec 13):
+- release svn revision 13 (2009 Dec 20):
+. pascalhelp.adb and .ads:
+. pascal.y (1.2a):
+	- put subtype in from of type identifier, string type, file type
+	- add anonym types when types declaration are inside const, type, var or proc declarations
+	- instantiate Direct_IO with file type
+	- instanciate Direct_IO with Interfaces.Unsigned_8 for untyped file
+	- add when others=>null; in case statement without else part
+	- add and operator for set types
+	- miscellaneous corrections (exception, operator, case stmt, ...)
+
+- release svn revision 12 (2009 Dec 13):
 . pascalhelp.adb and .ads:
 . pascal.l (1.1a):
 . pascal.y (1.1a):
-	- fgsgsg
 	- inside function local result variable and return has been added
 	- parameters of main program have been added with type Ada.Text_IO.File_Type
 	- reserved Ada words are finished by _k and double, heading, trailing underscores
@@ -95,6 +105,7 @@ Get help from http://sourceforge.net/projects/p2ada
 	- Mem, MemW and MemL aren't reserved words any more
 
 - release svn revision 10 (2009 Nov 27):
+. pascal.l (1.0c):
 . pascal.y (1.0d):
 	- initial SVN release of objp2ada
 

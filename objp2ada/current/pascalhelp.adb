@@ -1455,8 +1455,17 @@ Ada_Reserved_Word_List : constant Strings := (
    end;
 
    function Result_Declaration return Unbounded_String is
+      Ind : constant Natural := Index(Subprog_List.Last_Element, ":");
    begin
-      return "P2Ada_Result_" & Subprog_List.Last_Element & ';' & NL;
+      if Ind = 0 then
+         return Null_Unbounded_String;
+      else
+         if Element(Subprog_List.Last_Element, 1) /= '#' then
+            return "P2Ada_Result_" & Subprog_List.Last_Element & ';' & NL;
+         else
+            return Delete(Subprog_List.Last_Element, 1, 1) & ';' & NL;
+         end if;
+      end if;
    end;
 
    function Return_If_function return Unbounded_String is
@@ -1469,9 +1478,14 @@ Ada_Reserved_Word_List : constant Strings := (
          begin
             if Ind = 0 then
                return Null_Unbounded_String;
+            else
+               if Element(Subprog_List.Last_Element, 1) /= '#' then
+                  return "return P2Ada_Result_" &
+                         Unbounded_Slice(Subprog_List.Last_Element, 1, Ind-1) & ';' & NL;
                else
-               return "return P2Ada_Result_" &
-               Unbounded_Slice(Subprog_List.Last_Element, 1, Ind-1) & ';' & NL;
+                  return "return " &
+                         Unbounded_Slice(Subprog_List.Last_Element, 2, Ind-1) & ';' & NL;
+               end if;
             end if;
          end;
       end if;
@@ -1487,9 +1501,14 @@ Ada_Reserved_Word_List : constant Strings := (
          begin
             if Ind = 0 then
                return "null;" & NL;
+            else
+               if Element(Subprog_List.Last_Element, 1) /= '#' then
+                  return "return P2Ada_Result_" &
+                         Unbounded_Slice(Subprog_List.Last_Element, 1, Ind-1) & ';' & NL;
                else
-               return "return P2Ada_Result_" &
-               Unbounded_Slice(Subprog_List.Last_Element, 1, Ind-1) & ';' & NL;
+                  return "return " &
+                         Unbounded_Slice(Subprog_List.Last_Element, 2, Ind-1) & ';' & NL;
+               end if;
             end if;
          end;
       end if;
@@ -1527,6 +1546,52 @@ Ada_Reserved_Word_List : constant Strings := (
       else
          return Unbounded_Slice(Source, 1, Ind-1);
       end if;
+   end;
+
+   procedure Init_And_Operator (Ordinal_Type : Unbounded_String) is
+   begin
+      Append (And_Operator_List, "function ""and"" (Item : " & Ordinal_Type & "; Of_Set : #) return Boolean is" & NL
+              & "begin" & NL
+              & "return Of_Set(Item);" & NL
+              & "end;" & NL);
+   end;
+   procedure Finalize_And_Operator (Set_Type : Unbounded_String) is
+      Ind : constant Natural := Index(And_Operator_List, "#");
+   begin
+      if Ind /= 0 then
+         Replace_Slice(And_Operator_List, Ind, Ind, To_String(Set_Type));
+      end if;
+   end;
+
+   Subtype_Flag : Boolean := False;
+   function Type_Or_Subtype return Unbounded_String is
+   begin
+      if Subtype_Flag then
+         Subtype_Flag := False;
+         return To_Unbounded_String("subtype ");
+      else
+         return To_Unbounded_String("type ");
+      end if;
+   end;
+   procedure Reset_Subtype is
+   begin
+      Subtype_Flag := False;
+   end;
+   procedure Set_Subtype is
+   begin
+      Subtype_Flag := True;
+   end;
+
+
+   subtype Type_Index is Natural range 0..200;
+   Anonym_Type_Index : Type_Index := 0;
+   Procedure New_Anonym_Type_Name is
+   begin
+      Anonym_Type_Index := Anonym_Type_Index + 1;
+   end;
+   function Get_Anonym_Type_Name return Unbounded_String is
+   begin
+      return To_Unbounded_String("P2Ada_Anonym_" & Trim(Natural'Image(Anonym_Type_Index), Left));
    end;
 
 END PascalHelp;

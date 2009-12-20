@@ -318,14 +318,17 @@ PACKAGE PascalHelp IS
 procedure Set_Block_Flag;
 -- When subroutine has got a body replace ";" by " is "
 function Replace_SC_by_IS (Source : Unbounded_String) return Unbounded_String;
+
 -- Newline separator in internal text buffer
 NL : constant Unbounded_String := To_Unbounded_String ((1=>ASCII.LF));
--- Translate Pascal string separator "'" to """, control character #nnn and double """
-function To_Ada_String (Source : String) return Unbounded_String;
+
 -- Get stored unit name
 function Get_Unit_Name return Unbounded_String;
 -- Store unit name
 procedure Set_Unit_Name (Name : Unbounded_String);
+
+-- Translate Pascal string separator "'" to """, control character #nnn and double """
+function To_Ada_String (Source : String) return Unbounded_String;
 -- Translate Pascal reel numbers with permissive syntax 10e3, 10.e3
 function To_Ada_Float (Source : String) return Unbounded_String;
 -- Translate Pascal integer numbers with syntax hexa $hh, octal &ooo and binary %bbbb
@@ -347,5 +350,27 @@ function Get_Subprog_Name (Source : Unbounded_String) return Unbounded_String;
 
 -- List of with and use units to be placed before main procedure
 Unit_List : Unbounded_String := Null_Unbounded_String;
+
+-- List of P2Ada declarations inside main program
+Declaration_List : Unbounded_String := Null_Unbounded_String;
+
+-- declaration of and operator for set types
+And_Operator_List : Unbounded_String := Null_Unbounded_String;
+-- Create template of and operator for set types
+procedure Init_And_Operator (Ordinal_Type : Unbounded_String);
+-- Finalize template of and operator for set types
+procedure Finalize_And_Operator (Set_Type : Unbounded_String);
+
+-- Return type or subtype if type identifier
+function Type_Or_Subtype return Unbounded_String;
+-- Reset subtype if type identifier
+procedure Reset_Subtype;
+-- Set subtype if type identifier
+procedure Set_Subtype;
+
+-- Create a new order number for anonym type
+Procedure New_Anonym_Type_Name;
+-- Return current anonym type name
+function Get_Anonym_Type_Name return Unbounded_String;
 
 END PascalHelp;

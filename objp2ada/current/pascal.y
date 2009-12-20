@@ -2,8 +2,8 @@
 -- Name        : pascal.y
 -- Description : Object Pascal grammar for objP2Ada
 -- Author      : P2Ada team
--- Version     : 1.1a
--- Last update : 2009-12-12
+-- Version     : 1.2a
+-- Last update : 2009-12-19
 -- Licence     : GPL V3 (http://www.gnu.org/licenses/gpl.html)
 -- Contact     : http://sourceforge.net/projects/P2Ada
 -- Notes       :
@@ -544,23 +544,103 @@ resourcestring : identifier EQUAL_t constant SEMICOLON_t
 -- TP 4
 -- THP 3.0
 -- CWP 7.1
-type_declaration : identifier EQUAL_t type hint_directive SEMICOLON_t
-   { $$ := "type " & $1 & " is " & $3 & ';' & NL & $4; }
+type_declaration : identifier EQUAL_t outer_type hint_directive SEMICOLON_t
+   { $$ := Type_Or_Subtype & $1 & " is " & $3 & ';' & NL & $4;
+     Finalize_And_Operator($1); }
    | GENERIC_t identifier LT_t identifier_list GT_t EQUAL_t generic_class hint_directive SEMICOLON_t
    { $$ := "-- P2Ada to do: generic package " & $2 & " with " & $4 & NL & "type " & $2 & " is " & $7 & ';' & NL & $8; }
    | GENERIC_t identifier LT_t identifier_list GE_t generic_class hint_directive SEMICOLON_t
    { $$ := "-- P2Ada to do: generic package " & $2 & " with " & $4 & NL & "type " & $2 & " is " & $6 & ';' & NL & $7; }
    ;
-type : simple_type
+outer_type :
+     subrange_type
+   { $$ := "range " & $1; }
+   | enumerated_type
    { $$ := $1; }
+   | ordinal_type_identifier
+   { $$ := $1;
+     Set_Subtype; }
    | string_type
+   { $$ := $1;
+     Set_Subtype; }
+   | array_type
    { $$ := $1; }
-   | structured_type
+   | record_type
    { $$ := $1; }
+   | object_type -- part of restricted type in Delphi manual
+   { $$ := $1; }
+   | class_type -- part of restricted type in Delphi manual
+   { $$ := $1; }
+   | class_reference_type -- part of type in Delphi manual
+   { $$ := $1; }
+   | interface_type -- part of restricted type in Delphi manual
+   { $$ := $1; }
+   | set_type
+   { $$ := $1; }
+   | file_type
+   { $$ := $1;
+     Set_Subtype; }
    | pointer_type
    { $$ := $1; }
    | procedural_type
    { $$ := $1; }
+--   | generic_type
+--   { $$ := $1; }
+   | specialized_type
+   { $$ := $1; }
+-- | identifier   -- type identifier is also declared in ordinal type
+-- | variant_type -- Variant types are equivalent to identifier
+   ;
+type :
+     subrange_type
+   { New_Anonym_Type_Name;
+     Append (Declaration_List, "type " & Get_Anonym_Type_Name & " is range " & $1 & ';' & NL);
+     $$ := Get_Anonym_Type_Name; }
+   | enumerated_type
+   { New_Anonym_Type_Name;
+     Append (Declaration_List, "type " & Get_Anonym_Type_Name & " is " & $1 & ';' & NL);
+     $$ := Get_Anonym_Type_Name; }
+   | ordinal_type_identifier
+   { $$ := $1; }
+   | string_type
+   { $$ := $1; }
+   | array_type
+   { New_Anonym_Type_Name;
+     Append (Declaration_List, "type " & Get_Anonym_Type_Name & " is " & $1 & ';' & NL);
+     $$ := Get_Anonym_Type_Name; }
+   | record_type
+   { New_Anonym_Type_Name;
+     Append (Declaration_List, "type " & Get_Anonym_Type_Name & " is " & $1 & ';' & NL);
+     $$ := Get_Anonym_Type_Name; }
+   | object_type -- part of restricted type in Delphi manual
+   { New_Anonym_Type_Name;
+     Append (Declaration_List, "type " & Get_Anonym_Type_Name & " is " & $1 & ';' & NL);
+     $$ := Get_Anonym_Type_Name; }
+   | class_type -- part of restricted type in Delphi manual
+   { New_Anonym_Type_Name;
+     Append (Declaration_List, "type " & Get_Anonym_Type_Name & " is " & $1 & ';' & NL);
+     $$ := Get_Anonym_Type_Name; }
+   | class_reference_type -- part of type in Delphi manual
+   { New_Anonym_Type_Name;
+     Append (Declaration_List, "type " & Get_Anonym_Type_Name & " is " & $1 & ';' & NL);
+     $$ := Get_Anonym_Type_Name; }
+   | interface_type -- part of restricted type in Delphi manual
+   { New_Anonym_Type_Name;
+     Append (Declaration_List, "type " & Get_Anonym_Type_Name & " is " & $1 & ';' & NL);
+     $$ := Get_Anonym_Type_Name; }
+   | set_type
+   { New_Anonym_Type_Name;
+     Append (Declaration_List, "type " & Get_Anonym_Type_Name & " is " & $1 & ';' & NL);
+     $$ := Get_Anonym_Type_Name;
+     Finalize_And_Operator(Get_Anonym_Type_Name); }
+   | file_type
+   { $$ := $1; }
+   | pointer_type
+   { $$ := $1; }
+   | procedural_type
+   { New_Anonym_Type_Name;
+     Append (Declaration_List, "type " & Get_Anonym_Type_Name & " is " & $1 & ';' & NL);
+     $$ := Get_Anonym_Type_Name; }
 --   | generic_type
 --   { $$ := $1; }
    | specialized_type
@@ -573,7 +653,7 @@ type_identifier : identifier -- type identifier
    | STRING_t
    { $$ := To_Unbounded_String("P2Ada_String"); }
    | FILE_t
-   { $$ := To_Unbounded_String("P2Ada_no_type_file"); }
+   { $$ := To_Unbounded_String("P2Ada_No_Type_File"); }
    | identifier -- unit identifier
    PERIOD_t identifier -- type identifier
    { $$ := $1 & '.' & $3; }
@@ -583,19 +663,30 @@ type_identifier : identifier -- type identifier
 -- TP 4.1
 -- THP 3.1
 -- CWP 7.2
-simple_type : ordinal_type
+--simple_type : ordinal_type -- splitted in type definition
 -- | real_type; -- equivalent to identifier already declared in type
-   { $$ := $1; }
-   ;
 
 -- FPC 3.1.1 Ordinal types
 -- TP 4.1.1
 -- THP 3.1
 -- CWP 7.3
-ordinal_type : subrange_type
+array_ordinal_type : subrange_type -- declared for array index
    { $$ := $1; }
    | enumerated_type
+   { New_Anonym_Type_Name;
+     Append (Declaration_List, "type " & Get_Anonym_Type_Name & " is " & $1 & ';' & NL);
+     $$ := Get_Anonym_Type_Name; }
+   | ordinal_type_identifier
    { $$ := $1; }
+   ;
+set_ordinal_type : subrange_type -- declared for set type
+   { New_Anonym_Type_Name;
+     Append (Declaration_List, "subtype " & Get_Anonym_Type_Name & " is P2Ada_Put_Base_Type range " & $1 & "; -- P2Ada to do: replace by base type" & NL);
+     $$ := Get_Anonym_Type_Name; }
+   | enumerated_type
+   { New_Anonym_Type_Name;
+     Append (Declaration_List, "type " & Get_Anonym_Type_Name & " is " & $1 & ';' & NL);
+     $$ := Get_Anonym_Type_Name; }
    | ordinal_type_identifier
    { $$ := $1; }
    ;
@@ -681,9 +772,9 @@ range_part : LBRACK_t ordinal_type_list RBRACK_t
    |
    { $$ := Null_Unbounded_String; }
    ;
-ordinal_type_list : ordinal_type_list COMMA_t ordinal_type
+ordinal_type_list : ordinal_type_list COMMA_t array_ordinal_type
    { $$ := $1 & ", " & $3; }
-   | ordinal_type
+   | array_ordinal_type
    { $$ := $1; }
    ;
 
@@ -741,8 +832,9 @@ constant_list : constant_list COMMA_t constant
 -- TP 4.3.4
 -- THP 3.2.3
 -- CWP 7.2.3
-set_type : packed SET_t OF_t ordinal_type hint_directive -- packed from TP manual
-   { $$ := "array (P2Ada_Anonyme) of Boolean -- P2Ada to do: before declare anonyme ordinal type with " & $4 & NL & $1 & $5; }
+set_type : packed SET_t OF_t set_ordinal_type hint_directive -- packed from TP manual
+   { $$ := "array (" & $4 & ") of Boolean" & NL & $1 & $5;
+     Init_And_Operator($4); }
    ;
 packed : PACKED_t
    { $$ := "-- P2Ada: packed" & NL; }
@@ -755,9 +847,11 @@ packed : PACKED_t
 -- THP 3.2.4
 -- CWP 7.2.4
 file_type : packed FILE_t OF_t type hint_directive -- packed from TP manual
-   { $$ := "P2Ada_File_Of_" & $4 & " -- P2Ada to do: declare package is new Ada.Direct_IO (file_of_xx)" & NL & $1 & $5; }
+   { $$ := "P2Ada_File_Of_" & $4 & ".File_Type"  & $1 & $5;
+     Append (Declaration_List, "package P2Ada_File_Of_" & $4 & " is new Ada.Direct_IO (" & $4 & ");" & NL); }
    | packed FILE_t
-   { $$ := "P2Ada_No_Type_File" & $1; }
+   { $$ := "P2Ada_No_Type_File.File_Type" & $1;
+     Append (Declaration_List, "package P2Ada_No_Type_File is new Ada.Direct_IO (Interfaces.Unsigned_8);" & NL); }
    ;
 
 -- FPC 3.4 Pointers
@@ -1591,7 +1685,7 @@ else_part : ELSE_t statement_list
    | OTHERWISE_t statement_list -- from THP and CWP manuals
    { $$ := "when others => " & NL & $2; }
    |
-   { $$ := Null_Unbounded_String; }
+   { $$ := "when others => null;" & NL; }
    ;
 
 -- FPC 10.2.3 The If..then..else statement
@@ -1738,12 +1832,12 @@ proc_or_func_identifier : identifier
    { $$ := $1; }
    ;
 subroutine_block : block
-   { $$ := $1;
+   { $$ := Result_Declaration & $1;
      Set_Block_Flag; }
    | external_directive
    { $$ := "pragma Import (C, " & Get_Subprog_Name(Subprog_List.Last_Element) & ");" & NL & $1; }
    | asm_block
-   { $$ := $1;
+   { $$ := Result_Declaration & $1;
      Set_Block_Flag; }
    | FORWARD_t
    { $$ := "-- P2Ada: forward" & NL; } -- an Ada declaration is basicly a "forward" declaration so nothing to do
@@ -1756,7 +1850,7 @@ subroutine_block : block
 -- THP 7.2
 -- CWP 11.2
 function_declaration : function_header modifiers hint_directive subroutine_block SEMICOLON_t
-   { $$ := Replace_SC_by_IS($1) & $2 & $3 & Result_Declaration & $4;
+   { $$ := Replace_SC_by_IS($1) & $2 & $3 & $4;
      Subprog_List.Delete_Last; }    -- P2Ada to do: process modifiers
    ;
 function_header : FUNCTION_t proc_or_func_identifier formal_parameter_list COLON_t result_type SEMICOLON_t
@@ -1817,9 +1911,9 @@ variable_parameter : VAR_t identifier_list COLON_t type_identifier
    | VAR_t identifier_list
    { $$ := $2 & ": P2Ada_No_Type -- P2Ada to do : no type var para" & NL; }
    | VAR_t identifier_list COLON_t ARRAY_t OF_t type_identifier -- from Delphi manual
-   { $$ := $1 & ": -- P2Ada to do : anonymous array type " & $3 & NL; }
+   { $$ := $1 & ": P2Ada_No_Type -- P2Ada to do : anonymous array type " & $3 & NL; }
    | VAR_t identifier_list COLON_t UNIV_t type_identifier -- from THP, CWP manuals
-   { $$ := $2 & ": " & $5 & "-- P2Ada: THP and CWP var univ parameter" & NL; }
+   { $$ := $2 & ": in out " & $5 & "-- P2Ada: THP and CWP var univ parameter" & NL; }
    ;
 
 -- FPC 11.4.3 Out parameters
@@ -1829,9 +1923,9 @@ variable_parameter : VAR_t identifier_list COLON_t type_identifier
 out_parameter : OUT_t identifier_list COLON_t type_identifier
    { $$ := $2 & ": out " & $4; }
    | OUT_t identifier_list
-   { $$ := $2 & ": -- P2Ada to do : no type out para" & NL; }
+   { $$ := $2 & ": P2Ada_No_Type -- P2Ada to do : no type out para" & NL; }
    | OUT_t identifier_list COLON_t ARRAY_t OF_t type_identifier -- Delphi
-   { $$ := $1 & ": -- P2Ada to do : anonymous array type " & $3 & NL; }
+   { $$ := $1 & ": P2Ada_No_Type -- P2Ada to do : anonymous array type " & $3 & NL; }
    ;
 
 -- FPC 11.4.4 Constant parameters
@@ -1841,12 +1935,12 @@ out_parameter : OUT_t identifier_list COLON_t type_identifier
 constant_parameter : CONST_t identifier_list COLON_t type_identifier
    { $$ := $2 & ": " & $4; }
    | CONST_t identifier_list
-   { $$ := $2 & ": -- P2Ada to do : no type const para" & NL; }
+   { $$ := $2 & ": P2Ada_No_Type -- P2Ada to do : no type const para" & NL; }
    | CONST_t identifier_list COLON_t ARRAY_t OF_t type_identifier -- from Delphi manual
-   { $$ := $1 & ": -- P2Ada to do : anonymous array type " & $3 & NL; }
+   { $$ := $1 & ": P2Ada_No_Type -- P2Ada to do : anonymous array type " & $3 & NL; }
    | CONST_t identifier_list COLON_t type_identifier EQUAL_t constant -- default parameter value from Delphi manual
    | CONST_t identifier_list COLON_t UNIV_t type_identifier -- from CWP manual
-   { $$ := $2 & ": " & $5 & "-- P2Ada: CWP var univ parameter" & NL; }
+   { $$ := $2 & ": " & $5 & "-- P2Ada: CWP const univ parameter" & NL; }
    ;
 
 -- FPC 11.7 External functions
@@ -1955,10 +2049,12 @@ call_modifier_part : CDECL_t
 -- FPC 12.2 Operator declarations
 -- Not defined in Delphi, TP, THP and CWP
 operator_header : OPERATOR_t ope_part result_id COLON_t result_type SEMICOLON_t
-   { $$ := "function " & $2 & " return " & $5 & ';' & NL; }
+   { $$ := "function " & $2 & " return " & $5;
+     Subprog_List.Append('#' & $3 & ':' & $5); }
    ;
-operator_definition : OPERATOR_t ope_part result_id COLON_t result_type SEMICOLON_t subroutine_block SEMICOLON_t
-   { $$ := "function " & $2 & " return " & $5 & "is" & NL & $7 & ';' & NL; }
+operator_definition : operator_header subroutine_block SEMICOLON_t
+   { $$ := $1 & " is" & NL & $2 & NL;
+     Subprog_List.Delete_Last; }
    ;
 ope_part : assignment_operator_definition
    { $$ := $1; }
@@ -1970,10 +2066,10 @@ ope_part : assignment_operator_definition
 result_id : identifier -- result identifier
    { $$ := $1; }
    |
-   { $$ := Null_Unbounded_String; }
+   { $$ := To_Unbounded_String("result"); }
    ;
 assignment_operator_definition : ASSIGN_t LPAREN_t parameter_declaration RPAREN_t
-   { $$ := "function " & $2 & " return " & $3 & ';' & NL; }
+   { $$ := "P2Ada_Assign (" & $3 & ") -- P2Ada: you must change := by P2AdaAssign by hand" & NL; }
    ;
 arithmetic_opertor_definition : arith_ope LPAREN_t parameter_declaration_list RPAREN_t
    { $$ := $1 & '(' & $3 & ')'; }
@@ -2011,11 +2107,11 @@ comp_ope : EQUAL_t
 program : program_header uses_clause block PERIOD_t
    { $$ := Unit_List & $1 & $3; }
    | uses_clause block PERIOD_t
-   { $$ := Unit_List & $1; }
+   { $$ := "procedure P2Ada_Main is" & NL & Unit_List & $1; }
    | program_header block PERIOD_t
    { $$ := $1 & $2; }
    | block PERIOD_t
-   { $$ := $1; }
+   { $$ := "procedure P2Ada_Main is" & NL & $1; }
    ;
 program_header : PROGRAM_t identifier program_parameters_part SEMICOLON_t
    { $$ := "procedure " & $2 & $3 & " is" & NL; }
@@ -2090,7 +2186,7 @@ begin_init_final_part : initialization_part END_t
    | BEGIN_t statement_list END_t
    { $$ := "begin" & NL & $2 & NL & "end;" & NL; }
    | END_t
-   { $$ := Null_Unbounded_String; }
+   { $$ := "end;" & NL; }
    ;
 initialization_part : INITIALIZATION_t statement_list
    { $$ := "-- P2Ada: initialization" & NL & $2; }
@@ -2152,26 +2248,34 @@ const_list : const_list const_part
 const_part : constant_declaration
    { $$ := $1; }
    | typed_constant_declaration
-   { $$ := $1; }
+   { $$ := Declaration_List & And_Operator_List & $1;
+     Declaration_List := Null_Unbounded_String;
+     And_Operator_List := Null_Unbounded_String; }
    ;
 resourcestring_declaration_part : RESOURCESTRING_t const_list -- string constant
    { $$ := "-- P2Ada: resource string declaration: " & $2; }
    ;
 type_declaration_part : TYPE_t type_list
-   { $$ := $2; }
+   { $$ := $2 & And_Operator_List;
+     And_Operator_List := Null_Unbounded_String; }
    ;
 type_list : type_list type_declaration
-   { $$ := $1 & $2; }
+   { $$ := $1 & Declaration_List & $2;
+     Declaration_List := Null_Unbounded_String; }
     | type_declaration
-   { $$ := $1; }
+   { $$ := Declaration_List & $1;
+     Declaration_List := Null_Unbounded_String; }
    ;
 variable_declaration_part : VAR_t var_list
-   { $$ := $2; }
+   { $$ := $2 & And_Operator_List;
+     And_Operator_List := Null_Unbounded_String; }
    ;
 var_list : var_list variable_declaration
-   { $$ := $1 & $2; }
+   { $$ := $1 & Declaration_List & $2;
+     Declaration_List := Null_Unbounded_String; }
    | variable_declaration
-   { $$ := $1; }
+   { $$ := Declaration_List & $1;
+     Declaration_List := Null_Unbounded_String; }
    ;
 threadvariable_declaration_part : THREADVAR_t var_list
    { $$ := "-- P2Ada: thread var declaration: " & $2; }
@@ -2185,7 +2289,9 @@ property_declaration_list : property_declaration_list property_declaration
    { $$ := $1; }
    ;
 procedure_function_declaration_part : proc_func_list
-   { $$ := $1; }
+   { $$ := Declaration_List & And_Operator_List & $1;
+     Declaration_List := Null_Unbounded_String;
+     And_Operator_List := Null_Unbounded_String; }
    ;
 proc_func_list : proc_func_list proc_func_part
    { $$ := $1 & $2; }
@@ -2295,7 +2401,7 @@ exception_handler_list : exception_handler_list SEMICOLON_t exception_handler
    { $$ := $1; }
    ;
 exception_handler : ON_t identifier COLON_t type_identifier DO_t statement -- class type identifier
-   { $$ := "when " & $2 & ": " & $3 & " =>" & NL & $5; }
+   { $$ := "when " & $2 & ": " & $4 & " =>" & NL & $6; }
    | ON_t type_identifier DO_t statement -- class type identifier
    { $$ := "when " & $2 & " =>" & NL & $4; }
    ;
