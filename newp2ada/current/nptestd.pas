@@ -42,7 +42,7 @@ program NPTestD;
         X:= 1234
       end;
 
-      procedure Emplacement_obj.Init(InitX, InitY : Integer);
+      constructor Emplacement_obj.Init(InitX, InitY : Integer);
         begin
         X := InitX;
         Y := InitY;
@@ -57,7 +57,7 @@ program NPTestD;
         AkiY := Y;
         end;
 
-      procedure Emplacement_obj.Done;
+      destructor Emplacement_obj.Done;
       begin
         X:= 0;
       end;

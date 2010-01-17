@@ -78,6 +78,20 @@ Get help from http://sourceforge.net/projects/p2ada
 
 ## REALEASE NOTES
 
+- release svn revision 14 (2010 Jan 15):
+. pascalhelp.adb and .ads (1.3a):
+. pascal.y (1.3a):
+	- add shell package around object, class, interface and generic declaration and body
+	- avoid useless null and begin end instructions
+	- add default withs and translation date tag
+	- parameters of main program have been added and bounded to Ada_Text_IO only for input and ouput others are in comments
+	- add discriminant for variant record types and "when others => null;" clause in variant
+	- activation of export declarations in .def file
+	- add alias support
+	- add type information to constants, types, variables, functions
+	- change string translation to array (0..n)
+	- add Pascal "with V do" support
+
 - release svn revision 13 (2009 Dec 20):
 . pascalhelp.adb and .ads:
 . pascal.y (1.2a):

@@ -1,3 +1,15 @@
+-------------------------------------------------------------------------------
+-- Name        : pascalhelp.adb
+-- Description : Object Pascal help utilities for objP2Ada
+-- Author      : P2Ada team
+-- Version     : 1.3a
+-- Last update : 2009-12-21
+-- Licence     : GPL V3 (http://www.gnu.org/licenses/gpl.html)
+-- Contact     : http://sourceforge.net/projects/P2Ada
+-- Notes       : First part come from newP2Ada, last are dedicated to objP2Ada
+-------------------------------------------------------------------------------
+-- When version change, change also Burlb function
+
 -- 31-Aug-2009 [PP]
 -- Added string list facility for default withs from config file
 -- 26-Dec-2006 [GdM]
@@ -54,6 +66,7 @@
 
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+with Ada.Strings.Maps;
 PACKAGE PascalHelp IS
 
   function Blurb return String;
@@ -336,11 +349,10 @@ function To_Ada_Integer (Source : String) return Unbounded_String;
 -- Translate Pascal identifiers which match Ada reserved word and replace __ by u_
 function To_Ada_Identifier (Source : String) return Unbounded_String;
 
+-- List of nested sub-routines
 Subprog_List : String_List.List;
 -- Return Result variable local declaration for functions
 function Result_Declaration return Unbounded_String;
--- Return Result variable local declaration for functions
-function Return_If_function return Unbounded_String;
 -- Return Result variable local declaration for functions
 function Null_Or_Return_If_function return Unbounded_String;
 -- Return Result variable local declaration for functions
@@ -349,7 +361,11 @@ function Add_Result_If_Function (Source : Unbounded_String) return Unbounded_Str
 function Get_Subprog_Name (Source : Unbounded_String) return Unbounded_String;
 
 -- List of with and use units to be placed before main procedure
-Unit_List : Unbounded_String := Null_Unbounded_String;
+   Unit_List : Unbounded_String := "with Ada.Direct_IO;" & NL
+     & "with Ada.Text_IO; use Ada.Text_IO;" & NL
+     & "with Interfaces; use Interfaces;" & NL
+--     & "with Pascal; use Pascal;" & NL
+     & "with Ada.Unchecked_Deallocation;" & NL;
 
 -- List of P2Ada declarations inside main program
 Declaration_List : Unbounded_String := Null_Unbounded_String;
@@ -363,14 +379,66 @@ procedure Finalize_And_Operator (Set_Type : Unbounded_String);
 
 -- Return type or subtype if type identifier
 function Type_Or_Subtype return Unbounded_String;
--- Reset subtype if type identifier
+-- Reset subtype flag if type identifier
 procedure Reset_Subtype;
--- Set subtype if type identifier
+-- Set subtype flag if type identifier
 procedure Set_Subtype;
 
 -- Create a new order number for anonym type
 Procedure New_Anonym_Type_Name;
 -- Return current anonym type name
 function Get_Anonym_Type_Name return Unbounded_String;
+
+-- Increment block level
+procedure Inc_Block_Level;
+-- Decrement block level
+procedure Dec_Block_Level;
+
+-- Return package declaration if object
+function Package_If_Object (Name : Unbounded_String) return Unbounded_String;
+-- Return end of package with list of methods if object
+function Finalize_Object_Package return Unbounded_String;
+-- Return Instance if object
+function Instance_If_object (Name : Unbounded_String) return Unbounded_String;
+-- Append method to list with self param added
+procedure Append_Method_List (Method : Unbounded_String);
+-- Reset object flag if object
+procedure Reset_Object;
+-- Set object flag if object
+procedure Set_Object;
+-- Return null; if object is only composed of methods
+function Null_If_No_Field return Unbounded_String;
+-- Set object field flag if object field
+procedure Set_Object_Field;
+-- Name of object
+Object_Name : Unbounded_String := Null_Unbounded_String;
+-- Append method to package body
+function Append_If_object (Method : Unbounded_String) return Unbounded_String;
+-- Return end of package body with list of methods if object
+function Finalize_Package_Body return Unbounded_String;
+
+-- Set has statement flag
+procedure Set_Has_Stmt;
+-- Reset has statement flag
+procedure Reset_Has_Stmt;
+-- Return null; or nothing if has already statement
+function Null_If_No_Stmt return Unbounded_String;
+
+-- Return program prarameter files
+function Program_Parameter (Source : Unbounded_String) return Unbounded_String;
+
+-- Add record discriminant to list
+procedure Add_Discriminant (Source : Unbounded_String);
+-- Return record discriminant
+function Get_Discriminant return Unbounded_String;
+
+-- copy of modified newp2ada routines
+With_Suffixe : Unbounded_String := Null_Unbounded_String; -- for objp2ada
+procedure OBJ_Open_type_declaration;
+procedure OBJ_Close_type_declaration;
+procedure OBJ_WITH_header;
+procedure OBJ_WITH_variable;
+-- define const char or string type based on ' or "
+Char_Or_String : constant Ada.Strings.Maps.Character_Mapping := Ada.Strings.Maps.To_Mapping ("'""", "CS");
 
 END PascalHelp;

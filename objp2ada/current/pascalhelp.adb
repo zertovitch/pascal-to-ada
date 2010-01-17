@@ -1,3 +1,15 @@
+-------------------------------------------------------------------------------
+-- Name        : pascalhelp.adb
+-- Description : Object Pascal help utilities for objP2Ada
+-- Author      : P2Ada team
+-- Version     : 1.3a
+-- Last update : 2009-12-21
+-- Licence     : GPL V3 (http://www.gnu.org/licenses/gpl.html)
+-- Contact     : http://sourceforge.net/projects/P2Ada
+-- Notes       : First part come from newP2Ada, last are dedicated to objP2Ada
+-------------------------------------------------------------------------------
+-- When version change, change also Burlb function
+
 -- 26-Dec-2006 [GdM]
 -- * Output through Pascal_IO (as it should be) instead of Ada.Text_IO
 -- * Current_line and Current_column to locate translation errors
@@ -88,7 +100,7 @@ PACKAGE BODY PascalHelp IS
       "-- Translated on" &
       Integer'Image(Day(c)) & '-' & Ze_month & '-' &
       Trim(Integer'Image(Year(c)),Both)
-      & " by (New) P2Ada v. 28-Oct-2009";
+      & " by (Obj) P2Ada V1.3a 15-Jan-2010";
   end;
 
   function Current_line return Natural is
@@ -1279,6 +1291,7 @@ PACKAGE BODY PascalHelp IS
   -- Routines specific for objp2ada       --
   ------------------------------------------
 
+   -- False if suroutine hasn't block instructions
    Block_Flag : Boolean := False;
    procedure Set_Block_Flag is
    begin
@@ -1358,73 +1371,74 @@ PACKAGE BODY PascalHelp IS
       return Result;
    end To_Ada_String;
 
-Unit_Name : Unbounded_String;
-function Get_Unit_Name return Unbounded_String is
-  begin
-  return Unit_Name;
-  end;
-procedure Set_Unit_Name (Name : Unbounded_String) is
-  begin
-  Unit_Name := Name;
-  end;
+   -- Name of main unit
+   Unit_Name : Unbounded_String;
+   function Get_Unit_Name return Unbounded_String is
+   begin
+      return Unit_Name;
+   end;
+   procedure Set_Unit_Name (Name : Unbounded_String) is
+   begin
+      Unit_Name := Name;
+   end;
 
-function To_Ada_Float (Source : String) return Unbounded_String is
+   function To_Ada_Float (Source : String) return Unbounded_String is
       Result                                : Unbounded_String :=
         Null_Unbounded_String;
-Has_Dot : Boolean := False;
-begin
-for Ind in Source'Range loop
-case Source(Ind) is
-  when '.' =>
-	Has_Dot := True;
-  when 'e' | 'E' =>
-	if Has_Dot and then not Ada.Characters.Handling.Is_Decimal_Digit(Source(Ind-1)) then
-		Append(Result, '0');
-	elsif not Has_Dot then
-		Append(Result, ".0");
-	end if;
-  when others => null;
-end case;
-    Append (Result, Source(Ind));
-end loop;
-return Result;
-end;
+      Has_Dot : Boolean := False;
+   begin
+      for Ind in Source'Range loop
+         case Source(Ind) is
+         when '.' =>
+            Has_Dot := True;
+         when 'e' | 'E' =>
+            if Has_Dot and then not Ada.Characters.Handling.Is_Decimal_Digit(Source(Ind-1)) then
+               Append(Result, '0');
+            elsif not Has_Dot then
+               Append(Result, ".0");
+            end if;
+         when others => null;
+         end case;
+         Append (Result, Source(Ind));
+      end loop;
+      return Result;
+   end;
 
-function To_Ada_Integer (Source : String) return Unbounded_String is
+   function To_Ada_Integer (Source : String) return Unbounded_String is
       Result                                : Unbounded_String :=
         Null_Unbounded_String;
-begin
-case Source(Source'First) is
-  when '$' =>
-	Append (Result, "16#" & Source(Source'First+1.. Source'Last) & '#');
-  when '&' =>
-	Append (Result,"8#" & Source(Source'First+1.. Source'Last) & '#');
-  when '%' =>
-	Append (Result,"2#" & Source(Source'First+1.. Source'Last) & '#');
-  when others => Append (Result, Source);
-end case;
-return Result;
-end;
+   begin
+      case Source(Source'First) is
+      when '$' =>
+         Append (Result, "16#" & Source(Source'First+1.. Source'Last) & '#');
+      when '&' =>
+         Append (Result,"8#" & Source(Source'First+1.. Source'Last) & '#');
+      when '%' =>
+         Append (Result,"2#" & Source(Source'First+1.. Source'Last) & '#');
+      when others => Append (Result, Source);
+      end case;
+      return Result;
+   end;
 
-function To_Ada_Identifier (Source : String) return Unbounded_String is
-type Strings is array (Positive range <>) of String(1..12);
-Ada_Reserved_Word_List : constant Strings := (
-"abort       ", "abs         ", "abstract    ", "accept      ", "access      ",
-"aliased     ", "all         ", "and         ", "array       ", "at          ",
-"begin       ", "body        ", "case        ", "constant    ", "declare     ",
-"delay       ", "delta       ", "digits      ", "do          ", "else        ",
-"elsif       ", "end         ", "entry       ", "exception   ", "exit        ",
-"for         ", "function    ", "generic     ", "goto        ", "if          ",
-"in          ", "interface   ", "is          ", "limited     ", "loop        ",
-"mod         ", "new         ", "not         ", "null        ", "of          ",
-"or          ", "others      ", "out         ", "overriding  ", "package     ",
-"pragma      ", "private     ", "procedure   ", "protected   ", "raise       ",
-"range       ", "record      ", "rem         ", "rename      ", "requeue     ",
-"return      ", "reverse     ", "select      ", "separate    ", "subtype     ",
-"synchronized", "tagged      ", "task        ", "terminate   ", "then        ",
-"type        ", "until       ", "use         ", "when        ", "while       ",
-"with        ", "xor         "
-);
+   function To_Ada_Identifier (Source : String) return Unbounded_String is
+      type Strings is array (Positive range <>) of String(1..12);
+      Ada_Reserved_Word_List : constant Strings := (
+                                                    "abort       ", "abs         ", "abstract    ", "accept      ", "access      ",
+                                                    "aliased     ", "all         ", "and         ", "array       ", "at          ",
+                                                    "begin       ", "body        ", "case        ", "constant    ", "declare     ",
+                                                    "delay       ", "delta       ", "digits      ", "do          ", "else        ",
+                                                    "elsif       ", "end         ", "entry       ", "exception   ", "exit        ",
+                                                    "for         ", "function    ", "generic     ", "goto        ", "if          ",
+                                                    "in          ", "interface   ", "is          ", "limited     ", "loop        ",
+                                                    "mod         ", "new         ", "not         ", "null        ", "of          ",
+                                                    "or          ", "others      ", "out         ", "overriding  ", "package     ",
+                                                    "pragma      ", "private     ", "procedure   ", "protected   ", "raise       ",
+                                                    "range       ", "record      ", "rem         ", "rename      ", "requeue     ",
+                                                    "return      ", "reverse     ", "select      ", "separate    ", "subtype     ",
+                                                    "synchronized", "tagged      ", "task        ", "terminate   ", "then        ",
+                                                    "type        ", "until       ", "use         ", "when        ", "while       ",
+                                                    "with        ", "xor         "
+                                                   );
       Result : Unbounded_String := To_Unbounded_String (Source);
       Underscore : Boolean := False;
       Ind_UU : Natural := Index(Result, "__");
@@ -1468,46 +1482,23 @@ Ada_Reserved_Word_List : constant Strings := (
       end if;
    end;
 
-   function Return_If_function return Unbounded_String is
-   begin
-      if Subprog_List.Is_Empty then
-         return Null_Unbounded_String;
-      else
-         declare
-            Ind : constant Natural := Index(Subprog_List.Last_Element, ":");
-         begin
-            if Ind = 0 then
-               return Null_Unbounded_String;
-            else
-               if Element(Subprog_List.Last_Element, 1) /= '#' then
-                  return "return P2Ada_Result_" &
-                         Unbounded_Slice(Subprog_List.Last_Element, 1, Ind-1) & ';' & NL;
-               else
-                  return "return " &
-                         Unbounded_Slice(Subprog_List.Last_Element, 2, Ind-1) & ';' & NL;
-               end if;
-            end if;
-         end;
-      end if;
-   end;
-
    function Null_Or_Return_If_function return Unbounded_String is
    begin
       if Subprog_List.Is_Empty then
-         return "null;" & NL;
+         return Null_If_No_Stmt;
       else
          declare
             Ind : constant Natural := Index(Subprog_List.Last_Element, ":");
          begin
             if Ind = 0 then
-               return "null;" & NL;
+               return Null_If_No_Stmt;
             else
                if Element(Subprog_List.Last_Element, 1) /= '#' then
                   return "return P2Ada_Result_" &
-                         Unbounded_Slice(Subprog_List.Last_Element, 1, Ind-1) & ';' & NL;
+                  Unbounded_Slice(Subprog_List.Last_Element, 1, Ind-1) & ';' & NL;
                else
                   return "return " &
-                         Unbounded_Slice(Subprog_List.Last_Element, 2, Ind-1) & ';' & NL;
+                  Unbounded_Slice(Subprog_List.Last_Element, 2, Ind-1) & ';' & NL;
                end if;
             end if;
          end;
@@ -1519,10 +1510,8 @@ Ada_Reserved_Word_List : constant Strings := (
       procedure Find (Pos : String_List.Cursor) is
          Ind : constant Natural := Index(String_List.Element(Pos), ":");
       begin
-         if not Found then
-            if Ind /= 0 and then Source = Unbounded_Slice (String_List.Element(Pos), 1, Ind-1) then
-               Found := True;
-            end if;
+         if not Found and then Ind /= 0 and then Source = Unbounded_Slice (String_List.Element(Pos), 1, Ind-1) then
+            Found := True;
          end if;
       end;
    begin
@@ -1563,6 +1552,7 @@ Ada_Reserved_Word_List : constant Strings := (
       end if;
    end;
 
+   -- True if subtype is required
    Subtype_Flag : Boolean := False;
    function Type_Or_Subtype return Unbounded_String is
    begin
@@ -1582,7 +1572,7 @@ Ada_Reserved_Word_List : constant Strings := (
       Subtype_Flag := True;
    end;
 
-
+   -- Index value for each creation of anonym types
    subtype Type_Index is Natural range 0..200;
    Anonym_Type_Index : Type_Index := 0;
    Procedure New_Anonym_Type_Name is
@@ -1593,5 +1583,280 @@ Ada_Reserved_Word_List : constant Strings := (
    begin
       return To_Unbounded_String("P2Ada_Anonym_" & Trim(Natural'Image(Anonym_Type_Index), Left));
    end;
+
+   -- Block level
+   subtype Levels is Natural range 0..200;
+   Block_Level : Levels := 0;
+   procedure Inc_Block_Level is
+   begin
+      Block_Level := Block_Level + 1;
+   end;
+   procedure Dec_Block_Level is
+   begin
+      Block_Level := Block_Level - 1;
+   end;
+
+   -- List of P2Ada methods declarations inside object or class
+   Method_List : Unbounded_String := Null_Unbounded_String;
+   -- True if object declaration
+   Object_Flag : Boolean := False;
+   Object_Level : Levels;
+   function Package_If_Object (Name : Unbounded_String) return Unbounded_String is
+   begin
+      if Object_Flag then
+         return "package " & Name & " is" & NL;
+      else
+         return Null_Unbounded_String;
+      end if;
+   end;
+   function Finalize_Object_Package return Unbounded_String is
+      Result : Unbounded_String;
+   begin
+      if Object_Flag then
+         Object_Flag := False;
+         Result := Method_List & "end; -- package" & NL;
+         Method_List := Null_Unbounded_String;
+         return Result;
+      else
+         return Null_Unbounded_String;
+      end if;
+   end;
+   function Instance_If_object (Name : Unbounded_String) return Unbounded_String is
+   begin
+      if Object_Flag then
+         return To_Unbounded_String("Instance");
+      else
+         return Name;
+      end if;
+   end;
+   procedure Append_Method_List (Method : Unbounded_String) is
+      Result : Unbounded_String := Method;
+      Ind : Natural := Index(Method, "(");
+   begin
+      if Ind /= 0 then
+         if Element (Result, 1) = 'f' then
+            Insert (Result, Ind + 1, "Self : Instance; ");
+         else
+            Insert (Result, Ind + 1, "Self : in out Instance; ");
+         end if;
+      else
+         if Element (Result, 1) = 'f' then
+            Ind := Index(Method, " return ");
+            Insert (Result, Ind, " (Self : Instance)");
+         else
+            Ind := Index(Method, ";");
+            Insert (Result, Ind, " (Self : Instance)");
+         end if;
+      end if;
+      Append (Method_List, Result);
+   end;
+   procedure Reset_Object is
+   begin
+      Object_Flag := False;
+   end;
+   procedure Set_Object is
+   begin
+      Object_Flag := True;
+      Object_Level := Block_Level;
+   end;
+   Object_Field_Flag : Boolean := False;
+   function Null_If_No_Field return Unbounded_String is
+   begin
+      if Object_Field_Flag then
+         Object_Field_Flag := False;
+         return Null_Unbounded_String;
+      else
+         return "null;" & NL;
+      end if;
+   end;
+   procedure Set_Object_Field is
+   begin
+      Object_Field_Flag := True;
+   end;
+   -- Package body list of all declared object
+   Package_Body_List : String_List.List;
+   procedure Append_Package_Body (Method : Unbounded_String) is
+      use String_List;
+      Found : Cursor := No_Element;
+      procedure Find (Pos : Cursor) is
+         Ind : constant Natural := Index(Element(Pos), To_String(Object_Name));
+      begin
+         if Found = No_Element and then Ind /= 0 then
+            Found := Pos;
+         end if;
+      end;
+   begin
+      if not Package_Body_List.Is_Empty then
+         Package_Body_List.Iterate(Find'Access);
+      end if;
+      if Found /= No_Element then
+         Package_Body_List.Replace_Element (Found, Element (Found) & Method);
+      else
+         Package_Body_List.Append("package body " & Object_Name & " is" & NL & Method);
+      end if;
+   end;
+   function Append_If_object (Method : Unbounded_String) return Unbounded_String is
+      Result : Unbounded_String := Method;
+      Ind_Par : constant Natural := Index(Method, "(");
+      Ind_Is  : constant Natural := Index(Method, " is");
+      Ind_Ret : constant Natural := Index(Method, " return ");
+   begin
+      if Object_Name /= Null_Unbounded_String then
+         if Ind_Par /= 0 and then Ind_Par < Ind_Is then
+            if Element (Method, 1) = 'f' then
+               Insert (Result, Ind_Par + 1, "Self : Instance; ");
+            else
+               Insert (Result, Ind_Par + 1, "Self : in out Instance; ");
+            end if;
+         else
+            if Element (Method, 1) = 'f' then
+               Insert (Result, Ind_Ret, " (Self : Instance)");
+            else
+               Insert (Result, Ind_Is, " (Self : Instance)");
+            end if;
+         end if;
+         Append_Package_Body (Result);
+         Object_Name := Null_Unbounded_String;
+         return Null_Unbounded_String;
+      else
+         return Method;
+      end if;
+   end;
+   function Finalize_Package_Body return Unbounded_String is
+      Result : Unbounded_String := Null_Unbounded_String;
+      use String_List;
+      procedure Append_To_Result (Pos : Cursor) is
+      begin
+         Append (Result, Element(Pos) & "end; -- package body" & NL);
+      end;
+   begin
+      if Object_Level = Block_Level and then not Package_Body_List.Is_Empty then
+         Package_Body_List.Iterate(Append_To_Result'access);
+         Package_Body_List.Clear;
+         return Result;
+      else
+         return Null_Unbounded_String;
+      end if;
+   end;
+
+   Has_Stmt : Boolean := False;
+   procedure Set_Has_Stmt is
+   begin
+      Has_Stmt := True;
+   end;
+   -- Reset has statement flag
+   procedure Reset_Has_Stmt is
+   begin
+      Has_Stmt := False;
+   end;
+   -- Return null; or nothing if has already statement
+   function Null_If_No_Stmt return Unbounded_String is
+   begin
+      if Has_Stmt then
+         return Null_Unbounded_String;
+      else
+         return "null;" & NL;
+      end if;
+   end;
+
+   function Program_Parameter (Source : Unbounded_String) return Unbounded_String is
+      -- Only Input and Output program parameters are bounded to Ada.Text_IO
+      -- as they are implicit declared in Pascal
+      Result : Unbounded_String := "-- P2Ada: program parameters: " & Source & NL;
+      Ind_Input : constant Natural := Index(Ada.Characters.Handling.To_Lower(To_String(Source)), "input");
+      Ind_Output : constant Natural := Index(Ada.Characters.Handling.To_Lower(To_String(Source)), "output");
+   begin
+      if Ind_Input /= 0 then
+         Append (Result, "Input : Ada.Text_IO.File_Type renames Ada.Text_IO.Standard_Input;" & NL);
+      end if;
+      if Ind_Output /= 0 then
+         Append (Result, "Output : Ada.Text_IO.File_Type renames Ada.Text_IO.Standard_Output;" & NL);
+      end if;
+      return Result;
+   end;
+
+   -- List of record discriminants
+   Discriminant_List : Unbounded_String := Null_Unbounded_String;
+   procedure Add_Discriminant (Source : Unbounded_String) is
+   begin
+      if Discriminant_List = Null_Unbounded_String then
+         Append (Discriminant_List, '(' & Source);
+      else
+         Append (Discriminant_List, ';' & Source);
+      end if;
+   end;
+   function Get_Discriminant return Unbounded_String is
+      Result : constant Unbounded_String := Discriminant_List & ')';
+   begin
+      if Discriminant_List = Null_Unbounded_String then
+         return Null_Unbounded_String;
+      else
+         Discriminant_List := Null_Unbounded_String;
+         return Result;
+      end if;
+   end;
+
+  procedure OBJ_Open_type_declaration is
+  begin
+    P2Ada_Definition_info.Enter( Last_Pascal_Identifier, Tipe, 0);
+    P2Ada_Definition_info.Set_type_identifier_mark;
+    Clear_type_denoter;
+    -- Put_keyword(" IS ");
+    DirectIO:= False;
+    Just_after_TYPE_X_IS:= True;
+    is_type_decl_open:= True;
+  end;
+
+  procedure OBJ_Close_type_declaration is
+  begin
+    if is_type_decl_open then
+      P2Ada_Definition_info.Associate_new_type_to_denoter;
+      Maybe_must_add_NEW_to_type:= False;
+      -- Put(';');
+      is_type_decl_open:= False;
+    end if;
+  end;
+
+  procedure OBJ_WITH_header is
+  begin
+    -- Put_translation_comment("WITH instruction");
+    -- Put_keyword_line("DECLARE");
+    DirectIO:= False; -- retain output for variable accesses
+    Reset_selection;
+    P2Ada_Definition_info.Mark;
+  end;
+
+  procedure OBJ_WITH_variable is
+    t: constant String:= P2Ada_Definition_info.Name_of_type_selected;
+    no_type_found: constant Boolean:= t = "";
+    is_record: Boolean;
+  begin
+    Add(var);
+    DirectIO:= True;
+    Append (With_Suffixe, Last(var) & " : ");
+    if no_type_found then
+      Append (With_Suffixe, "<type>");
+    else
+      Append (With_Suffixe,t);
+    end if;
+    Append (With_Suffixe, " RENAMES "); -- Flush; Empty; Append (With_Suffixe, ';');
+
+    P2Ada_Definition_info.Add_WITH_variables( Last(var), is_record );
+
+    if no_type_found then
+      Append (With_Suffixe,
+        "-- !Help! No type found -> add '" & Last(var) & ".' to fields of "
+      );
+    elsif is_record then
+      null; -- New_Line;
+    else
+      Append (With_Suffixe,
+        "-- !Help! Seemingly a  non-record type found -> add '" &
+        Last(var) & ".' to fields of "
+      );
+    end if;
+    DirectIO:= False; -- continue retaining (other variables)
+    Reset_selection;
+  end;
 
 END PascalHelp;

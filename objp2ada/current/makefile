@@ -1,5 +1,5 @@
-#CFLAGS = -g
-#CFLAGS = -gnatEfowa -gnatVa -fstack-check -g
+CFLAGS = -m -gnatf -g
+#CFLAGS = -m -gnatEfowa -gnatVa -fstack-check -g
 
 all : p2ada bp2p
 
@@ -65,7 +65,7 @@ ayacc : ../ayacc95/actions_file.adb ../ayacc95/actions_file.ads \
  ../ayacc95/symbol_info.ads ../ayacc95/symbol_table.adb \
  ../ayacc95/symbol_table.ads ../ayacc95/tokens_file.adb \
  ../ayacc95/tokens_file.ads ../ayacc95/verbose_file.adb \
- ../ayacc95/verbose_file.ads 
+ ../ayacc95/verbose_file.ads
 	gnatmake $(CFLAGS) -D acu ../ayacc95/ayacc
 
 pascal_dfa.adb pascal_dfa.ads pascal_io.adb pascal_io.ads yylex.adb : pascal.l
@@ -116,8 +116,8 @@ nptest9.adb : nptest9.pas p2ada
 nptesta.adb : nptesta.pas p2ada
 	./p2ada nptesta.pas > nptesta.adb
 nptestb.adb : nptestb.pas nptest2.adb p2ada
-	./p2ada nptestb.pas > nptestb.adb
-#	./p2ada nptestb.pas -inptest2.def > nptestb.adb
+#	./p2ada nptestb.pas > nptestb.adb
+	./p2ada nptestb.pas -inptest2.def > nptestb.adb
 nptestc.adb : nptestc.pas p2ada
 	./p2ada nptestc.pas > nptestc.adb
 nptestd.adb : nptestd.pas p2ada
