@@ -2,8 +2,8 @@
 -- Name        : pascal.y
 -- Description : Object Pascal grammar for objP2Ada
 -- Author      : P2Ada team
--- Version     : 1.3a
--- Last update : 2009-12-21
+-- Version     : 1.4a
+-- Last update : 2010-03-28
 -- Licence     : GPL V3 (http://www.gnu.org/licenses/gpl.html)
 -- Contact     : http://sourceforge.net/projects/P2Ada
 -- Notes       :
@@ -275,6 +275,7 @@ identifier : inner_identifier
    ;
 new_identifier : inner_identifier
    { $$ := $1;
+     $$ := To_Unbounded_String(Find_Alias(To_String($1)));
      Memorize_Identifier (To_String($$), To_String($$)); }
    ;
 inner_identifier : ID_t
@@ -498,8 +499,8 @@ character_string : CHARACTER_STRING_t
 constant_declaration : const_identifier EQUAL_t
    { Clear_Type_Denoter; Reset_Selection; } -- virtual ayacc rule
    constant hint_directive SEMICOLON_t -- without loop because it is done at const section
-   { $$ := $1 & " : constant := " & $4 & ';' & NL & $5 & "-- P2Ada to do: give a type to char, string, boolean and set constants" & NL;
-     Give_Variables_A_Type; }
+   { Give_Variables_A_Type;
+     $$ := $1 & " : constant " & Get_Variable_Type & " := " & $4 & ';' & $5  & NL; }
    ;
 const_identifier : { Set_Variable_Mark; } -- virtual ayacc rule
    var_identifier
@@ -1096,26 +1097,39 @@ default_specifier : NODEFAULT_t
 -- TP 4.3.3
 -- THP 3.2.5
 -- CWP 7.7.5
-object_type : packed OBJECT_t heritage component_list END_t
-   { $$ := "new " & $3 & ".Instance with record" & NL & $1 & $4 & Null_If_No_Field & "end record";
-     Set_Object; }
-   | packed OBJECT_t heritage END_t
-   { $$ := "new " & $3 & ".Instance with null record" & NL & $1;
-     Set_Object; }
-   | packed OBJECT_t component_list END_t
-   { $$ := "tagged record" & NL & $1 & $3 & Null_If_No_Field & "end record";
-     Set_Object; }
-   | packed OBJECT_t END_t
-   { $$ := "tagged null record" & $1;
-     Set_Object; }
+object_type : OBJECT_t -- packed OBJECT_t
+   { Remember_Name_Of_Object(0); EnterObjectStruct; Open_Record_Def; } -- virtual ayacc rule
+   heritage component_list END_t
+   { $$ := Tagged_Type($3) & $4 & Null_If_No_Field & "end record";
+     Set_Object; Close_Record_Def; LeaveObjectStruct; }
+--   | OBJECT_t -- packed OBJECT_t
+--   { Remember_Name_Of_Object(0); EnterObjectStruct; Open_Record_Def; } -- virtual ayacc rule
+--   heritage END_t
+--   { $$ := "new " & $4 & ".Instance with null record" & NL & $1;
+--     Set_Object; Close_Record_Def; LeaveObjectStruct; }
+--   | OBJECT_t -- packed OBJECT_t
+--   { Remember_Name_Of_Object(0); EnterObjectStruct; Open_Record_Def; } -- virtual ayacc rule
+--    component_list END_t
+--   { $$ := "tagged record" & NL & $1 & $4 & Null_If_No_Field & "end record";
+--     Set_Object; Close_Record_Def; LeaveObjectStruct; }
+--   | OBJECT_t -- packed OBJECT_t
+--   { Remember_Name_Of_Object(0); EnterObjectStruct; Open_Record_Def; } -- virtual ayacc rule
+--   END_t
+--   { $$ := "tagged null record" & $1;
+--     Set_Object; Close_Record_Def; LeaveObjectStruct; }
    ;
 heritage : LPAREN_t type_identifier RPAREN_t -- object type identifier
-   { $$ := $2; }
+   { $$ := $2;
+     Link_Parent_Of_Object; }
+   |
+   { $$ := Null_Unbounded_String; }
    ;
 component_list : component_list component_part
    { $$ := $1 & $2; }
    | component_part
    { $$ := $1; }
+   |
+   { $$ := Null_Unbounded_String; }
    ;
 component_part : object_visibility_specifier
    { $$ := $1; }
@@ -1126,10 +1140,12 @@ component_part : object_visibility_specifier
    { $$ := Null_Unbounded_String;
      Append_Method_List($1); }
    ;
-field_definition : identifier_list COLON_t type SEMICOLON_t
-   { $$ := $1 & ": " & $3 & ';' & NL; }
-   | identifier_list COLON_t type SEMICOLON_t STATIC_t SEMICOLON_t -- from FPC manual
-   { $$ := $1 & ": " & $3 & "; -- P2Ada: static" & NL; }
+field_definition : { Set_Field_Mark (1); } -- virtual ayacc rule
+   field_identifier_list COLON_t
+   { Set_Field_Mark (2); } -- virtual ayacc rule
+   type SEMICOLON_t
+   { $$ := $2 & ": " & $5 & ';' & NL;
+     Give_Variables_A_Type; }
    ;
 object_visibility_specifier : PRIVATE_t -- not defined for THP and CWP
    { $$ := "-- P2Ada: private" & NL; }
@@ -1144,10 +1160,10 @@ object_visibility_specifier : PRIVATE_t -- not defined for THP and CWP
 -- THP not defined
 -- CWP not defines
 constructor_declaration : constructor_header subroutine_block SEMICOLON_t
-   { $$ := Replace_SC_by_IS($1) & $2; }
+   { $$ := Replace_SC_by_IS($1) & $2;  LeaveObjectStruct;}
    ;
 destructor_declaration : destructor_header subroutine_block SEMICOLON_t
-   { $$ := Replace_SC_by_IS($1) & $2; }
+   { $$ := Replace_SC_by_IS($1) & $2;  LeaveObjectStruct;}
    ;
 constructor_header : CONSTRUCTOR_t identifier formal_parameter_list SEMICOLON_t
    { $$ := "procedure " & $2 & $3 & "; -- P2Ada: constructor" & NL;
@@ -1164,9 +1180,10 @@ destructor_header : DESTRUCTOR_t identifier formal_parameter_list  SEMICOLON_t
      Stack_Ada_subprog (False); }
    ;
 qualified_method_identifier : identifier -- object type identifier
+   { Remember_Name_Of_Object(0); }
    PERIOD_t new_identifier -- method identifier
-   { $$ := $3;
-     Object_name := $1; }
+   { $$ := $4;
+     Object_name := $1; EnterObjectStruct; }
    ;
 
 -- FPC 5.5 Methods
@@ -1212,21 +1229,29 @@ meth_virt : VIRTUAL_t SEMICOLON_t -- not defined for THP and CWP
 -- TP not defined
 -- THP not defined
 -- CWP not defines
-class_type : packed CLASS_t class_heritage class_component_list END_t
-   { $$ := "new " & $3 & ".Instance with record" & NL & $1 & $4 & Null_If_No_Field & "end record";
-     Set_Object; }
-   | packed CLASS_t class_heritage END_t
-   { $$ := "new " & $3 & ".Instance with null record" & NL & $1;
-     Set_Object; }
-   | packed CLASS_t class_component_list END_t
-   { $$ := "tagged record" & NL & $1 & $3 & Null_If_No_Field & "end record";
-     Set_Object; }
-   | packed CLASS_t END_t
-   { $$ := "tagged null record" & $1;
-     Set_Object; }
+class_type : CLASS_t -- packed CLASS_t
+   { Remember_Name_Of_Object(0); EnterObjectStruct; Open_Record_Def; } -- virtual ayacc rule
+   class_heritage class_component_list END_t
+   { $$ := Tagged_Type($3) & $4 & Null_If_No_Field & "end record";
+     Set_Object; Close_Record_Def; LeaveObjectStruct; }
+--class_type : packed CLASS_t class_heritage class_component_list END_t
+--   { $$ := "new " & $3 & ".Instance with record" & NL & $1 & $4 & Null_If_No_Field & "end record";
+--     Set_Object; }
+--   | packed CLASS_t class_heritage END_t
+--   { $$ := "new " & $3 & ".Instance with null record" & NL & $1;
+--     Set_Object; }
+--   | packed CLASS_t class_component_list END_t
+--   { $$ := "tagged record" & NL & $1 & $3 & Null_If_No_Field & "end record";
+--     Set_Object; }
+--   | packed CLASS_t END_t
+--   { $$ := "tagged null record" & $1;
+--     Set_Object; }
    ;
 class_heritage : LPAREN_t class_identifier_list RPAREN_t -- class type and implemented interfaces identifiers
    { $$ := $2; }
+-- P2Ada to do:     Link_Parent_Of_Object; }
+   |
+   { $$ := Null_Unbounded_String; }
    ;
 class_identifier_list : class_identifier_list COMMA_t type_identifier
    { $$ := $1 & " and " & $3; }
@@ -1237,6 +1262,8 @@ class_component_list : class_component_list class_component_part
    { $$ := $1 & $2; }
    | class_component_part
    { $$ := $1; }
+   |
+   { $$ := Null_Unbounded_String; }
    ;
 class_component_part : class_visibility_specifier
    { $$ := $1; }
@@ -1331,10 +1358,10 @@ stored_specifier : STORED_t constant
 -- TP not defined
 -- THP not defined
 -- CWP not defines
-interface_type : INTERFACE_t class_heritage guid int_component_list END_t
+interface_type : INTERFACE_t int_heritage guid int_component_list END_t
    { $$ := "new " & $2 & ".Instance" & NL & $4 & $3;
      Set_Object; }
-   | INTERFACE_t class_heritage guid END_t
+   | INTERFACE_t int_heritage guid END_t
    { $$ := "new " & $2 & ".Instance" & $3;
      Set_Object; }
    | INTERFACE_t guid int_component_list END_t
@@ -1344,10 +1371,10 @@ interface_type : INTERFACE_t class_heritage guid int_component_list END_t
    { $$ := "interface" & $2;
      Set_Object; }
     -- from Delphi manual
-   | DISPINTERFACE_t class_heritage guid int_component_list END_t
+   | DISPINTERFACE_t int_heritage guid int_component_list END_t
    { $$ := "new " & $2 & ".Instance with record" & NL & $4 & Null_If_No_Field & "end record" & $3;
      Set_Object; }
-   | DISPINTERFACE_t class_heritage guid END_t
+   | DISPINTERFACE_t int_heritage guid END_t
    { $$ := "new " & $2 & ".Instance" & $3;
      Set_Object; }
    | DISPINTERFACE_t guid int_component_list END_t
@@ -1357,9 +1384,9 @@ interface_type : INTERFACE_t class_heritage guid int_component_list END_t
    { $$ := "interface" & $2;
      Set_Object; }
    ;
---int_heritage : LPAREN_t type_identifier_list RPAREN_t -- interface type identifiers
---   { $$ := '(' & $2 & ')'; }
---   ;
+int_heritage : LPAREN_t class_identifier_list RPAREN_t -- interface type identifiers
+   { $$ := '(' & $2 & ')'; }
+   ;
 guid : LBRACK_t constant RBRACK_t -- constant string
    { $$ := "-- P2Ada: GUID " & $2 & NL; }
    |
@@ -1443,9 +1470,9 @@ type_identifier_list : type_identifier_list COMMA_t type_identifier
 -- THP 5.0
 -- CWP 9.3
 expression : simple_expression
-   { $$ := $1; Reset_Selection; }
+   { $$ := $1; } -- Clear_Selection; }
    | simple_expression rel_op simple_expression
-   { $$ := $1 & $2 & $3; Reset_Selection; }
+   { $$ := $1 & $2 & $3; } -- Clear_Selection; }
    ;
 rel_op : LT_t
    { $$ := To_Unbounded_String(" < "); }
@@ -1548,7 +1575,7 @@ qualifier : indice
    | field_descriptor
    { $$ := $1; }
    | UPARROW_t
-   { $$ := To_Unbounded_String(".all "); }
+   { $$ := To_Unbounded_String(".all "); Select_Pointed; }
    ;
 indice : LBRACK_t index_list RBRACK_t
    { $$ := '(' & $2 & ')'; }
@@ -1587,11 +1614,15 @@ designator : identifier
    | identifier qualifier_list
    { $$ := $1 & $2; }
    ;
-actual_parameter_list : LPAREN_t expression_list RPAREN_t
-   { $$ := '(' & $2 & ')'; }
+actual_parameter_list : LPAREN_t
+   { Stack_Selection; } -- vitual ayacc rule
+   expression_list RPAREN_t
+   { $$ := '(' & $3 & ')'; Destack_Selection; }
    ;
-expression_list : expression_list COMMA_t expression
-   { $$ := $1 & ", " & $3; }
+expression_list : expression_list COMMA_t
+   { Clear_Selection; } -- vitual ayacc rule
+   expression
+   { $$ := $1 & ", " & $4; }
    | expression
    { $$ := $1; }
    ;
@@ -1701,11 +1732,11 @@ assignment_statement : variable_reference ASSIGN_t expression
 procedure_statement : variable_reference
    { $$ := $1 & ';' & NL; }
    | WRITE_t write_params
-   { $$ := "Write; -- P2Ada to do: format parameters" & $2 & NL; }
+   { $$ := To_Unbounded_String(Find_Alias("Write")) & $2 & ';' & NL; }
    | WRITELN_t write_params
-   { $$ := "WriteLn; -- P2Ada to do: format parameters" & $2 & NL; }
+   { $$ := To_Unbounded_String(Find_Alias("Writeln")) & $2 & ';' & NL; }
    | STR_t str_params
-   { $$ := "Str; -- P2Ada to do: format parameters" & $2 & NL; }
+   { $$ := To_Unbounded_String(Find_Alias("Str")) & "; -- P2Ada to do: format parameters" & $2 & NL; }
    | CYCLE_t -- from CWP manual 10.7.2
    { $$ := "-- P2Ada to do: cycle" & NL; }
    | LEAVE_t -- from CWP manual 10.7.3
@@ -1717,14 +1748,14 @@ write_params : LPAREN_t write_actual_parameter_list RPAREN_t
    { $$ := Null_Unbounded_String; }
    ;
 write_actual_parameter_list : write_actual_parameter_list COMMA_t write_actual_parameter
-   { $$ := $1 & ", " & $3; }
+   { $$ := $1 & " & " & $3; }
    | write_actual_parameter
    { $$ := $1; }
    ;
 write_actual_parameter : expression
-   { $$ := $1; }
-   | expression COLON_t another_colon
-   { $$ := $1 & ", " & $3; }
+   { $$ := $1 & Get_Img_Tag; Clear_Selection; }
+   | expression COLON_t another_colon -- P2ADA to do: process format
+   { $$ := $1 & Get_Img_Tag; Clear_Selection; }
    ;
 another_colon : expression
    { $$ := $1; }
@@ -1976,7 +2007,7 @@ dep_list : dep_list sign constant
 procedure_declaration : procedure_header modifiers hint_directive subroutine_block SEMICOLON_t
    { $$ := Replace_SC_by_IS($1) & $2 & $3 & $4;
      Subprog_List.Delete_Last;
-     De_Stack; }    -- P2Ada to do: process modifiers
+     De_Stack;  LeaveObjectStruct;}    -- P2Ada to do: process modifiers
    ;
 procedure_header : PROCEDURE_t proc_or_func_identifier formal_parameter_list SEMICOLON_t
    { $$ := "procedure " & $2 & $3 & ';' & NL;
@@ -2012,7 +2043,8 @@ subroutine_block : block
 -- CWP 11.2
 function_declaration : function_header modifiers hint_directive subroutine_block SEMICOLON_t
    { $$ := Replace_SC_by_IS($1) & $2 & $3 & $4;
-     Subprog_List.Delete_Last; }    -- P2Ada to do: process modifiers
+     Subprog_List.Delete_Last;
+     De_Stack; LeaveObjectStruct;}    -- P2Ada to do: process modifiers
    ;
 function_header : FUNCTION_t proc_or_func_identifier formal_parameter_list COLON_t result_type SEMICOLON_t
    { $$ := "function " & $2 & $3 & " return " & $5 & ';' & NL;
@@ -2028,13 +2060,17 @@ function_header : FUNCTION_t proc_or_func_identifier formal_parameter_list COLON
 -- TP 9.4
 -- THP 7.3
 -- CWP 11.4
-formal_parameter_list : LPAREN_t parameter_declaration_list RPAREN_t
-   { $$ := '(' & $2 & ')'; }
+formal_parameter_list : LPAREN_t
+   { OBJ_Var_Self_If_Object; Set_Variable_Mark; Clear_Selection; }
+   parameter_declaration_list RPAREN_t
+   { $$ := '(' & $3 & ')'; }
    |
-   { $$ := Null_Unbounded_String; }
+   { $$ := Null_Unbounded_String; OBJ_Var_Self_If_Object; }
    ;
-parameter_declaration_list : parameter_declaration_list SEMICOLON_t parameter_declaration
-   { $$ := $1 & "; " & $3; }
+parameter_declaration_list : parameter_declaration_list SEMICOLON_t
+   { Set_Variable_Mark; Clear_Selection; }
+   parameter_declaration
+   { $$ := $1 & "; " & $4; }
    | parameter_declaration
    { $$ := $1; }
    ;
@@ -2057,13 +2093,13 @@ parameter_declaration : value_parameter
 -- THP 7.3.1
 -- CWP 11.4.1
 value_parameter : new_identifier_list COLON_t type_identifier
-   { $$ := $1 & ": " & $3; }
+   { $$ := $1 & ": " & $3; Give_Variables_A_Type; }
    | new_identifier_list COLON_t ARRAY_t OF_t type_identifier -- from Delphi manual
-   { $$ := $1 & ": -- P2Ada to do : anonymous array type " & $3 & NL; }
+   { $$ := $1 & ": -- P2Ada to do : anonymous array type " & $3 & NL; Give_Variables_A_Type; }
    | new_identifier_list COLON_t type_identifier EQUAL_t constant -- default parameter value from Delphi manual
-   { $$ := $1 & ": " & $3 & " := " & $5; }
+   { $$ := $1 & ": " & $3 & " := " & $5; Give_Variables_A_Type; }
    | new_identifier_list COLON_t UNIV_t type_identifier -- from THP, CWP manuals
-   { $$ := $1 & ": " & $4 & " -- P2Ada: THP and CWP value univ parameter" & NL; }
+   { $$ := $1 & ": " & $4 & " -- P2Ada: THP and CWP value univ parameter" & NL; Give_Variables_A_Type; }
    ;
 
 -- FPC 11.4.2 Variable parameters
@@ -2071,13 +2107,13 @@ value_parameter : new_identifier_list COLON_t type_identifier
 -- THP 7.3.2
 -- CWP 11.4.2
 variable_parameter : VAR_t new_identifier_list COLON_t type_identifier
-   { $$ := $2 & ": in out " & $4; }
+   { $$ := $2 & ": in out " & $4; Give_Variables_A_Type; }
    | VAR_t new_identifier_list
    { $$ := $2 & ": P2Ada_No_Type -- P2Ada to do : no type var para" & NL; }
    | VAR_t new_identifier_list COLON_t ARRAY_t OF_t type_identifier -- from Delphi manual
-   { $$ := $1 & ": P2Ada_No_Type -- P2Ada to do : anonymous array type " & $3 & NL; }
+   { $$ := $1 & ": P2Ada_No_Type -- P2Ada to do : anonymous array type " & $3 & NL; Give_Variables_A_Type; }
    | VAR_t new_identifier_list COLON_t UNIV_t type_identifier -- from THP, CWP manuals
-   { $$ := $2 & ": in out " & $5 & " -- P2Ada: THP and CWP var univ parameter" & NL; }
+   { $$ := $2 & ": in out " & $5 & " -- P2Ada: THP and CWP var univ parameter" & NL; Give_Variables_A_Type; }
    ;
 
 -- FPC 11.4.3 Out parameters
@@ -2085,11 +2121,11 @@ variable_parameter : VAR_t new_identifier_list COLON_t type_identifier
 -- THP not defined
 -- CWP not defined
 out_parameter : OUT_t new_identifier_list COLON_t type_identifier
-   { $$ := $2 & ": out " & $4; }
+   { $$ := $2 & ": out " & $4; Give_Variables_A_Type; }
    | OUT_t new_identifier_list
    { $$ := $2 & ": P2Ada_No_Type -- P2Ada to do : no type out para" & NL; }
    | OUT_t new_identifier_list COLON_t ARRAY_t OF_t type_identifier -- Delphi
-   { $$ := $1 & ": P2Ada_No_Type -- P2Ada to do : anonymous array type " & $3 & NL; }
+   { $$ := $1 & ": P2Ada_No_Type -- P2Ada to do : anonymous array type " & $3 & NL; Give_Variables_A_Type; }
    ;
 
 -- FPC 11.4.4 Constant parameters
@@ -2097,15 +2133,15 @@ out_parameter : OUT_t new_identifier_list COLON_t type_identifier
 -- THP not defined
 -- CWP 11.4.3
 constant_parameter : CONST_t new_identifier_list COLON_t type_identifier
-   { $$ := $2 & ": " & $4; }
+   { $$ := $2 & ": " & $4; Give_Variables_A_Type; }
    | CONST_t new_identifier_list
    { $$ := $2 & ": P2Ada_No_Type -- P2Ada to do : no type const para" & NL; }
    | CONST_t new_identifier_list COLON_t ARRAY_t OF_t type_identifier -- from Delphi manual
-   { $$ := $1 & ": P2Ada_No_Type -- P2Ada to do : anonymous array type " & $3 & NL; }
+   { $$ := $1 & ": P2Ada_No_Type -- P2Ada to do : anonymous array type " & $3 & NL; Give_Variables_A_Type; }
    | CONST_t new_identifier_list COLON_t type_identifier EQUAL_t constant -- default parameter value from Delphi manual
-   { $$ := $2 & ": " & $4 & " := " & $6; }
+   { $$ := $2 & ": " & $4 & " := " & $6; Give_Variables_A_Type; }
    | CONST_t new_identifier_list COLON_t UNIV_t type_identifier -- from CWP manual
-   { $$ := $2 & ": " & $5 & " -- P2Ada: CWP const univ parameter" & NL; }
+   { $$ := $2 & ": " & $5 & " -- P2Ada: CWP const univ parameter" & NL; Give_Variables_A_Type; }
    ;
 
 -- FPC 11.7 External functions
@@ -2270,11 +2306,11 @@ comp_ope : EQUAL_t
 -- THP 8.1 (program header always required)
 -- CWP 14.2 (program header always required)
 program : program_header uses_clause block PERIOD_t
-   { $$ := Unit_List & $1 & $3 & Blurb;
+   { $$ := Get_Unit_List & Unit_List & $1 & $3 & Blurb & NL;
      Stop_Export; -- is it useful to export declaration of main program?
      De_Stack; }
    | program_header block PERIOD_t
-   { $$ := Unit_List & $1 & $2 & Blurb;
+   { $$ := Get_Unit_List & Unit_List & $1 & $2 & Blurb & NL;
      Stop_Export; -- is it useful to export declaration of main program?
      De_Stack; }
    ;
@@ -2302,7 +2338,7 @@ uses_clause : USES_t new_identifier_list SEMICOLON_t
 -- CWP 14.3
 unit : unit_header hint_directive -- portability directive from Delphi manual
    interface_part implementation_part begin_init_final_part PERIOD_t
-   { $$ := Unit_List & $2 & $3 & Blurb & $4 & $5 & Blurb; }
+   { $$ := Get_Unit_List & Unit_List & $2 & $3 & Blurb & NL & $4 & $5 & Blurb & NL; }
    ;
 unit_header : UNIT_t new_identifier SEMICOLON_t
    { Set_Unit_Name ($2); }
@@ -2375,12 +2411,13 @@ finalization_part : FINALIZATION_t statement_list
 -- THP 2.1
 -- CWP 13.1
 -- block : declaration_list exports_statement compound_statement exports_statement; -- from Delphi manual
-block : { Inc_Block_Level; Reset_Selection; } -- virtual ayacc rule
+block : { Inc_Block_Level; Reset_Selection; With_Self_If_Object; } -- virtual ayacc rule
    declaration_list block_statement
    { $$ := $2 & Finalize_Package_Body & $3;
-     Dec_Block_Level; }
-   | block_statement
-   { $$ := $1; }
+     Dec_Block_Level; End_Self_If_Object; }
+   | { With_Self_If_Object; } -- virtual ayacc rule
+   block_statement
+   { $$ := $2; End_Self_If_Object; }
    ;
 declaration_list : declaration_list declaration_part
    { $$ := $1 & $2; }
@@ -2513,9 +2550,9 @@ exports_item : identifier NAME_t expression -- string constant
 -- THP not defined
 -- CWP not defined
 library : library_header uses_clause block PERIOD_t
-   { $$ := Unit_List & $1 & $3; }
+   { $$ := Get_Unit_List & Unit_List & $1 & $3; }
    | library_header block PERIOD_t
-   { $$ := $1 & $2 & Blurb; }
+   { $$ := $1 & $2 & Blurb & NL; }
    ;
 library_header : LIBRARY_t new_identifier SEMICOLON_t
    { $$ := "-- P2Ada to do: library " & $2 & NL; }
@@ -2524,13 +2561,13 @@ library_header : LIBRARY_t new_identifier SEMICOLON_t
 -- Delphi Packages
 -- Not defined in FPC, TP, THP and CWP
 package : package_header END_t PERIOD_t
-   { $$ := $1 & Blurb; }
+   { $$ := $1 & Blurb & NL; }
    | package_header requires_clause END_t PERIOD_t
-   { $$ := $1 & $2 & Blurb; }
+   { $$ := $1 & $2 & Blurb & NL; }
    | package_header requires_clause contains_clause END_t PERIOD_t
-   { $$ := $1 & $2 & $3 & Blurb; }
+   { $$ := $1 & $2 & $3 & Blurb & NL; }
    | package_header contains_clause END_t PERIOD_t
-   { $$ := $1 & $2 & Blurb; }
+   { $$ := $1 & $2 & Blurb & NL; }
    ;
 package_header : PACKAGE_t new_identifier SEMICOLON_t
    { $$ := "-- P2Ada to do: package " & $2 & NL; }

@@ -2,8 +2,8 @@
 -- Name        : pascalhelp.adb
 -- Description : Object Pascal help utilities for objP2Ada
 -- Author      : P2Ada team
--- Version     : 1.3a
--- Last update : 2009-12-21
+-- Version     : 1.4a
+-- Last update : 2009-03-28
 -- Licence     : GPL V3 (http://www.gnu.org/licenses/gpl.html)
 -- Contact     : http://sourceforge.net/projects/P2Ada
 -- Notes       : First part come from newP2Ada, last are dedicated to objP2Ada
@@ -100,7 +100,7 @@ PACKAGE BODY PascalHelp IS
       "-- Translated on" &
       Integer'Image(Day(c)) & '-' & Ze_month & '-' &
       Trim(Integer'Image(Year(c)),Both)
-      & " by (Obj) P2Ada V1.3a 15-Jan-2010";
+      & " by (Obj) P2Ada V1.4a 28-Mar-2010";
   end;
 
   function Current_line return Natural is
@@ -1739,6 +1739,15 @@ PACKAGE BODY PascalHelp IS
       end if;
    end;
 
+   function Tagged_Type (Heritage : Unbounded_String) return Unbounded_String is
+   begin
+      if Heritage /= Null_Unbounded_String then
+         return "new " & Heritage & ".Instance with record" & NL;
+      else
+         return "tagged record" & NL;
+      end if;
+   end;
+
    Has_Stmt : Boolean := False;
    procedure Set_Has_Stmt is
    begin
@@ -1858,5 +1867,54 @@ PACKAGE BODY PascalHelp IS
     DirectIO:= False; -- continue retaining (other variables)
     Reset_selection;
   end;
+
+  procedure OBJ_Var_Self_If_Object is
+    noo: constant String:= To_String(name_of_object);
+    begin
+    if ObjectStruct then
+      Set_variable_mark;
+      Clear_Selection;
+      Memorize_identifier("Self", "Self");
+      Enter_var_name;
+      Clear_Selection;
+      Memorize_identifier(noo,noo);
+      Type_identifier;
+      Give_variables_a_type;
+      Clear_Selection;
+      end if;
+    end;
+
+   function Get_Variable_Type return Unbounded_String is
+   begin
+      return To_Unbounded_String(P2Ada_Definition_info.Get_Variable_Type);
+   end;
+
+   function Get_Img_Tag return Unbounded_String is
+      T : constant String := P2Ada_Definition_info.Get_Last_Selected;
+   begin
+      if Index(T, "Char") /= 0 or else Index(T, "String") /= 0 then
+         return Null_Unbounded_String;
+      else
+         return To_Unbounded_String("'img");
+      end if;
+   end;
+
+   function Get_Unit_List return Unbounded_String is
+     Dum : Unbounded_String := Null_Unbounded_String;
+     procedure Add (Position : in String_List.Cursor) is
+      begin
+         Dum := Dum & String_List.Element(Position) & NL;
+      end;
+     begin
+       if String_List.Is_Empty (Default_With_List) then
+         return "with Ada.Direct_IO;" & NL
+               & "with Ada.Text_IO; use Ada.Text_IO;" & NL
+               & "with Interfaces; use Interfaces;" & NL
+               & "with Ada.Unchecked_Deallocation;" & NL;
+       else
+         String_List.Iterate (Default_With_List, Add'Access);
+         return Dum;
+       end if;
+     end;
 
 END PascalHelp;

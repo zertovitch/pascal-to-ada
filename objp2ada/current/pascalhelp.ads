@@ -1,9 +1,9 @@
 -------------------------------------------------------------------------------
--- Name        : pascalhelp.adb
+-- Name        : pascalhelp.ads
 -- Description : Object Pascal help utilities for objP2Ada
 -- Author      : P2Ada team
--- Version     : 1.3a
--- Last update : 2009-12-21
+-- Version     : 1.4a
+-- Last update : 2009-03-28
 -- Licence     : GPL V3 (http://www.gnu.org/licenses/gpl.html)
 -- Contact     : http://sourceforge.net/projects/P2Ada
 -- Notes       : First part come from newP2Ada, last are dedicated to objP2Ada
@@ -361,11 +361,8 @@ function Add_Result_If_Function (Source : Unbounded_String) return Unbounded_Str
 function Get_Subprog_Name (Source : Unbounded_String) return Unbounded_String;
 
 -- List of with and use units to be placed before main procedure
-   Unit_List : Unbounded_String := "with Ada.Direct_IO;" & NL
-     & "with Ada.Text_IO; use Ada.Text_IO;" & NL
-     & "with Interfaces; use Interfaces;" & NL
---     & "with Pascal; use Pascal;" & NL
-     & "with Ada.Unchecked_Deallocation;" & NL;
+   function Get_Unit_List return Unbounded_String;
+   Unit_List : Unbounded_String := Null_Unbounded_String;
 
 -- List of P2Ada declarations inside main program
 Declaration_List : Unbounded_String := Null_Unbounded_String;
@@ -416,6 +413,8 @@ Object_Name : Unbounded_String := Null_Unbounded_String;
 function Append_If_object (Method : Unbounded_String) return Unbounded_String;
 -- Return end of package body with list of methods if object
 function Finalize_Package_Body return Unbounded_String;
+-- Return tagged or inherited type
+function Tagged_Type (Heritage : Unbounded_String) return Unbounded_String;
 
 -- Set has statement flag
 procedure Set_Has_Stmt;
@@ -432,13 +431,19 @@ procedure Add_Discriminant (Source : Unbounded_String);
 -- Return record discriminant
 function Get_Discriminant return Unbounded_String;
 
--- copy of modified newp2ada routines
+-- Copy of modified newp2ada routines
 With_Suffixe : Unbounded_String := Null_Unbounded_String; -- for objp2ada
 procedure OBJ_Open_type_declaration;
 procedure OBJ_Close_type_declaration;
 procedure OBJ_WITH_header;
 procedure OBJ_WITH_variable;
--- define const char or string type based on ' or "
+procedure OBJ_Var_Self_If_Object;
+-- Define const char or string type based on ' or "
 Char_Or_String : constant Ada.Strings.Maps.Character_Mapping := Ada.Strings.Maps.To_Mapping ("'""", "CS");
+
+-- Get type of last variable
+function Get_Variable_Type return Unbounded_String;
+-- Get image tag if different from String or Char
+function Get_Img_Tag return Unbounded_String;
 
 END PascalHelp;

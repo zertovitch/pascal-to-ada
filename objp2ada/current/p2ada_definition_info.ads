@@ -1,3 +1,13 @@
+-------------------------------------------------------------------------------
+-- Name        : p2ada_definition_info.ads
+-- Description : Object Pascal help utilities for objP2Ada
+-- Author      : P2Ada team
+-- Version     : 1.0a
+-- Last update : 2009-03-27
+-- Licence     : GPL V3 (http://www.gnu.org/licenses/gpl.html)
+-- Contact     : http://sourceforge.net/projects/P2Ada
+-- Notes       : First part come from newP2Ada, last are dedicated to objP2Ada
+-------------------------------------------------------------------------------
 -- Started 23-Jan-2003 [GdM].
 
 -- This is a pseudo-compiler construction. It builds internal tables
@@ -42,6 +52,8 @@ package P2Ada_Definition_info is
 
   -- After type denoter is read:
   procedure Give_variables_a_type;
+  -- Get type of last variable
+  function Get_Variable_Type return String;
 
   procedure Set_type_identifier_mark;
   procedure Associate_new_type_to_denoter;
@@ -136,5 +148,7 @@ package P2Ada_Definition_info is
   procedure Close_one_dimension;
 
   procedure Select_litteral( sort: Character ); -- 'C'har, 'S'tring, 'N'umber
+
+  function Get_Last_Selected return String;
 
 end P2Ada_Definition_info;

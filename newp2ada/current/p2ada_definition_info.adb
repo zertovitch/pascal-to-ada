@@ -258,7 +258,7 @@ package body P2Ada_Definition_info is
     else -- scan for still incomplete types
       for pt in type_mark .. typ_top loop
       -- we scan forward, complete types are naturally found backwards
-        if typ_stack(pt).kind = pointer then -- a pointer type
+        if pt /= 0 and then typ_stack(pt).kind = pointer then -- a pointer type
           t:= typ_stack(pt).pointed;
           if t /= no_type then
             if typ_stack(t).kind = incomplete then
@@ -1415,6 +1415,9 @@ package body P2Ada_Definition_info is
             Analyse (Get_Line (F));
          end loop;
          close (F);
+         Hep("--------[ End of predefined ]--------");
+         predef:= (idents=> idt_top+1, types=> typ_top+1);
+         start_exports:= predef;
       end if;
    end Load_Alias;
 

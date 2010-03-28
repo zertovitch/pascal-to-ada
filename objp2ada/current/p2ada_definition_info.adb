@@ -1,3 +1,13 @@
+-------------------------------------------------------------------------------
+-- Name        : p2ada_definition_info.adb
+-- Description : Object Pascal help utilities for objP2Ada
+-- Author      : P2Ada team
+-- Version     : 1.0a
+-- Last update : 2009-03-27
+-- Licence     : GPL V3 (http://www.gnu.org/licenses/gpl.html)
+-- Contact     : http://sourceforge.net/projects/P2Ada
+-- Notes       : First part come from newP2Ada, last are dedicated to objP2Ada
+-------------------------------------------------------------------------------
 --with GNAT.Traceback.Symbolic, Ada.Exceptions;
 
 with Ada.Text_IO;                       use Ada.Text_IO;
@@ -258,7 +268,7 @@ package body P2Ada_Definition_info is
     else -- scan for still incomplete types
       for pt in type_mark .. typ_top loop
       -- we scan forward, complete types are naturally found backwards
-        if typ_stack(pt).kind = pointer then -- a pointer type
+        if pt /= 0 and then typ_stack(pt).kind = pointer then -- a pointer type
           t:= typ_stack(pt).pointed;
           if t /= no_type then
             if typ_stack(t).kind = incomplete then
@@ -359,6 +369,7 @@ package body P2Ada_Definition_info is
       raise Type_too_complicated;
     else
       denoter_top:= denoter_top + 1;
+      Hep("Nest_denoter");
       Clear_type_denoter;
     end if;
   end;
@@ -369,6 +380,7 @@ package body P2Ada_Definition_info is
       raise Too_low_level;
     else
       denoter_top:= denoter_top - 1;
+      Hep("Unnest_denoter");
     end if;
   end;
 
@@ -541,6 +553,17 @@ package body P2Ada_Definition_info is
     end loop;
   end Give_variables_a_type;
 
+   -- Get type of last variable
+   function Get_Variable_Type return String is
+      T: constant Natural:= denoter_stack( denoter_top ).T;
+   begin
+      if T = no_type then
+         return "";
+      else
+         return idt_stack( typ_stack(T).I ).Cased_Name;
+      end if;
+   end;
+
   -- Definition of a named type
 
   type_identifier_mark: Natural:= no_ident;
@@ -612,12 +635,14 @@ package body P2Ada_Definition_info is
   procedure Reset_selection is
   begin
     selector_top:= 0;
+    Hep("Reset_selection");
     Clear_Selection;
   end;
 
   procedure Stack_selection is
   begin
     selector_top:= selector_top + 1;
+    Hep("Stack_selection");
     Clear_Selection;
   end;
 
@@ -843,6 +868,11 @@ package body P2Ada_Definition_info is
       Hep("Type denoter takes type of litteral"); -- whose type is determined
     end if;                                       -- by the litteral
   end;
+
+  function Get_Last_Selected return String is
+    begin
+      return Rich_Image_of_type(selector_stack(selector_top).type_selected);
+    end;
 
   --------------------
   -- Input / Output --
@@ -1415,6 +1445,9 @@ package body P2Ada_Definition_info is
             Analyse (Get_Line (F));
          end loop;
          close (F);
+         Hep("--------[ End of predefined ]--------");
+         predef:= (idents=> idt_top+1, types=> typ_top+1);
+         start_exports:= predef;
       end if;
    end Load_Alias;
 

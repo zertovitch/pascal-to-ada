@@ -8,66 +8,6 @@ nptest5.adb nptest6.adb nptest7.adb nptest8.adb nptest9.adb nptesta.adb \
 nptestb.adb nptestc.adb nptestd.adb npteste.adb nptestf.adb p2ada bp2p
 	cat nptest?.adb > test.ada
 
-aflex :../aflex95/aflex.adb            ../aflex95/misc.ads \
-../aflex95/aflex_scanner.adb           ../aflex95/misc_defs.adb \
-../aflex95/aflex_scanner.ads           ../aflex95/misc_defs.ads \
-../aflex95/ascan_dfa.adb               ../aflex95/nfa.adb \
-../aflex95/ascan_dfa.ads               ../aflex95/nfa.ads \
-../aflex95/ascan_io.adb                ../aflex95/parse_goto.ads \
-../aflex95/ascan_io.ads                ../aflex95/parse_shift_reduce.ads \
-../aflex95/ccl.adb                     ../aflex95/parse_tokens.ads \
-../aflex95/ccl.ads                     ../aflex95/parser.adb \
-../aflex95/command_line_interface.adb  ../aflex95/parser.ads \
-../aflex95/command_line_interface.ads  ../aflex95/scanner.adb \
-../aflex95/dfa.adb                     ../aflex95/scanner.ads \
-../aflex95/dfa.ads                     ../aflex95/skeleton_manager.adb \
-../aflex95/ecs.adb                     ../aflex95/skeleton_manager.ads \
-../aflex95/ecs.ads                     ../aflex95/sym.adb \
-../aflex95/external_file_manager.adb   ../aflex95/sym.ads \
-../aflex95/external_file_manager.ads   ../aflex95/tblcmp.adb \
-../aflex95/file_string.ads             ../aflex95/tblcmp.ads \
-../aflex95/gen.adb                     ../aflex95/template_manager.adb \
-../aflex95/gen.ads                     ../aflex95/template_manager.ads \
-../aflex95/int_io.ads                  ../aflex95/tstring.ads \
-../aflex95/main_body.adb               ../aflex95/vstrings.adb \
-../aflex95/main_body.ads               ../aflex95/vstrings.ads \
-../aflex95/misc.adb
-	gnatmake $(CFLAGS) -D acu ../aflex95/aflex
-
-ayacc : ../ayacc95/actions_file.adb ../ayacc95/actions_file.ads \
- ../ayacc95/ayacc-initialize-get_arguments.adb \
- ../ayacc95/ayacc-initialize.adb ../ayacc95/ayacc-print_statistics.adb \
- ../ayacc95/ayacc.adb ../ayacc95/ayacc_file_names.adb \
- ../ayacc95/ayacc_file_names.ads ../ayacc95/command_line_interface-read_command_line.adb \
- ../ayacc95/command_line_interface.adb ../ayacc95/command_line_interface.ads \
- ../ayacc95/error_report_file.adb ../ayacc95/error_report_file.ads \
- ../ayacc95/goto_file.adb ../ayacc95/goto_file.ads \
- ../ayacc95/lalr_symbol_info.adb ../ayacc95/lalr_symbol_info.ads \
- ../ayacc95/lexical_analyzer.adb ../ayacc95/lexical_analyzer.ads \
- ../ayacc95/lists.adb ../ayacc95/lists.ads \
- ../ayacc95/lr0_machine.adb ../ayacc95/lr0_machine.ads \
- ../ayacc95/options.adb ../ayacc95/options.ads \
- ../ayacc95/output_file.adb ../ayacc95/output_file.ads \
- ../ayacc95/parse_table.adb ../ayacc95/parse_table.ads \
- ../ayacc95/parse_template_file.adb ../ayacc95/parse_template_file.ads \
- ../ayacc95/parser.adb ../ayacc95/parser.ads \
- ../ayacc95/ragged.adb ../ayacc95/ragged.ads \
- ../ayacc95/rule_table.adb ../ayacc95/rule_table.ads \
- ../ayacc95/set_pack.adb ../ayacc95/set_pack.ads \
- ../ayacc95/shift_reduce_file.adb ../ayacc95/shift_reduce_file.ads \
- ../ayacc95/source_file.adb ../ayacc95/source_file.ads \
- ../ayacc95/stack_pack.adb ../ayacc95/stack_pack.ads \
- ../ayacc95/stack_pkg.adb ../ayacc95/stack_pkg.ads \
- ../ayacc95/str_pack.adb ../ayacc95/str_pack.ads \
- ../ayacc95/string_lists.ads ../ayacc95/string_pkg.adb \
- ../ayacc95/string_pkg.ads ../ayacc95/string_scanner.adb \
- ../ayacc95/string_scanner.ads ../ayacc95/symbol_info.adb \
- ../ayacc95/symbol_info.ads ../ayacc95/symbol_table.adb \
- ../ayacc95/symbol_table.ads ../ayacc95/tokens_file.adb \
- ../ayacc95/tokens_file.ads ../ayacc95/verbose_file.adb \
- ../ayacc95/verbose_file.ads
-	gnatmake $(CFLAGS) -D acu ../ayacc95/ayacc
-
 pascal_dfa.adb pascal_dfa.ads pascal_io.adb pascal_io.ads yylex.adb : pascal.l
 	./aflex -i -E pascal.l
 #	./aflex -i -d -E pascal.l

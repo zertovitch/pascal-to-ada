@@ -1,0 +1,26 @@
+-- Pascal entity Name, Entity Type[, Pascal type Name][, Ada alias Name][, Ada postfix alias]
+-- Entity Type are :
+--   Simple, Arrays, Pointer, File, Konst, Funkt, Proc (Funkt with no return type ;-),
+--   with, withuse, option
+-- Type Name are valid for Konst and Funkt entities
+
+-- Options
+--var, option, in_out
+--EOL, option, Unix
+--MOD, option, is_rem
+
+-- Withs and uses
+Ada.Text_IO, withuse
+Interfaces, withuse
+Pascal, withuse
+
+-- withs
+Ada.Direct_IO, with
+Ada.Unchecked_Deallocation, with
+
+-- Classic_predefined
+Char, Simple
+Boolean, Simple
+Real, Simple
+--Integer, Simple
+String, Arrays, Char
