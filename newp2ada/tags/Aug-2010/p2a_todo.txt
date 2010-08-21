@@ -1,0 +1,9 @@
+- track type of expressions
+- Addop: + -> & when String/Char
+- Add commented line like
+    -- original: float := original_IN; -- P2Ada: needed copy of IN parameter 
+    for each per-copy parameter.
+- fix bug of ReadLn(f) -> Get(f); Skip_Line(f);
+- translate WriteLn([String]) as "Put_Line([String]);"
+    instead of "Put[String]; New_Line;"
+- header for Pascal examples, catalog

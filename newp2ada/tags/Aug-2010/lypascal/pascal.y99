@@ -1,0 +1,1208 @@
+-- * GdM 26.viii.1999 *
+--
+-- Str translated ( bug: should be put(s,123) instead of put(123,s) )
+-- ' character, written '' ( bug: should trash the 2nd ' )
+-- arbitrary order of declaration kinds, instead of label-const-type-var-proc
+-- typeless var parameters
+-- DIV becomes /
+-- SHL & SHR operators ( bug: translated by "a Shift_left( ; ) b" )
+-- programs not beginning by 'Program' !
+-- global initialized VARiables - in the CONSTant parts - ; aggregates
+-- strings with contraints
+-- typeless files
+-- else part in case..of
+-- asm...end blocks (not complete)
+-- special directives in proc/func decl. (like near/far/assembler)
+-- characters with explicit ascii (#223)
+--
+-- begin/end simplified when safe (then/else/do/case)
+-- outputs "Null;" for empty statement
+-- outputs "WHEN others=> Null;" when no else part
+--
+-- $Id: Pascal.y,v 2.1 1997/08/23 18:59:33 nestor Rel $
+-- $Locker:  $
+-- $Log: Pascal.y,v $
+-- Revision 2.1  1997/08/23 18:59:33  nestor
+-- Laurent Gasser's correction for MacOS extended Pascal
+-- added MacOS Pascal tokens: unit, interface, implementation, uses
+-- allow module/units to become packages
+-- transform Pascal uses list in Ada with list
+-- accepts @ operator
+-- corrected Pascal record statement (especially variant ones)
+-- accepts hexadecimal constants
+-- accepts procedures and functions as types
+-- accepts procedure pointers as statements
+-- reorder tokens in alphabetically
+-- notify empty rules with comment
+-- regroup rules with titles in comments
+--
+-- Revision 1.1  1997/08/22  21:06:07  nestor
+-- Martin C. Carlisle's original version, standard Pascal
+--
+-- ayacc specification for Pascal
+--
+-- Martin C. Carlisle, US Air Force Academy
+-- mcc@cs.usafa.af.mil
+-- http://www.usafa.af.mil/dfcs/bios/carlisle.html
+-- November 26, 1996
+--
+-- Laurent Gasser, Hirondelle Lumineuse
+-- lga@sma.ch
+-- June 21, 1997
+-- 
+-- Adaptation to extended MacOS Pascal
+-- Based on the syntax diagrams of:
+--   Language Reference chapter
+--   in THINK Pascal, User Manual, Symantech 1991
+--
+--   CodeWarrior Pascal Language Reference CW10
+--   Metrowerks 1996
+--
+-- added MacOS Pascal tokens: unit, interface, implementation, uses
+-- allow module/units to become packages
+-- transform Pascal uses list in Ada with list
+-- accepts @ operator
+-- corrected Pascal record statement (especially variant ones)
+-- accepts hexadecimal constants
+-- accepts procedures and functions as types
+-- accepts procedure pointers as statements
+--
+-- usage: ayacc Pascal.y
+
+-- Declarations
+%token    AND_t
+%token    AMPERSAND_t
+%token    ARRAY_t
+%token    ARROW_t
+%token    ASCII_t
+%token    ASM_t
+%token    ASSIGN_t
+%token    AT_t
+%token    BEGIN_t
+%token    CASE_t
+%token    CHAR_t
+%token    CHAR_CONST_t
+%token    COLON_t
+%token    CONST_t
+%token    CONSTANT_t
+%token    COMMA_t
+%token    DIV_t
+%token    DIVIDE_t
+%token    DO_t
+%token    DOUBLEDOT_t
+%token    DOUBLESTAR_t
+%token    DOWNTO_t
+%token    ELSE_t
+%token    END_t
+%token    EQUAL_t
+%token    EXTERNAL_t
+%token    FALSE_t
+%token    FILE_t
+%token    FOR_t
+%token    FORWARD_t
+%token    FUNCTION_t
+%token    GE_t
+%token    GOTO_t
+%token    GT_t
+%token    HEXADECIMAL_t
+%token    ID_t
+%token    IF_t
+%token    IMPLEMENTATION_t
+%token    IN_t
+%token    INTERFACE_t
+%token    LABEL_t
+%token    LBRACK_t
+%token    LE_t
+%token    LPAREN_t
+%token    LT_t
+%token    MINUS_t
+%token    MOD_t
+%token    NE_t
+%token    NIL_t
+%token    NOT_t
+%token    OF_t
+%token    OR_t
+%token    OTHERWISE_t
+%token    PACKED_t
+%token    PERIOD_t
+%token    PLUS_t
+%token    PROCEDURE_t
+%token    PROGRAM_t
+%token    RBRACK_t
+%token    REAL_t
+%token    RECORD_t
+%token    REPEAT_t
+%token    RPAREN_t
+%token    SEMICOLON_t
+%token    SET_t
+%token    SHL_t
+%token    SHR_t
+%token    STR_t
+%token    STRING_t
+%token    THEN_t
+%token    TIMES_t
+%token    TO_t
+%token    TRUE_t
+%token    TYPE_t
+%token    UNIT_t
+%token    UNTIL_t
+%token    UPARROW_t
+%token    USES_t
+%token    VAR_t
+%token    WHILE_t
+%token    WITH_t
+%token    WRITE_t
+%token    WRITELN_t
+
+%start    entity
+
+{
+  type const_type is (string_type,character_type,boolean_type,other_type);
+  type YYSType is record
+     text    : String(1..80);
+     length  : Natural := 0;
+     vartype : const_type;
+  end record;
+}
+
+%%
+-- Rules
+
+entity : unit | program ;
+
+unit : unit_heading
+    interface_part
+    implementation_part
+    ;
+
+unit_heading : UNIT_t
+    mute_identifier {pascalhelp.package_name := $2.text;
+    pascalhelp.package_name_length := $2.length;}
+    SEMICOLON_t
+    ;
+
+mute_identifier : ID_t {$$.length := YYLength; 
+    $$.text(1..YYLength) := YYText;}
+    ;
+
+procedure_and_function_heading_part : 
+    procedure_heading SEMICOLON_t {pascalhelp.put(";");}
+    | function_heading SEMICOLON_t {pascalhelp.put(";");}
+    ;
+
+heading_declaration_part : heading_declaration_list
+    | -- EMPTY
+    ;
+
+heading_declaration_list : heading_declaration_list any_heading_declaration
+    | any_heading_declaration
+    ;
+
+any_heading_declaration :
+    | constant_declaration_part
+    | type_definition_part
+    | variable_declaration_part
+    | procedure_and_function_heading_part
+    ;
+
+interface_part : INTERFACE_t
+    {
+    pascalhelp.put("PACKAGE ");
+    pascalhelp.put(pascalhelp.package_name(1..pascalhelp.package_name_length));
+    pascalhelp.put(" IS");
+    }
+    uses_clause
+    heading_declaration_part
+    ;
+
+declaration_part : declaration_list
+    | -- EMPTY
+    ;
+
+declaration_list : declaration_list any_declaration
+    | any_declaration
+    ;
+
+any_declaration :
+    | label_declaration_part
+    | constant_declaration_part
+    | type_definition_part
+    | variable_declaration_part
+    | procedure_and_function_declaration_part
+    ;
+
+implementation_part : IMPLEMENTATION_t
+    {
+    pascalhelp.put("END ");
+    pascalhelp.put(pascalhelp.package_name(1..pascalhelp.package_name_length));
+    pascalhelp.put_line(";");
+    pascalhelp.put_line(" ");
+    pascalhelp.put("PACKAGE BODY ");
+    pascalhelp.put(pascalhelp.package_name(1..pascalhelp.package_name_length));
+    pascalhelp.put(" IS");
+    }
+    uses_clause
+    declaration_part
+    END_t PERIOD_t
+    {
+    pascalhelp.put("END ");
+    pascalhelp.put(pascalhelp.package_name(1..pascalhelp.package_name_length));
+    pascalhelp.put(";");
+    }
+    ;
+    
+uses_clause : USES_t {pascalhelp.put("WITH ");}
+    identifier_list
+    SEMICOLON_t {pascalhelp.put(";");}
+    |  -- EMPTY
+    ;
+
+program : PROGRAM_t {pascalhelp.put("PROCEDURE ");}
+    identifier {pascalhelp.put_line(" IS");} 
+    file_list SEMICOLON_t
+    uses_clause
+    block PERIOD_t
+    | {pascalhelp.put_line("PROCEDURE I_love_Borland IS");} 
+    uses_clause
+    block PERIOD_t
+    ;
+
+file_list : LPAREN_t file_identifier_list RPAREN_t
+    |  -- EMPTY
+    ;
+
+file_identifier_list : file_identifier_list COMMA_t 
+    identifier
+    {pascalhelp.put_line(": Ada.Text_IO.File_Type;");}
+    | identifier
+    {pascalhelp.put_line(": Ada.Text_IO.File_Type;");}
+    ;
+
+identifier_list : identifier_list COMMA_t {pascalhelp.put(',');} identifier
+    | identifier
+    ;
+
+block :
+    declaration_part
+    compound_statement
+    ;
+
+label_declaration_part : LABEL_t label_list SEMICOLON_t
+    ;
+
+label_list : label_list comma label
+    | label
+    ;
+
+label : CONSTANT_t
+    ;
+
+emitted_label : CONSTANT_t 
+    {pascalhelp.Put("<<Label_"); pascalhelp.put(YYText); pascalhelp.put(">>");}
+    ;
+
+-----------------------------------------------
+--  C O N S T A N T   D E C L A R A T I O N  --
+-----------------------------------------------
+constant_declaration_part : CONST_t constant_declaration_list
+    ;
+
+constant_declaration_list : constant_declaration_list constant_declaration
+    | constant_declaration
+    ;
+
+constant_declaration : identifier EQUAL_t 
+    { pascalhelp.Put(": CONSTANT"); pascalhelp.DirectIO := False;}
+    cexpression SEMICOLON_t 
+    {
+     pascalhelp.DirectIO := True;
+     IF $4.vartype = boolean_type THEN
+       pascalhelp.put(" Boolean := ");
+     ELSIF $4.vartype = character_type THEN  
+       pascalhelp.put(" Character := ");
+     ELSIF $4.vartype = string_type THEN  
+       pascalhelp.put(" String := ");
+     ELSE
+       pascalhelp.put(":= ");
+     END IF;
+     pascalhelp.flush;
+     pascalhelp.empty;
+     pascalhelp.Put(";");
+    }
+    -- Initialized variables (=CONST...)
+    |
+    identifier
+    COLON_t {pascalhelp.put(':');} 
+    type_denoter
+    EQUAL_t {pascalhelp.put(":=");}
+    expr_or_agg SEMICOLON_t {pascalhelp.put(";");}
+    ;
+
+expr_or_agg : expression | aggregate;
+
+aggregate : -- Turbo Pascal use them for initialized variables
+    LPAREN_t {pascalhelp.put('(');} record_agg RPAREN_t {pascalhelp.put(')');}
+    |
+    LPAREN_t {pascalhelp.put('(');} array_agg RPAREN_t {pascalhelp.put(')');}
+    ;
+
+array_agg : array_agg COMMA_t {pascalhelp.put(',');} expr_or_agg
+          | expr_or_agg ;
+record_agg : record_agg SEMICOLON_t {pascalhelp.put(',');} named_field
+           | named_field ;
+named_field : identifier COLON_t {pascalhelp.put("=>");} expr_or_agg;
+
+cexpression : csimple_expression {$$.vartype := $1.vartype;}
+    | csimple_expression relop csimple_expression {$$.vartype:=boolean_type;}
+    ;
+
+csimple_expression : unsigned_csimple_expression {$$.vartype := $1.vartype;}
+    | sign unsigned_csimple_expression {$$.vartype := other_type;}
+    ;
+
+unsigned_csimple_expression : constant_term
+    | unsigned_csimple_expression PLUS_t {pascalhelp.put('+');} constant_term
+    | unsigned_csimple_expression MINUS_t {pascalhelp.put('-');} constant_term
+    | unsigned_csimple_expression OR_t {pascalhelp.put("OR");} constant_term
+--    | unsigned_csimple_expression BOR_t constant_term
+    ;
+
+constant_term : constant_term mulop constant_factor {$$.vartype := other_type;}
+    | constant_factor
+    ;
+
+-- remove "unsigned_constant : identifier" so explicit reduction to identifier
+constant_factor : unsigned_constant
+    | identifier
+    | function_call
+    | set_constructor
+    | LPAREN_t {pascalhelp.put('(');}
+      cexpression
+      RPAREN_t {pascalhelp.put(')'); $$.vartype := $3.vartype;}
+    | NOT_t {pascalhelp.put("NOT");} constant_factor
+    ;
+
+explicit_ascii : ASCII_t 
+        {DECLARE the_number : string := YYText;
+         BEGIN
+           pascalhelp.Put("Character'Val(" & the_number(2..
+           the_number'last) & ")");
+         END;}
+    ;
+
+borland_substring : 
+      STRING_t {pascalhelp.printstring(YYText);}
+      | explicit_ascii ;
+
+borland_string :
+      borland_substring |
+      borland_string {pascalhelp.put('&');} borland_substring
+      ;
+
+-- add rules because TRUE_t and FALSE_t are no identifiers
+-- remove reduction to identifier to avoid conflict with variable_access
+unsigned_constant : unsigned_number {$$.vartype := other_type;}
+    | CHAR_CONST_t {pascalhelp.put(YYText); $$.vartype := character_type;}
+    | explicit_ascii {$$.vartype := character_type;}
+    | borland_string {$$.vartype := string_type;}
+--    | identifier
+    | NIL_t {pascalhelp.put("NULL"); $$.vartype := other_type;}
+    | TRUE_t {pascalhelp.put("True"); $$.vartype := boolean_type;}
+    | FALSE_t {pascalhelp.put("False"); $$.vartype := boolean_type;}
+    ;
+
+-- csimple_expression : cterm {$$.vartype := $1.vartype;}
+--     | csimple_expression addop cterm {$$.vartype := other_type;}
+--     ;
+-- 
+-- cterm : cfactor {$$.vartype := $1.vartype;}
+--     | cterm mulop cfactor {$$.vartype := other_type;}
+--     ;
+-- 
+-- cfactor : sign cfactor {$$.vartype := other_type;}
+--     | cexponentiation {$$.vartype := $1.vartype;}
+--     ;
+-- 
+-- cexponentiation : cprimary {$$.vartype := $1.vartype;}
+--     | cprimary DOUBLESTAR_t {pascalhelp.put("**");} cexponentiation
+--       {$$.vartype := other_type;}
+--     ;
+-- 
+-- cprimary : identifier {$$.vartype := other_type;}
+--     | LPAREN_t {pascalhelp.put('(');}
+--       cexpression
+--       RPAREN_t {pascalhelp.put(')'); $$.vartype := $3.vartype;} 
+--     | unsigned_constant {$$.vartype := $1.vartype;}
+--     | NOT_t {pascalhelp.put(" NOT ");} cprimary {$$.vartype := boolean_type;}
+--     ;
+
+constant : non_string {$$.vartype := $1.vartype;}
+    | sign non_string {$$.vartype := other_type;}
+    | CHAR_CONST_t {pascalhelp.put(YYText); $$.vartype := character_type;}
+    | explicit_ascii {$$.vartype := character_type;}
+    | borland_string {$$.vartype := string_type;}
+    ;
+
+sign : PLUS_t {pascalhelp.put('+');}
+    | MINUS_t {pascalhelp.put('-');}
+    ;
+
+non_string : CONSTANT_t {pascalhelp.put(YYText); $$.vartype := other_type;}
+    | HEXADECIMAL_t
+      {
+       DECLARE
+         the_number : string := YYText;
+       BEGIN
+         pascalhelp.Put("16#" & the_number(2..the_number'last) & "#");
+         $$.vartype := other_type;
+       END;
+       }
+    | identifier  {$$.vartype := other_type;}
+    | TRUE_t {pascalhelp.put(" True "); $$.vartype := boolean_type;}
+    | FALSE_t {pascalhelp.put(" False "); $$.vartype := boolean_type;}
+    ;
+
+
+---------------------------------------
+--  T Y P E   D E C L A R A T I O N  --
+---------------------------------------
+type_definition_part : TYPE_t type_definition_list
+    ;
+
+type_definition_list : type_definition_list type_definition
+    | type_definition
+    ;
+
+type_definition : {pascalhelp.put("TYPE ");}
+    identifier EQUAL_t {pascalhelp.put(" IS ");} type_denoter SEMICOLON_t
+    {pascalhelp.put(';');}
+    ;
+
+string_constraint : -- we know that the identifier is "string"...
+    identifier LBRACK_t {pascalhelp.put("(1..");}
+    constant {pascalhelp.put(")");} RBRACK_t ;
+
+type_denoter : identifier | string_constraint | new_type ;
+
+new_type : new_ordinal_type
+    | new_structured_type
+    | new_pointer_type
+    | new_procedure_type
+    | new_function_type
+    ;
+
+new_ordinal_type : enumerated_type
+    | subrange_type
+    ;
+
+enumerated_type : LPAREN_t {pascalhelp.put('(');}
+    identifier_list RPAREN_t {pascalhelp.put(')');}
+    ;
+
+subrange_type : constant DOUBLEDOT_t {pascalhelp.put("..");} constant
+    ;
+
+new_structured_type : structured_type
+    | PACKED_t structured_type
+    ;
+
+structured_type : array_type
+    | record_type
+    | set_type
+    | file_type
+    ;
+
+array_type : ARRAY_t {pascalhelp.put(" ARRAY (");} 
+    LBRACK_t index_list RBRACK_t OF_t 
+    {pascalhelp.put(") OF ");}
+    component_type
+    ;
+
+index_list : index_list comma {pascalhelp.put(',');} index_type
+    | index_type
+    ;
+
+index_type : ordinal_type ;
+
+ordinal_type : new_ordinal_type
+    | identifier
+    ;
+
+component_type : type_denoter ;
+
+-- record_type : RECORD_t {pascalhelp.put(" RECORD ");}
+--     field_list optional_semicolon {pascalhelp.put(';');}
+--     END_t {pascalhelp.put("END RECORD");}
+--     ;
+-- 
+-- field_list : record_section_list
+--     | record_section_list SEMICOLON_t {pascalhelp.put(';');} variant_part
+--     | variant_part
+--     ;
+-- 
+-- record_section_list : record_section_list SEMICOLON_t {pascalhelp.put(';');}
+--     record_section
+--     | record_section
+--     ;
+--
+-- The SEMICOLON_t after record_section_list is raising a shift/reduce
+-- conflict: within record_section_list or transition to variant_part?
+-- So regroup the two rules
+--   record_section_list SEMICOLON_t record_section
+--   record_section_list SEMICOLON_t variant_part
+-- in record_section_list, eliminate left recursion, and left factor the
+-- resulting rule.
+--
+-- The persistent shift/reduce conflict is correctly resolved in favor
+-- of the shift: consume a SEMICOLON_t and iterate on record_section_list.
+-- But this very SEMICOLON_t could be interprated as the optional_semicolon
+-- in record_type.  This conflict was raising a syntax error exception on legal
+-- Pascal source.  It has been solve by removing optional_semicolon after
+-- field_list in the rule record_type, and using a boolean for closing
+-- the last statement of the record with a semicolon.
+
+record_type : RECORD_t {pascalhelp.put(" RECORD ");}
+    field_list
+    {
+    if not pascalhelp.has_optional_semicolon then
+      pascalhelp.put(';');
+    end if;
+    pascalhelp.has_optional_semicolon := FALSE;
+    }
+    END_t {pascalhelp.put("END RECORD");}
+    ;
+
+field_list : record_section_list
+    | variant_part
+    ;
+
+record_section_list : record_section_list SEMICOLON_t {pascalhelp.put(';');} 
+    tail_record_section_list
+    | record_section
+    ;
+
+tail_record_section_list : record_section
+    | variant_part
+    | {pascalhelp.has_optional_semicolon := TRUE;}
+    ;
+
+record_section : 
+    identifier_list
+    COLON_t {pascalhelp.put(':');}
+    type_denoter
+    ;
+
+variant_part : 
+    CASE_t {pascalhelp.put("CASE");}
+    variant_selector 
+    OF_t {pascalhelp.put_line("IS");}
+    {pascalhelp.put("WHEN ");} variant_list 
+    optional_semicolon {pascalhelp.put("END CASE");}
+    ;
+
+variant_selector : tag_field COLON_t tag_type
+    | tag_type
+    ;
+
+variant_list : variant_list SEMICOLON_t
+     {pascalhelp.put("WHEN ");} variant
+    | variant
+    ;
+
+variant : case_constant_list COLON_t {pascalhelp.put(" => ");}
+    LPAREN_t
+    field_list optional_semicolon {pascalhelp.put(';');}
+    RPAREN_t
+    ;
+
+-- variant : case_constant_list COLON_t {pascalhelp.put(" => ");}
+--     LPAREN_t
+--     record_section_list RPAREN_t
+--     | case_constant_list COLON_t LPAREN_t record_section_list SEMICOLON_t
+--         variant_part RPAREN_t
+--     | case_constant_list COLON_t LPAREN_t variant_part RPAREN_t
+--     ;
+
+case_constant_list : case_constant_list 
+      comma {pascalhelp.put(" | ");}
+      case_constant
+    | case_constant
+    ;
+
+case_constant : constant
+    | constant DOUBLEDOT_t constant
+    ;
+
+tag_field : identifier ;
+
+tag_type : identifier ;
+
+set_type : SET_t OF_t {pascalhelp.put("NEW Set(Of =>");} base_type
+    {pascalhelp.put(")");}
+    ;
+
+base_type : ordinal_type ;
+
+file_type :
+      FILE_t OF_t component_type
+       {pascalhelp.put("Ada.Text_IO.File_Type");}
+    | FILE_t
+       {pascalhelp.put("Byte_direct_IO.File_Type");}
+    ;
+
+new_pointer_type : UPARROW_t {pascalhelp.Put("ACCESS ");} domain_type
+    ;
+
+domain_type : identifier ;
+
+new_procedure_type : PROCEDURE_t {pascalhelp.put("PROCEDURE");}
+    | PROCEDURE_t {pascalhelp.put("PROCEDURE");} formal_parameter_list
+    ;
+
+new_function_type : FUNCTION_t {pascalhelp.put("FUNCTION");}
+    COLON_t {pascalhelp.put(" IS ");} identifier
+    | FUNCTION_t {pascalhelp.put("FUNCTION");}
+    formal_parameter_list
+    COLON_t {pascalhelp.put(" IS ");} identifier
+    ;
+
+-----------------------------------------------
+--  V A R I A B L E   D E C L A R A T I O N  --
+-----------------------------------------------
+variable_declaration_part : VAR_t
+    variable_declaration_list
+    ;
+
+variable_declaration_list :
+      variable_declaration_list variable_declaration
+    | variable_declaration
+    ;
+
+variable_declaration : 
+    identifier_list
+    COLON_t {pascalhelp.put(':');} 
+    type_denoter
+    SEMICOLON_t {pascalhelp.put(";");}
+    ;
+
+---------------------------------------------------
+--  S U B R O U T I N E   D E C L A R A T I O N  --
+---------------------------------------------------
+procedure_and_function_declaration_part :
+        proc_or_func_declaration_list SEMICOLON_t 
+    ;
+
+proc_or_func_declaration_list :
+      proc_or_func_declaration_list SEMICOLON_t 
+      proc_or_func_declaration 
+    | proc_or_func_declaration
+    ;
+
+proc_or_func_declaration : procedure_declaration
+    | function_declaration
+    ;
+
+procedure_declaration : procedure_heading SEMICOLON_t 
+      {DECLARE
+         tok : Token;
+       BEGIN
+         tok := YYLex;
+         IF (tok = FORWARD_t) OR (tok=EXTERNAL_t) THEN
+           pascalhelp.put_line(";");
+         ELSE
+           pascalhelp.put_line(" IS");
+         END IF;
+         UnYYLex(tok);
+      END;}
+      directive_or_block
+    ;
+
+procedure_heading : procedure_identification
+    | procedure_identification formal_parameter_list
+    ;
+
+directive : FORWARD_t | EXTERNAL_t ;
+link_directive : identifier SEMICOLON_t | ; -- near or far and/or assembler
+
+formal_parameter_list : LPAREN_t {pascalhelp.put('(');}
+     formal_parameter_section_list RPAREN_t {pascalhelp.put(')');} ;
+
+formal_parameter_section_list : formal_parameter_section_list SEMICOLON_t
+      {pascalhelp.put(';');} formal_parameter_section
+    | formal_parameter_section
+    ;
+
+formal_parameter_section : value_parameter_specification
+    | variable_parameter_specification
+    | procedural_parameter_specification
+    | functional_parameter_specification
+    ;
+
+value_parameter_specification : identifier_list COLON_t {pascalhelp.put(':');}
+    identifier
+    ;
+
+variable_parameter_specification :
+    VAR_t 
+    identifier_list COLON_t {pascalhelp.put(": IN OUT ");} identifier |
+    VAR_t
+    identifier_list {pascalhelp.put(": IN OUT [Help! Typeless VAR!]");}
+    ;
+
+procedural_parameter_specification : procedure_heading ;
+
+functional_parameter_specification : function_heading ;
+
+procedure_identification : PROCEDURE_t {pascalhelp.put("PROCEDURE");} identifier ;
+
+procedure_block : block ;
+
+function_declaration : function_heading SEMICOLON_t 
+      {DECLARE
+         tok : Token;
+       BEGIN
+         tok := YYLex;
+         IF (tok = FORWARD_t) OR (tok=EXTERNAL_t) THEN
+           pascalhelp.put_line(";");
+         ELSE
+           pascalhelp.put_line(" IS");
+           pascalhelp.put("Result");
+           pascalhelp.put(pascalhelp.FunctionName(1..pascalhelp.FnNameLength));
+           pascalhelp.put(" : ");
+           pascalhelp.put($1.text(1..$1.length));
+           pascalhelp.put_line(";");
+           pascalhelp.put_line("BEGIN");
+           pascalhelp.put("DECLARE ");
+         END IF;
+         UnYYLex(tok);
+      END;}
+    func_directive_or_block
+    ;
+
+func_directive_or_block :
+      directive 
+    | link_directive link_directive block
+    {pascalhelp.put("RETURN Result");
+     pascalhelp.put(pascalhelp.FunctionName(1..pascalhelp.FnNameLength));
+     pascalhelp.put_line(";");
+     pascalhelp.put("END;");
+     pascalhelp.FnNameLength := 0;}
+    ;
+
+directive_or_block :
+      directive 
+    | link_directive link_directive block
+    ;
+
+function_heading : FUNCTION_t {pascalhelp.put("FUNCTION ");} 
+    identifier {pascalhelp.FnNameLength := $3.length; 
+                pascalhelp.FunctionName(1..$3.length) := 
+                  $3.text(1..$3.length);
+               }
+    possible_formals
+    COLON_t {pascalhelp.put(" RETURN ");} result_type
+    {$$.length := $8.length;
+     $$.text := $8.text;
+    }
+    ;
+
+possible_formals :
+    formal_parameter_list
+    | -- EMPTY
+    ;
+
+result_type : identifier {$$.length := $1.length; $$.text := $1.text;};
+
+function_identification : FUNCTION_t identifier ;
+
+function_block : block ;
+
+
+---------------------------
+--  S T A T E M E N T S  --
+---------------------------
+
+statement_part : non_labeled_statement
+    | emitted_label COLON_t non_labeled_statement
+    | {pascalhelp.put(" Null; ");} -- EMPTY
+    ;
+
+non_labeled_statement : simple_statement
+    | structured_statement
+    ;
+
+simple_statement : assignment_statement
+    | procedure_statement
+    | goto_statement
+    ;
+
+structured_statement : compound_statement
+    | if_statement
+    | case_statement
+    | repeat_statement
+    | while_statement
+    | for_statement
+    | with_statement
+    ;
+
+junk_asm : junk_asm | identifier;  -- to be completed!
+
+compound_statement : 
+    BEGIN_t {pascalhelp.put("BEGIN");}
+       statement_sequence
+    END_t {pascalhelp.put("END;");}
+    |
+    ASM_t {pascalhelp.put_line("BEGIN ASM (");}
+       junk_asm
+    END_t {pascalhelp.put_line("); END; -- ASM");}
+    ;
+
+statement_sequence : statement_part
+    | statement_sequence SEMICOLON_t statement_part
+    ;
+
+repeat_statement : REPEAT_t {pascalhelp.put_line("LOOP");}
+    statement_sequence
+    UNTIL_t {pascalhelp.put(" EXIT WHEN ");} boolean_expression
+    {pascalhelp.put_line(";"); pascalhelp.put_line("END LOOP;");}
+    ;
+
+while_statement : WHILE_t {pascalhelp.put("WHILE ");} boolean_expression 
+    DO_t {pascalhelp.put_line(" LOOP");} 
+    fat_statement_part {pascalhelp.put_line("END LOOP;");}
+    ;
+
+for_statement : FOR_t {pascalhelp.put("FOR ");} control_variable 
+            ASSIGN_t {pascalhelp.put(" IN ");
+              pascalhelp.DirectIO := False;
+            } initial_value direction
+            {pascalhelp.put("..");}
+            final_value DO_t 
+            {pascalhelp.put_line(" LOOP");} 
+            fat_statement_part
+            {pascalhelp.put_line("END LOOP;");}
+    ;
+
+with_statement : WITH_t 
+    {
+    pascalhelp.put_line("--HELP!! WITH ");
+    pascalhelp.put_line("DECLARE ");
+    pascalhelp.put("  r : <type> RENAMES ");
+    }
+    record_variable_list 
+    DO_t {pascalhelp.put(';');}
+    statement_part
+    ;
+
+fat_statement_part : -- Trash the extra safely enclosed BEGIN...END
+    statement_part
+    | BEGIN_t statement_sequence END_t ;
+    
+if_statement :
+    IF_t {pascalhelp.put("IF ");} boolean_expression
+    THEN_t {pascalhelp.put("THEN");} fat_statement_part
+    else_part 
+    {pascalhelp.put("END IF;");}
+    ;
+
+else_part : ELSE_t {pascalhelp.put("ELSE");} fat_statement_part
+    |  -- EMPTY
+    ;
+
+assignment_statement : variable_access ASSIGN_t 
+    {pascalhelp.put(":=");}
+    expression
+    {pascalhelp.put(";");}
+    ;
+
+indexed_variable : variable_access LBRACK_t 
+    {pascalhelp.put('(');}
+    index_expression_list RBRACK_t
+    {pascalhelp.put(')');}
+    ;
+
+index_expression_list : index_expression_list comma index_expression
+    | index_expression
+    ;
+
+index_expression : expression ;
+
+field_designator : variable_access PERIOD_t 
+    {pascalhelp.put('.');}
+    identifier
+    ;
+
+procedure_statement : identifier params {pascalhelp.put(";");}
+    | pointer_dereference params {pascalhelp.put(';');}
+    | STR_t {pascalhelp.Put("Put");} str_params {pascalhelp.put(";");}
+    | WRITE_t {pascalhelp.Put("Put");} write_params {pascalhelp.put(";");}
+    | WRITELN_t {pascalhelp.Put("Put");} write_params 
+      {pascalhelp.put_line(";");
+       pascalhelp.put("New_Line;");}
+    ;
+
+-- resolve conflict with non_empty_params by calling non_empty_params
+-- params : LPAREN_t {pascalhelp.put('(');}
+--     actual_parameter_list RPAREN_t {pascalhelp.put(')');}
+--     |  -- EMPTY
+--     ;
+params : non_empty_params
+    |  -- EMPTY
+    ;
+
+write_params : LPAREN_t {pascalhelp.put('(');}
+    write_actual_parameter_list RPAREN_t {pascalhelp.put(')');}
+    |  -- EMTPY
+    ;
+
+write_actual_parameter_list : write_actual_parameter_list comma 
+    {pascalhelp.put_line(");");
+     pascalhelp.put("Put(");} write_actual_parameter 
+    | write_actual_parameter
+    ;
+
+write_actual_parameter : expression
+    | expression COLON_t {pascalhelp.put(',');} another_colon
+    ;
+
+another_colon : expression
+    | expression COLON_t {pascalhelp.put(',');} expression 
+      {pascalhelp.put(",0");}
+    ;
+
+str_params : LPAREN_t {pascalhelp.put('(');}
+    str_actual_parameter comma {pascalhelp.put(',');}
+    expression RPAREN_t {pascalhelp.put(')');}
+    ;
+
+str_actual_parameter : expression
+    | expression COLON_t {pascalhelp.put(',');} expression
+    ;
+
+non_empty_params : LPAREN_t {pascalhelp.put('(');}
+    actual_parameter_list
+    RPAREN_t {pascalhelp.put(')');}
+    ;
+
+actual_parameter_list : actual_parameter_list comma 
+    {pascalhelp.put(',');} actual_parameter
+    | actual_parameter
+    ;
+
+-- completed according to the Metrowerks standard with 
+-- variable_access, procedure_identifier, function_identifier
+actual_parameter : expression
+--    | variable_access
+    ;
+
+goto_statement : GOTO_t {pascalhelp.put("GOTO ");}
+    emitted_label {pascalhelp.put_line(";");}
+    ;
+
+case_statement : CASE_t {pascalhelp.put("CASE ");} case_index 
+    OF_t {pascalhelp.put_line(" IS ");} 
+    {pascalhelp.put("WHEN ");} case_list_element_list 
+    rest_of_case END_t {pascalhelp.put_line("END CASE;");}
+    ;
+
+rest_of_case : optional_semicolon otherwisepart_or_null optional_semicolon
+    ;
+
+optional_semicolon : SEMICOLON_t
+    |  -- EMPTY
+    ;
+
+otherwisepart_or_null : otherwisepart
+    | {pascalhelp.put_line("WHEN OTHERS=> Null; ");}   -- EMPTY
+    ;
+
+case_index : expression ;
+
+case_list_element_list : case_list_element_list SEMICOLON_t 
+      {pascalhelp.put("WHEN ");} case_list_element
+    | case_list_element
+    ;
+
+case_list_element : case_constant_list COLON_t {pascalhelp.put("=>");}
+    fat_statement_part
+    ;
+
+otherwisepart : OTHERWISE_t {pascalhelp.put("WHEN OTHERS =>");} fat_statement_part
+    | OTHERWISE_t COLON_t {pascalhelp.put("WHEN OTHERS =>");} fat_statement_part
+    | ELSE_t {pascalhelp.put("WHEN OTHERS =>");} fat_statement_part
+    ;
+
+control_variable : identifier ;
+
+initial_value : expression ;
+
+direction : TO_t
+      { pascalhelp.DirectIO := True;
+        pascalhelp.flush;
+        pascalhelp.empty;
+      }
+    | DOWNTO_t 
+      { pascalhelp.DirectIO := True;
+        pascalhelp.put(" REVERSE ");
+        pascalhelp.flush;
+        pascalhelp.empty;
+      }
+    ;
+
+final_value : expression ;
+
+record_variable_list : record_variable_list comma variable_access
+    | variable_access
+    ;
+
+boolean_expression : expression ;
+
+expression : simple_expression
+    | simple_expression relop simple_expression
+    ;
+
+-- according to Metrowerks Pascal description
+-- add sign to term
+-- simple_expression : term
+--     | simple_expression addop term
+--     ;
+
+simple_expression : unsigned_simple_expression
+    | sign unsigned_simple_expression
+    ;
+
+unsigned_simple_expression : term
+    | unsigned_simple_expression addop term
+    ;
+
+term : factor
+    | term mulop factor
+    ;
+
+-- factor : function_call is implicit with variable_access
+-- implicit identifier through unsigned_constant replaced by variable_access
+factor : AT_t 
+      {pascalhelp.put("System.Address_To_Access_Conversions.To_Address(");}
+      variable_access {pascalhelp.put(')');}
+    | unsigned_constant
+    | variable_access
+    | set_constructor
+    | LPAREN_t {pascalhelp.put('(');}
+      expression
+      RPAREN_t {pascalhelp.put(')');}
+    | NOT_t {pascalhelp.put("NOT");} factor
+    ;
+
+function_call : identifier non_empty_params
+    ;               -- A function_call could be an identifier, but this is
+                    -- always made available when function_call is called.
+
+-- split definition to avoid reduction conflicts
+variable_access : identifier
+    | composed_variable_access
+    ;
+
+composed_variable_access : function_call
+    | pointer_dereference
+    | variable_access PERIOD_t {pascalhelp.put('.');} identifier
+    | variable_access
+      LBRACK_t {pascalhelp.put('(');}
+      index_expression_list
+      RBRACK_t {pascalhelp.put(')');}
+    ;
+    
+-- avoid shift/reduce conflict with procedure_statement. Factor it out.
+pointer_dereference : variable_access UPARROW_t {pascalhelp.put(".all");} 
+    ;    
+
+-- unsigned_constant : unsigned_number {$$.vartype := other_type;}
+--     | CHAR_CONST_t {pascalhelp.put(YYText); $$.vartype := character_type;}
+--     | STRING_t {PascalHelp.PrintString(YYText); $$.vartype := string_type;}
+--     | TRUE_t {PascalHelp.PrintString(" True "); $$.vartype := boolean_type;}
+--     | FALSE_t {PascalHelp.PrintString(" False "); $$.vartype := boolean_type;}
+--     | NIL_t {pascalhelp.put("NULL"); $$.vartype := other_type;}
+--     ;
+
+unsigned_number : CONSTANT_t {pascalhelp.Put(YYText);}
+       | HEXADECIMAL_t 
+         {
+         DECLARE
+           the_number : string := YYText;
+         BEGIN
+           pascalhelp.Put("16#" & the_number(2..the_number'last) & "#");
+         END;
+         }
+       ;
+
+set_constructor : LBRACK_t member_designator_list RBRACK_t
+    | LBRACK_t RBRACK_t
+    ;
+
+member_designator_list : member_designator_list comma member_designator
+    | member_designator
+    ;
+
+member_designator : member_designator DOUBLEDOT_t {pascalhelp.put("..");}
+    expression
+    | expression
+    ;
+
+addop: PLUS_t {pascalhelp.put('+');}
+    | MINUS_t {pascalhelp.put('-');}
+    | OR_t {pascalhelp.put(" OR ");}
+    ;
+
+mulop : TIMES_t {pascalhelp.put('*');}
+    | DIVIDE_t {pascalhelp.put('/');}
+    | DIV_t {pascalhelp.put("  /  ");}
+    | MOD_t {pascalhelp.put(" MOD ");}
+    | AND_t {pascalhelp.put(" AND ");}
+    | SHL_t {pascalhelp.put(" Shift_left( , ) ");}
+    | SHR_t {pascalhelp.put(" Shift_right( , ) ");}
+    | AMPERSAND_t {pascalhelp.put('&');}
+    | DOUBLESTAR_t {pascalhelp.put("**");}
+    ;
+
+relop : EQUAL_t {pascalhelp.put('=');}
+    | NE_t {pascalhelp.put("/=");}
+    | LT_t {pascalhelp.put('<');}
+    | GT_t {pascalhelp.put('>');}
+    | LE_t {pascalhelp.put("<=");}
+    | GE_t {pascalhelp.put(">=");}
+    | IN_t {pascalhelp.put(" IN ");}
+    ;
+
+identifier : ID_t {IF YYLength = pascalhelp.FnNameLength AND THEN
+                      YYtext(1..YYLength) = 
+                      pascalhelp.FunctionName(1..YYLength) THEN
+                     pascalhelp.put("Result");
+                   END IF;
+                   $$.length:=YYLength; $$.text(1..YYLength):=YYText;
+                   pascalhelp.put(YYText);
+                  }
+    | CHAR_t {$$.length:=9; $$.text(1..9):="Character";
+              pascalhelp.put(" Character "); }
+    | REAL_t {$$.length:=5; $$.text(1..5):="Float";
+              pascalhelp.put("Float"); }
+    ;
+
+comma : COMMA_t
+    ;
+
+%%
+
+-- p2ada
+-- a source converter from Pascal MacOS to Ada
+-- original version Martin C. Carlisle (November 1996)
+-- mcc@cs.usafa.af.mil
+-- http://www.usafa.af.mil/dfcs/bios/carlisle.html
+
+-- extended for MacOS by Laurent Gasser (June 1997)
+-- lga@sma.ch
+
+with Pascal_Tokens, Pascal_Shift_Reduce, Pascal_Goto;
+use  Pascal_Tokens, Pascal_Shift_Reduce, Pascal_Goto;
+with Pascal_DFA, YYroutines, Text_IO, PascalHelp, YYerror; 
+use  Pascal_DFA, YYroutines, Text_IO;
+
+##

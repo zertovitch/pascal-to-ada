@@ -1,0 +1,8 @@
+#!/bin/tcsh
+foreach f ($argv)
+  set ft = $f:t
+  echo Translating $ft
+# cat $f | tr -d '[\015]' > $ft.tmp # for System V see man
+  cat $f | tr -d '\015' > $ft.tmp # for BSD see man
+  mv $ft.tmp $ft
+end
