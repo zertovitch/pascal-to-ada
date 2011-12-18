@@ -1,0 +1,208 @@
+		UNITÉS TURBO PASCAL EN ADA
+
+
+I Introduction :
+
+     Après quelques années passées à programmer sur PC en Turbo
+Pascal, je me suis mis à la programmation avec Think Pascal sur
+Macintosh. J'ai immédiatement voulu reprendre quelques uns de mes
+sources en Turbo Pascal. D'où l'idée de reconstituer les unités
+de Borland sur Macintosh.
+
+     Je suis ensuite passé à la programmation Ada sur Mac OS X.
+De ce fait, j'ai migré mes sources Pascal en Ada avec l'utilitaire
+de traduction P2Ada.
+
+     Je me suis d'abord penché sur l'unité Graph qui présente le
+plus de similitude avec le gestionnaire graphique du Macintosh
+: QuickDraw avec les interfaces de programmation CarbonAda. Cela
+a donné la version 1.0 de TP7Ada.
+     Depuis l'arrivé de Quartz le nouveau gestionnaire graphique Mac,
+beaucoup d'appels à QuickDraw sont devenus obsolètes. Je me suis
+alors tourné vers la bibliothèque graphique GTKAda qui a l'avantage
+supplémentaire d'être également présente sur Linux et Windows. Cela
+a donné la version 2.0 de TP7Ada.
+     Toutes les unités Pascal ont été traduites en Ada mais ne sont pas
+encore totalement fonctionnelles. Le tableau TurboPascal7.0-Ada.html
+récapitule l'avancée des fonctionnalités regroupées par unité.
+
+
+II Description des unités :
+	1) Description de l'unité TP7 :
+
+	Contient les déclarations des types Pascal en deux déclinaisons,
+une la plus compatible avec les types Ada pour éviter les conversions
+lourdes, l'autre avec une représentation en mémoire la plus proche de
+Pascal pour les types composés.
+	Pour le type Pascal String un équivalent est proposé sous la forme
+de chaînes avec terminaison par le caractère nul. Cela permet de conserver
+la taille d'origine ainsi que l'accès caractère par caractère et la
+compatibilité avec Ada.
+	Contient également une fonction de Debug lié à une case à cocher
+par l'utilisateur et une procédure Init.
+
+	2) Description de l'unité System :
+
+	Contient les primitives standard prédéfinies par Turbo Pascal.
+Elle comprend les procédures de contrôle d'exécution, d'allocation
+dynamique de mémoire, d'arithmétique, de manipulation de chaînes
+de caractères, d'entrées / sorties.
+	Certaines non plus de sens avec Ada ou sous Unix, elles sont présentes
+mais renvoies un message d'avertissement si Debug est activé,
+d'autres ont un équivalent Ada donné dans le tableau TurboPascal7.0-Ada.html.
+
+	3) Description de l'unité Printer :
+
+	Contient la variable fichier LST ouvert sur LPT1.txt.
+
+	4) Description de l'unité Graph :
+
+     Dans l'unité on retrouve toutes les primitives graphiques de Borland
+avec les quelques modifications suivantes :
+
+     * Le Gestionnaire d'erreur :
+     L'option prise ici est de ne pas faire de contrôle dans un
+premier temps. On retourne toujours "grOk".
+
+     * L'initialisation :
+     Les options choisies sont l'émulation de la carte VGA, en
+mode VGAhi, avec les polices et les motifs GTKAda qui cadre
+le mieux avec ceux du PC.
+     Les procédures permettant d'installer des polices ou des
+gestionnaires d'écrans sont vides et ne font donc rien. (voir le
+texte de l'unité)
+
+     * Le gestionnaire de l'écran :
+     L'option choisie est de ne gérer qu'une seule page
+graphique.
+
+     * Procédures d'affichage point et ligne :
+     La bibliothèque Cairo de dessin 2D a été utilisée.
+
+     * Procédures d'affichage de motifs :
+     Les procédures "DrawPoly" et "FillPoly" comportent le nouveau
+type "PolygonType". Il permet de passer en paramètre un tableau de
+points.
+
+     * Procédures d'affichage de courbes :
+     Les procédures "GetAspectRatio" et "SetAspectRatio" ne sont pas fonctionnelles.
+
+     * Gestionnaire de couleur et palette :
+     La procédure "SetRGBPalette" n'est pas fonctionnelle.
+
+     * Procédures d'affichage Bit-Map :
+     Les procédures ne sont pas fonctionnelles.
+
+     * Gestionnaire de texte :
+     L'option choisie est d'utiliser les polices les plus proches
+existantes sur GTK.
+     Le mode d'affichage vertical ne produit pas tout à fait
+celui de Turbo Pascal puisque il affiche des caractères
+horizontaux l'un au-dessous de l'autre.
+     On ne peux pas agir sur la taille en X indépendamment de la
+taille en Y.
+
+	5) Description de l'unité DOS :
+
+	À venir.
+
+	6) Description de l'unité CRT :
+
+	À venir.
+
+	7) Description de l'unité Test :
+
+	L'unité Test permet d'ajouter des procédures dans une liste.
+L'utilisateur peut sélectionner les procédures avec des cases à cocher.
+Ces procédures sélectionnées sont alors exécutées en séquences.
+
+
+     III Mise en oeuvre des unités TP7Ada :
+
+     Au préalable, le compilateur GNAT et la bibliothèque GTKAda
+doivent être installés, voir par ailleurs sur Blady.
+
+	Les sources de la bibliothèque sont :
+arty.adb
+bgidemo.adb
+exemples_tp7.adb
+main.adb
+tp7-crt.adb
+tp7-crt.ads
+tp7-dos.adb
+tp7-dos.ads
+tp7-graph.adb
+tp7-graph.ads
+tp7-printer.adb
+tp7-printer.ads
+tp7-system.adb
+tp7-system.ads
+tp7-test.adb
+tp7-test.ads
+tp7.adb
+tp7.ads
+
+     Tout d'abord votre programme principal Ada issu de Turbo Pascal (avec
+l'utilitaire P2Ada par exemple) doit être référencé dans le programme main.adb
+avec la procédure TP7.Init.
+     La création et le lancement de l'exécutable est fait par exemple avec
+les commandes :
+
+$ gnatmake main `gtkada-config`
+$ ./main
+
+     La bibliothèque contient un programme principal par défaut
+utilisé pour le test des unités : TP7.Test.Execute, voir main.adb.
+     Le programme se compose d'une fenêtre de contrôle : démarrage et
+arrêt du programme, d'une fenêtre texte (affichage et saisie)
+si l'unité TP7.CRT est appelée sinon utilisation du Terminal,
+d'une fenêtre graphique si l'unité TP7.Graph est appelée.
+
+
+     IV Utilisation et licence :
+
+     Cette bibliothèque est fournie uniquement pour test, telle qu'elle.
+Elle ne doit pas être utilisée pour réaliser quelques logiciels que
+ce soit autre que pour test.
+     Chaque partie du logiciel indiqué appartient aux propriétaires
+cités dans le source.
+     La bibliothèque est utilisable avec la licence CeCILL,
+voir Licence_CeCILL_V2-fr.txt.
+
+
+     V Améliorations :
+
+     L'unité peut être améliorée :
+     . en gérant les erreurs graphiques
+     . en gérant plus d'une page graphique
+     . en incluant un gestionnaire de polices vectorielles.
+(Polices contenues dans les fichiers .chr de Borland par exemple)
+
+
+     VI Conclusion :
+
+     J'espère que cette unité permettra de tester nombre de
+programmes graphiques sur Macintosh, Unix ou Windows.
+
+
+     VII Historique :
+
+- 2.3a : codage complet de l'unité TP7.Graph avec les exemples graphiques BGIDemo et Arty;
+		ajout de l'unité TP7.Test; ajout d'une fonction dans l'unité TP7
+		de construction d'une chaine de taille différente de la longueur;
+		utilisation de l'unité TP7.Test dans main; 
+- 2.2a : intégration de la saisie de texte à la fenêtre d'affichage du texte
+		et rebasculement des affichages et saisies dans TP7 avec modification
+		des entrées/sorties de TP7.System
+- 2.1a : codage complet de l'unité TP7.System; ajout d'une fonction
+		et d'une case à cocher Debug, basculement des affichages GTK
+		dans CRT et redéfinition des types fichiers de l'unité TP7;
+		adaptation de Lst dans l'unité TP7.Printer; codage des fonctions
+		Linexx, Arc, Circle, Ellipse dans l'unité TP7.Graph; ajustement
+		des interfaces de l'unité TP7.Dos; reprise des affichages GTK
+		dans l'unité TP7.CRT
+- 2.0a : première version basée sur GTKAda
+- 1.0a : première version basée sur CarbonAda
+
+Pascal Pignard, juin 1994, octobre 2002, septembre-décembre 2011.
+
