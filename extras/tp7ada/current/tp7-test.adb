@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7-test.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 1.0a
--- DATE DE LA DERNIERE MISE A JOUR  : 16 décembre 2011
+-- VERSION DU CSU                   : 1.1a
+-- DATE DE LA DERNIERE MISE A JOUR  : 26 décembre 2011
 -- ROLE DU CSU                      : Unité de test.
 --
 --
@@ -18,10 +18,10 @@
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
 
-with Ada.Containers.Doubly_Linked_Lists;
 with Gtk.Check_Button;
 with TP7.System;
 with Glib.Convert;
+with Ada.Containers.Vectors;
 
 package body TP7.Test is
 
@@ -29,8 +29,8 @@ package body TP7.Test is
       Proc     : TPProc;
       IsMarked : Gtk.Check_Button.Gtk_Check_Button;
    end record;
-   package TestProcList is new Ada.Containers.Doubly_Linked_Lists (TestProcRec);
-   TestProcs : TestProcList.List;
+   package TestProcVect is new Ada.Containers.Vectors (Positive, TestProcRec);
+   TestProcs : TestProcVect.Vector;
 
    ---------
    -- Add --
@@ -49,9 +49,9 @@ package body TP7.Test is
    ---------------
 
    procedure SelectAll is
-      procedure SelectTest (Position : in TestProcList.Cursor) is
+      procedure SelectTest (Position : in TestProcVect.Cursor) is
       begin
-         TestProcList.Element (Position).IsMarked.Set_Active (True);
+         TestProcVect.Element (Position).IsMarked.Set_Active (True);
       end SelectTest;
    begin
       TestProcs.Iterate (SelectTest'Access);
@@ -62,20 +62,24 @@ package body TP7.Test is
    -------------
 
    procedure Execute is
-      procedure ExcuteTest (Position : in TestProcList.Cursor) is
+      procedure ExecuteTest (Position : in TestProcVect.Cursor) is
       begin
-         if TestProcList.Element (Position).IsMarked.Get_Active then
+         if TestProcVect.Element (Position).IsMarked.Get_Active then
             if TP7.Debug then
                TP7.System.Writeln
                  ("Test of " +
                   Glib.Convert.Locale_From_UTF8
-                     (TestProcList.Element (Position).IsMarked.Get_Label));
+                     (TestProcVect.Element (Position).IsMarked.Get_Label));
             end if;
-            TestProcList.Element (Position).Proc.all;
+            TestProcVect.Element (Position).Proc.all;
          end if;
-      end ExcuteTest;
+      end ExecuteTest;
    begin
-      TestProcs.Iterate (ExcuteTest'Access);
+      -- Can't use Iterate because of Program_Error when finalization during aborting
+      -- TestProcs.Iterate (ExecuteTest'Access);
+      for Ind in 1 .. Positive (TestProcs.Length) loop
+         ExecuteTest (TestProcs.To_Cursor (Ind));
+      end loop;
    end Execute;
 
 end TP7.Test;

@@ -386,13 +386,11 @@ procedure Exemples_TP7 is
    end ExDetectGraph; -- block
    procedure ExDiskFree is
    begin
-      --  Writeln((DiskFree(0) / 1024)'img + " ko disponibles");
-      null;
+      Writeln (DiskFree (0)'Img + " octets disponibles.");
    end ExDiskFree; -- block
    procedure ExDiskSize is
    begin
-      --  Writeln("Capacité totale : " + (DiskSize(0) / 1024)'img + " Ko");
-      null;
+      Writeln ("Capacité totale : " + DiskSize (0)'Img + " octets.");
    end ExDiskSize; -- block
    procedure ExDisposeNew is
       subtype Str41 is String (1 .. 41 + 1);
@@ -418,7 +416,7 @@ procedure Exemples_TP7 is
       SwapVectors;
       Exec (NomProgram, LigneCmd);
       SwapVectors;
-      Writeln ("...Retour après exéc_ution");
+      Writeln ("...Retour après exécution");
       if DosError /= 0 then
          Writeln ("Erreur Dos No " + DosError'Img);
       else
@@ -534,11 +532,11 @@ procedure Exemples_TP7 is
    procedure ExFexpandFsearch is
       S : PathStr;
    begin
-      Assign_String (S, FSearch (To_TPString ("TURBO.EXE"), GetEnv ("PATH")));
+      Assign_String (S, FSearch (To_TPString (PathStr'Length - 1, "gnat"), GetEnv ("PATH")));
       if Is_Equal (S, "") then
-         Write ("Fichier TURBO.EXE introuvable");
+         Writeln ("Fichier gnat introuvable");
       else
-         Write ("Fichier TURBO.EXE trouvé comme " + FExpand (S));
+         Writeln ("Fichier gnat trouvé comme " + FExpand (S));
       end if;
    end ExFexpandFsearch; -- block
    procedure ExFileposFilesizeSeek is
@@ -603,7 +601,7 @@ procedure Exemples_TP7 is
    procedure ExFindfirstFindnext is
       DirInfo : SearchRec;
    begin
-      FindFirst (To_TPString ("*.PAS"), Archive, DirInfo);
+      FindFirst (To_TPString (PathStr'Length - 1, "*.txt"), Archive, DirInfo);
       while DosError = 0 loop
          Writeln (DirInfo.Name);
          FindNext (DirInfo);
@@ -685,7 +683,7 @@ procedure Exemples_TP7 is
       if Is_Equal (E, "") then
          Assign_String (E, ".PAS");
       end if;
-      P := Concat (D, Concat (N, E));
+      Assign_String (P, Concat (D, Concat (N, E)));
       Writeln ("Spécification résultante " + P);
    end ExFSplit; -- block
    procedure ExGetArcCoords is
@@ -876,21 +874,21 @@ procedure Exemples_TP7 is
    procedure ExGetenvSwapvectors is
       Commande : ComStr;
    begin
-      Write ("Une commande DOS : ");
+      Write ("Une commande SHELL : ");
       Readln (Commande);
       if not Is_Equal (Commande, "") then
-         Commande := Concat ("/C ", Commande);
+         Assign_String (Commande, Concat ("-c ", Commande));
       end if;
       SwapVectors;
-      Exec (GetEnv ("COMSPEC"), Commande);
+      Exec (To_TPString (PathStr'Length - 1, GetEnv ("SHELL")), Commande);
       SwapVectors;
       if DosError /= 0 then
-         Writeln ("Impossible d'exécuter COMMAND.COM");
+         Writeln ("Impossible d'exécuter SHELL");
       end if;
    end ExGetenvSwapvectors; -- block
    procedure ExGetFAttr is
       f    : File;
-      attr : Word;
+      attr : Word1;
    begin
       Assign (f, ParamStr (1));
       GetFAttr (f, attr);
@@ -899,22 +897,22 @@ procedure Exemples_TP7 is
          Writeln ("Code erreur DOS = " + DosError'Img);
       else
          Writeln ("Attribut = " + attr'Img);
-         if (Word1 (attr) and ReadOnly) /= 0 then
+         if (attr and ReadOnly) /= 0 then
             Writeln ("Lecture seule");
          end if;
-         if (Word1 (attr) and Hidden) /= 0 then
+         if (attr and Hidden) /= 0 then
             Write ("Fichier caché");
          end if;
-         if (Word1 (attr) and SysFile) /= 0 then
+         if (attr and SysFile) /= 0 then
             Write ("Fichier système");
          end if;
-         if (Word1 (attr) and VolumeID) /= 0 then
+         if (attr and VolumeID) /= 0 then
             Writeln ("Identificateur de volume");
          end if;
-         if (Word1 (attr) and Directory) /= 0 then
+         if (attr and Directory) /= 0 then
             Writeln ("Répertoire");
          end if;
-         if (Word1 (attr) and Archive) /= 0 then
+         if (attr and Archive) /= 0 then
             Writeln ("Archive ( Fichier normal)");
          end if;
       end if;
@@ -1097,8 +1095,9 @@ procedure Exemples_TP7 is
       SetIntVec (16#1B#, GestionBreak'Address);
       Write ("Frappez Ctrl-Break pour quitter");
       loop
-         null;
-         exit when IndicBreak; -- TBF
+         Delay1 (1000);
+         exit when IndicBreak;
+         exit when KeyPressed;
       end loop;
       SetIntVec (16#1B#, Int1BSauve);
    end ExGetintvectSetintvect; -- block
@@ -1308,8 +1307,8 @@ procedure Exemples_TP7 is
       OffOn : P2Ada_Anonym_6;
       v     : Boolean;
    begin
-      OffOn (False) := "active  ";
-      OffOn (True)  := "inactive";
+      OffOn (False) := "inactive";
+      OffOn (True)  := "active  ";
       GetVerify (v);
       Writeln ("La vérification d'écriture est : " + OffOn (v));
       v := not (v);
@@ -1575,9 +1574,9 @@ procedure Exemples_TP7 is
       regs : Registers;
    begin
       Assign_String (msg, "Bonjour, monde!$");
-      regs.AH := 9;
+      regs.AX := 9;
       regs.DS := Seg (msg'Address);
-      regs.DX := Ofs (msg (1)'Address);
+      regs.DX := Ofs (msg'Address);
       Intr (16#21#, regs);
    end ExIntr; -- block
    procedure ExIOResult is
@@ -2803,8 +2802,8 @@ begin
    --     ExAddr;
    --     Writeln ("Test ExAppend");
    --     ExAppend;
-   Writeln ("Test ExArc");
-   ExArc;
+   --     Writeln ("Test ExArc");
+   --     ExArc;
    --     Writeln ("Test ExArcTan");
    --     ExArcTan;
    --     Writeln ("Test ExAssign");
@@ -2814,26 +2813,26 @@ begin
    --     Writeln ("Test ExAssignCrt"); ExAssignCrt;
    --     Writeln ("Test ExAssign_String");
    --     ExAssign_String;
-   Writeln ("Test ExBar");
-   ExBar;
-   Writeln ("Test ExBar3D");
-   ExBar3D;
+   --     Writeln ("Test ExBar");
+   --     ExBar;
+   --     Writeln ("Test ExBar3D");
+   --     ExBar3D;
    --     Writeln ("Test ExAssignBlockReadWriteClose");
    --     ExAssignBlockReadWriteClose;
    --     Writeln ("Test ExChdir");
    --     ExChdir;
    --     Writeln ("Test ExChr");
    --     ExChr;
-   Writeln ("Test ExCircle");
-   ExCircle;
-   Writeln ("Test ExClearDevice");
-   ExClearDevice;
-   Writeln ("Test ExClearViewport");
-   ExClearViewport;
+   --     Writeln ("Test ExCircle");
+   --     ExCircle;
+   --     Writeln ("Test ExClearDevice");
+   --     ExClearDevice;
+   --     Writeln ("Test ExClearViewport");
+   --     ExClearViewport;
    --     Writeln ("Test ExClose");
    --     ExClose;
    Writeln ("Test ExCloseGraph");
-   ExCloseGraph;
+   --     ExCloseGraph;
    --     Writeln ("Test ExClrEol"); ExClrEol;
    --     Writeln ("Test ExClrscr"); ExClrscr;
    --     Writeln ("Test ExConcat");
@@ -2850,19 +2849,24 @@ begin
    --     Writeln ("Test ExDelete");
    --     ExDelete;
    --     Writeln ("Test ExDelLine"); ExDelLine;
-   Writeln ("Test ExDetectGraph");
-   ExDetectGraph;
-   --     Writeln ("Test ExDiskFree"); ExDiskFree;
-   --     Writeln ("Test ExDiskSize"); ExDiskSize;
+   --     Writeln ("Test ExDetectGraph");
+   --     ExDetectGraph;
+   Writeln ("Test ExDiskFree");
+   ExDiskFree;
+   Writeln ("Test ExDiskSize");
+   ExDiskSize;
    --     Writeln ("Test ExDisposeNew");
    --     ExDisposeNew;
-   --     Writeln ("Test ExDosExitCodeExec"); ExDosExitCodeExec;
-   --     Writeln ("Test ExDosVersion"); ExDosVersion;
-   Writeln ("Test ExDrawPoly");
-   ExDrawPoly;
-   Writeln ("Test ExEllipse");
-   ExEllipse;
-   --     Writeln ("Test ExEnvcountEnvstr"); ExEnvcountEnvstr;
+   Writeln ("Test ExDosExitCodeExec");
+   ExDosExitCodeExec;
+   Writeln ("Test ExDosVersion");
+   ExDosVersion;
+   --     Writeln ("Test ExDrawPoly");
+   --     ExDrawPoly;
+   --     Writeln ("Test ExEllipse");
+   --     ExEllipse;
+   Writeln ("Test ExEnvcountEnvstr");
+   ExEnvcountEnvstr;
    --     Writeln ("Test ExEofReadWrite");
    --     ExEofReadWrite;
    --     Writeln ("Test ExEoln");
@@ -2872,86 +2876,95 @@ begin
    --     Writeln ("Test ExExit"); ExExit;
    --     Writeln ("Test ExExp");
    --     ExExp;
-   --     Writeln ("Test ExFexpandFsearch"); ExFexpandFsearch;
+   Writeln ("Test ExFexpandFsearch");
+   ExFexpandFsearch;
    --     Writeln ("Test ExFileposFilesizeSeek");
    --     ExFileposFilesizeSeek;
    --     Writeln ("Test ExFillChar");
    --     ExFillChar;
-   Writeln ("Test ExFillEllipse");
-   ExFillEllipse;
-   Writeln ("Test ExFillPoly");
-   ExFillPoly;
-   --     Writeln ("Test ExFindfirstFindnext"); ExFindfirstFindnext;
+   --     Writeln ("Test ExFillEllipse");
+   --     ExFillEllipse;
+   --     Writeln ("Test ExFillPoly");
+   --     ExFillPoly;
+   Writeln ("Test ExFindfirstFindnext");
+   ExFindfirstFindnext;
    Writeln ("Test ExFloodFill");
-   ExFloodFill;
+   --     ExFloodFill;
    --     Writeln ("Test ExFlush");
    --     ExFlush;
    --     Writeln ("Test ExFrac");
    --     ExFrac;
    --     Writeln ("Test ExFreememGetmemMaxavail");
    --     ExFreememGetmemMaxavail;
-   --     Writeln ("Test ExFSplit"); ExFSplit;
-   Writeln ("Test ExGetArcCoords");
-   ExGetArcCoords;
-   Writeln ("Test ExGetAspectRatio");
-   ExGetAspectRatio;
+   Writeln ("Test ExFSplit");
+   ExFSplit;
+   --     Writeln ("Test ExGetArcCoords");
+   --     ExGetArcCoords;
+   --     Writeln ("Test ExGetAspectRatio");
+   --     ExGetAspectRatio;
    Writeln ("Test ExGetBkColor");
-   ExGetBkColor;
-   --     Writeln ("Test ExGetcbreakSetcbreak"); ExGetcbreakSetcbreak;
-   Writeln ("Test ExGetColor");
-   ExGetColor;
-   --     Writeln ("Test ExGetDate"); ExGetDate;
+   --     ExGetBkColor;
+   Writeln ("Test ExGetcbreakSetcbreak");
+   ExGetcbreakSetcbreak;
+   --     Writeln ("Test ExGetColor");
+   --     ExGetColor;
+   Writeln ("Test ExGetDate");
+   ExGetDate;
    Writeln ("Test ExGetDefaultPalette");
-   ExGetDefaultPalette;
+   --     ExGetDefaultPalette;
    --     Writeln ("Test ExGetDir");
    --     ExGetDir;
-   Writeln ("Test ExGetDriverName");
-   ExGetDriverName;
-   --     Writeln ("Test ExGetenvSwapvectors"); ExGetenvSwapvectors;
-   --     Writeln ("Test ExGetFAttr"); ExGetFAttr;
+   --     Writeln ("Test ExGetDriverName");
+   --     ExGetDriverName;
+   Writeln ("Test ExGetenvSwapvectors");
+   ExGetenvSwapvectors;
+   Writeln ("Test ExGetFAttr");
+   ExGetFAttr;
    Writeln ("Test ExGetfillpatternSetfillpattern");
-   ExGetfillpatternSetfillpattern;
+   --     ExGetfillpatternSetfillpattern;
    Writeln ("Test ExGetfillsettingsSetfillstyle");
-   ExGetfillsettingsSetfillstyle;
-   --     Writeln ("Test ExGetftimePacktimeSetftimeUnpacktime");
-   --ExGetftimePacktimeSetftimeUnpacktime;
-   Writeln ("Test ExGetGraphMode");
-   ExGetGraphMode;
+   --     ExGetfillsettingsSetfillstyle;
+   Writeln ("Test ExGetftimePacktimeSetftimeUnpacktime");
+   ExGetftimePacktimeSetftimeUnpacktime;
+   --     Writeln ("Test ExGetGraphMode");
+   --     ExGetGraphMode;
    Writeln ("Test ExGetimageImagesizePutimage");
-   ExGetimageImagesizePutimage;
-   --     Writeln ("Test GestionBreak"); GestionBreak;
-   --     Writeln ("Test ExGetintvectSetintvect"); ExGetintvectSetintvect;
-   Writeln ("Test ExGetLineSettings");
-   ExGetLineSettings;
-   Writeln ("Test ExGetmaxcolorSetcolor");
-   ExGetmaxcolorSetcolor;
-   Writeln ("Test ExGetmaxmodeGetmodename");
-   ExGetmaxmodeGetmodename;
-   Writeln ("Test ExGetmaxxGetmaxy");
-   ExGetmaxxGetmaxy;
-   Writeln ("Test ExGetmoderangeSetgraphmode");
-   ExGetmoderangeSetgraphmode;
-   Writeln ("Test ExGetPalette");
-   ExGetPalette;
-   Writeln ("Test ExGetPaletteSize");
-   ExGetPaletteSize;
+   --     ExGetimageImagesizePutimage;
+   Writeln ("Test ExGetintvectSetintvect");
+   ExGetintvectSetintvect;
+   --     Writeln ("Test ExGetLineSettings");
+   --     ExGetLineSettings;
+   --     Writeln ("Test ExGetmaxcolorSetcolor");
+   --     ExGetmaxcolorSetcolor;
+   --     Writeln ("Test ExGetmaxmodeGetmodename");
+   --     ExGetmaxmodeGetmodename;
+   --     Writeln ("Test ExGetmaxxGetmaxy");
+   --     ExGetmaxxGetmaxy;
+   --     Writeln ("Test ExGetmoderangeSetgraphmode");
+   --     ExGetmoderangeSetgraphmode;
+   --     Writeln ("Test ExGetPalette");
+   --     ExGetPalette;
+   --     Writeln ("Test ExGetPaletteSize");
+   --     ExGetPaletteSize;
    Writeln ("Test ExGetPixel");
-   ExGetPixel;
+   --     ExGetPixel;
    Writeln ("Test ExGetTextSettings");
-   ExGetTextSettings;
-   --     Writeln ("Test ExGetTime"); ExGetTime;
-   --     Writeln ("Test ExGetverifySetverify"); ExGetverifySetverify;
-   Writeln ("Test ExGetViewSettings");
-   ExGetViewSettings;
-   Writeln ("Test ExGetxGety");
-   ExGetxGety;
+   --     ExGetTextSettings;
+   Writeln ("Test ExGetTime");
+   ExGetTime;
+   Writeln ("Test ExGetverifySetverify");
+   ExGetverifySetverify;
+   --     Writeln ("Test ExGetViewSettings");
+   --     ExGetViewSettings;
+   --     Writeln ("Test ExGetxGety");
+   --     ExGetxGety;
    --     Writeln ("Test ExGotoXY"); ExGotoXY;
-   Writeln ("Test ExGraphDefaults");
-   ExGraphDefaults;
-   Writeln ("Test ExGraphErrorMsg");
-   ExGraphErrorMsg;
-   Writeln ("Test ExGraphResult");
-   ExGraphResult;
+   --     Writeln ("Test ExGraphDefaults");
+   --     ExGraphDefaults;
+   --     Writeln ("Test ExGraphErrorMsg");
+   --     ExGraphErrorMsg;
+   --     Writeln ("Test ExGraphResult");
+   --     ExGraphResult;
    --     Writeln ("Test ExHalt");
    --     ExHalt;
    --     Writeln ("Test ExHi");
@@ -2959,32 +2972,32 @@ begin
    --     Writeln ("Test ExHighVideo"); ExHighVideo;
    --     Writeln ("Test ExInc");
    --     ExInc;
-   Writeln ("Test ExInitGraph");
-   ExInitGraph;
+   --     Writeln ("Test ExInitGraph");
+   --     ExInitGraph;
    --     Writeln ("Test ExInsert");
    --     ExInsert;
    --     Writeln ("Test ExInsLine"); ExInsLine;
-   Writeln ("Test ExInstallUserDriver");
-   ExInstallUserDriver;
-   Writeln ("Test ExInstallUserFont");
-   ExInstallUserFont;
+   --     Writeln ("Test ExInstallUserDriver");
+   --     ExInstallUserDriver;
+   --     Writeln ("Test ExInstallUserFont");
+   --     ExInstallUserFont;
    --     Writeln ("Test ExInt");
    --     ExInt;
-   --     Writeln ("Test ExIntr"); ExIntr;
+   Writeln ("Test ExIntr");
+   ExIntr;
    --     Writeln ("Test ExIOResult");
    --     ExIOResult;
-   --     Writeln ("Test KbdIntVec"); KbdIntVec;
-   --     Writeln ("Test Keyclick"); Keyclick;
-   --     Writeln ("Test ExKeep"); ExKeep;
+   Writeln ("Test ExKeep");
+   ExKeep;
    --     Writeln ("Test ExKeyPressed"); ExKeyPressed;
    --     Writeln ("Test ExLenght");
    --     ExLenght;
-   Writeln ("Test ExLine");
-   ExLine;
-   Writeln ("Test ExLineRel");
-   ExLineRel;
-   Writeln ("Test ExLineTo");
-   ExLineTo;
+   --     Writeln ("Test ExLine");
+   --     ExLine;
+   --     Writeln ("Test ExLineRel");
+   --     ExLineRel;
+   --     Writeln ("Test ExLineTo");
+   --     ExLineTo;
    --     Writeln ("Test ExLn");
    --     ExLn;
    --     Writeln ("Test ExLo");
@@ -2999,27 +3012,27 @@ begin
    --     Writeln ("Test ExMove");
    --     ExMove;
    Writeln ("Test ExMoveRel");
-   ExMoveRel;
-   Writeln ("Test ExMoveTo");
-   ExMoveTo;
-   --     Writeln ("Test ExMsdos"); ExMsdos;
+   --     ExMoveRel;
+   --     Writeln ("Test ExMoveTo");
+   --     ExMoveTo;
+   --     --     Writeln ("Test ExMsdos"); ExMsdos;
    --     Writeln ("Test ExNormvideoTextbackgroundTextcolor"); ExNormvideoTextbackgroundTextcolor;
    --     Writeln ("Test ExOdd");
    --     ExOdd;
    --     Writeln ("Test ExOrd");
    --     ExOrd;
    Writeln ("Test ExOutText");
-   ExOutText;
+   --     ExOutText;
    Writeln ("Test ExOutTextXY");
-   ExOutTextXY;
+   --     ExOutTextXY;
    --     Writeln ("Test ExParamCount");
    --     ExParamCount;
    --     Writeln ("Test ExParamStr");
    --     ExParamStr;
    --     Writeln ("Test ExPi");
    --     ExPi;
-   Writeln ("Test ExPieSlice");
-   ExPieSlice;
+   --     Writeln ("Test ExPieSlice");
+   --     ExPieSlice;
    --     Writeln ("Test ExPos");
    --     ExPos;
    --     Writeln ("Test ExPredSucc");
@@ -3027,24 +3040,24 @@ begin
    --     Writeln ("Test ExPtr");
    --     ExPtr;
    Writeln ("Test ExPutPixel");
-   ExPutPixel;
+   --     ExPutPixel;
    --     Writeln ("Test ExRandomRandomize");
    --     ExRandomRandomize;
    --     Writeln ("Test ExReadKey"); ExReadKey;
    --     Writeln ("Test ExReadlnWriteln");
    --     ExReadlnWriteln;
-   Writeln ("Test ExRectangle");
-   ExRectangle;
-   Writeln ("Test ExRegisterBGIDriver");
-   ExRegisterBGIDriver;
-   Writeln ("Test ExRegisterBGIFont");
-   ExRegisterBGIFont;
+   --     Writeln ("Test ExRectangle");
+   --     ExRectangle;
+   --     Writeln ("Test ExRegisterBGIDriver");
+   --     ExRegisterBGIDriver;
+   --     Writeln ("Test ExRegisterBGIFont");
+   --     ExRegisterBGIFont;
    --     Writeln ("Test ExRename");
    --     ExRename;
    --     Writeln ("Test ExReset");
    --     ExReset;
-   Writeln ("Test ExRestoreCRTMode");
-   ExRestoreCRTMode;
+   --     Writeln ("Test ExRestoreCRTMode");
+   --     ExRestoreCRTMode;
    --     Writeln ("Test ExRewrite");
    --     ExRewrite;
    --     Writeln ("Test ExRmdir");
@@ -3053,41 +3066,42 @@ begin
    --     ExRound;
    --     Writeln ("Test ExRunError");
    --     ExRunError;
-   Writeln ("Test ExSector");
-   ExSector;
+   --     Writeln ("Test ExSector");
+   --     ExSector;
    --     Writeln ("Test ExSeekeofSeekeoln");
    --     ExSeekeofSeekeoln;
-   Writeln ("Test ExSetactivatepageSetvisualpage");
-   ExSetactivatepageSetvisualpage;
+   --     Writeln ("Test ExSetactivatepageSetvisualpage");
+   --     ExSetactivatepageSetvisualpage;
    Writeln ("Test ExSetAllPalette");
-   ExSetAllPalette;
+   --     ExSetAllPalette;
    Writeln ("Test ExSetAspectRatio");
-   ExSetAspectRatio;
+   --     ExSetAspectRatio;
    Writeln ("Test ExSetBkColor");
-   ExSetBkColor;
+   --     ExSetBkColor;
    --     Writeln ("Test ExSetDate"); ExSetDate;
    --     Writeln ("Test ExSetFAttr"); ExSetFAttr;
-   Writeln ("Test ExSetGraphBufSize");
-   ExSetGraphBufSize;
-   Writeln ("Test ExSetLineStyle");
-   ExSetLineStyle;
+   --     Writeln ("Test ExSetGraphBufSize");
+   --     ExSetGraphBufSize;
+   --     Writeln ("Test ExSetLineStyle");
+   --     ExSetLineStyle;
    Writeln ("Test ExSetPalette");
-   ExSetPalette;
+   --     ExSetPalette;
    Writeln ("Test ExSetRGBPalette");
-   ExSetRGBPalette;
+   --     ExSetRGBPalette;
    --     Writeln ("Test ExSetTextBuf");
    --     ExSetTextBuf;
-   Writeln ("Test ExSetTextJustify");
-   ExSetTextJustify;
+   --     Writeln ("Test ExSetTextJustify");
+   --     ExSetTextJustify;
    Writeln ("Test ExSetTextStyle");
-   ExSetTextStyle;
-   --     Writeln ("Test ExSetTime"); ExSetTime;
+   --     ExSetTextStyle;
+   Writeln ("Test ExSetTime");
+   ExSetTime;
    Writeln ("Test ExSetUserCharSize");
-   ExSetUserCharSize;
-   Writeln ("Test ExSetViewport");
-   ExSetViewport;
+   --     ExSetUserCharSize;
+   --     Writeln ("Test ExSetViewport");
+   --     ExSetViewport;
    Writeln ("Test ExSetWriteMode");
-   ExSetWriteMode;
+   --     ExSetWriteMode;
    --     Writeln ("Test ExSin");
    --     ExSin;
    --     Writeln ("Test ExSizeof"); ExSizeof;
@@ -3096,11 +3110,11 @@ begin
    --     Writeln ("Test ExStr"); ExStr;
    --     Writeln ("Test ExSwap");
    --     ExSwap;
-   Writeln ("Test ExTextHeight");
-   ExTextHeight;
+   --     Writeln ("Test ExTextHeight");
+   --     ExTextHeight;
    --     Writeln ("Test ExTextMode"); ExTextMode;
-   Writeln ("Test ExTextWidth");
-   ExTextWidth;
+   --     Writeln ("Test ExTextWidth");
+   --     ExTextWidth;
    --     Writeln ("Test ExTrunc");
    --     ExTrunc;
    --     Writeln ("Test ExTruncate");

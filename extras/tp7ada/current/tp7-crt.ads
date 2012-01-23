@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (spécification)       : tp7-crt.ads
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.2a
--- DATE DE LA DERNIERE MISE A JOUR  : 28 octobre 2011
+-- VERSION DU CSU                   : 2.3a
+-- DATE DE LA DERNIERE MISE A JOUR  : 26 décembre 2011
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -77,13 +77,13 @@ package TP7.Crt is
    -- Interface variables
 
    CheckBreak  : Boolean := False;    -- Enable Ctrl-Break
-   CheckEOF    : Boolean := False;      -- Enable Ctrl-Z
-   DirectVideo : Boolean := False;   -- Enable direct video addressing
-   CheckSnow   : Boolean := False;     -- Enable snow filtering
-   LastMode    : Word    := 0;         -- Current text mode
-   TextAttr    : Byte    := 0;         -- Current text attribute
-   WindMin     : Word    := 0;          -- Window upper left coordinates
-   WindMax     : Word    := 0;          -- Window lower right coordinates
+   CheckEOF    : Boolean := False;    -- Enable Ctrl-Z
+   DirectVideo : Boolean := False;    -- Enable direct video addressing
+   CheckSnow   : Boolean := False;    -- Enable snow filtering
+   LastMode    : Word    := CO80;                -- Current text mode
+   TextAttr    : Byte    := Black * 16 + White;  -- Current text attribute
+   WindMin     : Word    := 0;                   -- Window upper left coordinates
+   WindMax     : Word    := 24 * 256 + 79;       -- Window lower right coordinates
 
    -- Interface procedures
 

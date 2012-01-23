@@ -104,7 +104,10 @@ taille en Y.
 
 	5) Description de l'unité DOS :
 
-	À venir.
+	Contient l'ensemble des procédures liées au DOS et à la gestion
+des fichiers, de la date et de l'heure, des variables d'environnement.
+	Certaines non plus de sens sous Unix, elles sont présentes
+mais renvoies un message d'avertissement si Debug est activé.
 
 	6) Description de l'unité CRT :
 
@@ -114,7 +117,7 @@ taille en Y.
 
 	L'unité Test permet d'ajouter des procédures dans une liste.
 L'utilisateur peut sélectionner les procédures avec des cases à cocher.
-Ces procédures sélectionnées sont alors exécutées en séquences.
+Ces procédures sélectionnées sont alors exécutées en séquence.
 
 
      III Mise en oeuvre des unités TP7Ada :
@@ -122,25 +125,25 @@ Ces procédures sélectionnées sont alors exécutées en séquences.
      Au préalable, le compilateur GNAT et la bibliothèque GTKAda
 doivent être installés, voir par ailleurs sur Blady.
 
-	Les sources de la bibliothèque sont :
+	Les sources de la bibliothèque version 2.4a sont :
 arty.adb
 bgidemo.adb
 exemples_tp7.adb
 main.adb
-tp7-crt.adb
-tp7-crt.ads
-tp7-dos.adb
-tp7-dos.ads
-tp7-graph.adb
-tp7-graph.ads
-tp7-printer.adb
-tp7-printer.ads
-tp7-system.adb
-tp7-system.ads
-tp7-test.adb
-tp7-test.ads
-tp7.adb
-tp7.ads
+tp7-crt.adb	 2.3a
+tp7-crt.ads	 2.3a
+tp7-dos.adb	 2.1a
+tp7-dos.ads	 2.1a
+tp7-graph.adb	 2.2a
+tp7-graph.ads	 2.0b
+tp7-printer.adb	 2.1a
+tp7-printer.ads	 2.1a
+tp7-system.adb	 2.2a
+tp7-system.ads	 2.1a
+tp7-test.adb	 1.1a
+tp7-test.ads	 1.0a
+tp7.adb		 2.4a
+tp7.ads		 2.4a
 
      Tout d'abord votre programme principal Ada issu de Turbo Pascal (avec
 l'utilitaire P2Ada par exemple) doit être référencé dans le programme main.adb
@@ -187,6 +190,9 @@ programmes graphiques sur Macintosh, Unix ou Windows.
 
      VII Historique :
 
+- 2.4a : codage complet de l'unité TP7.DOS; ajout mécanisme automatique de l'init de TP7.CRT;
+		modif itération dans TP7.Test pour éviter un Programm_Error lors d'un abort;
+		modif de l'init de TP7.CRT;
 - 2.3a : codage complet de l'unité TP7.Graph avec les exemples graphiques BGIDemo et Arty;
 		ajout de l'unité TP7.Test; ajout d'une fonction dans l'unité TP7
 		de construction d'une chaine de taille différente de la longueur;
@@ -205,4 +211,5 @@ programmes graphiques sur Macintosh, Unix ou Windows.
 - 1.0a : première version basée sur CarbonAda
 
 Pascal Pignard, juin 1994, octobre 2002, septembre-décembre 2011.
+http://blady.pagesperso-orange.fr
 

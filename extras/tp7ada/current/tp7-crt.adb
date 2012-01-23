@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7-crt.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.2a
--- DATE DE LA DERNIERE MISE A JOUR  : 28 octobre 2011
+-- VERSION DU CSU                   : 2.3a
+-- DATE DE LA DERNIERE MISE A JOUR  : 26 décembre 2011
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -18,9 +18,9 @@
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
 
-with Gdk.Color;     use Gdk.Color;
-with Glib;          use Glib;
-with Gtk.Text_Iter; use Gtk.Text_Iter;
+with Gdk.Color;
+with Glib;
+with Gtk.Text_Iter;
 with TP7.System;
 pragma Elaborate_All (Gdk.Color);
 
@@ -29,14 +29,31 @@ package body TP7.Crt is
    CCharSize : constant := 8;
    MaxColors : constant := 15;
 
-   type TabColors is array (0 .. MaxColors) of Gdk_Color;
+   type IntTabColors is array (0 .. MaxColors) of Gdk.Color.Gdk_Color;
 
-   type PaletteType is record
+   type IntPaletteType is record
       Size   : Byte;
-      Colors : TabColors;
+      Colors : IntTabColors;
    end record;
 
-   IntPalette : PaletteType;
+   IntPalette : IntPaletteType :=
+     (Size   => 16,
+      Colors => (Black        => Gdk.Color.Parse ("black"),
+                 Blue         => Gdk.Color.Parse ("blue"),
+                 Green        => Gdk.Color.Parse ("green"),
+                 Cyan         => Gdk.Color.Parse ("cyan"),
+                 Red          => Gdk.Color.Parse ("red"),
+                 Magenta      => Gdk.Color.Parse ("magenta"),
+                 Brown        => Gdk.Color.Parse ("brown"),
+                 LightGray    => Gdk.Color.Parse ("LightGray"),
+                 DarkGray     => Gdk.Color.Parse ("DarkGray"),
+                 LightBlue    => Gdk.Color.Parse ("LightBlue"),
+                 LightGreen   => Gdk.Color.Parse ("LightGreen"),
+                 LightCyan    => Gdk.Color.Parse ("LightCyan"),
+                 LightRed     => Gdk.Color.Parse ("LightCoral"),
+                 LightMagenta => Gdk.Color.Parse ("LightPink"),
+                 Yellow       => Gdk.Color.Parse ("yellow"),
+                 White        => Gdk.Color.Parse ("white")));
 
    procedure AssignCrt (F : in out Text) is
    begin
@@ -81,8 +98,8 @@ package body TP7.Crt is
    procedure GotoXY (X, Y : Byte) is
       Target_Iter : Gtk.Text_Iter.Gtk_Text_Iter;
    begin
-      Set_Line (Target_Iter, Gint (X));
-      Set_Line_Offset (Target_Iter, Gint (Y));
+      Gtk.Text_Iter.Set_Line (Target_Iter, Glib.Gint (X));
+      Gtk.Text_Iter.Set_Line_Offset (Target_Iter, Glib.Gint (Y));
       --        Place_Cursor (Gtk.Text_View.Get_Buffer (Aera_Text), Target_Iter);
       null;
    end GotoXY;
@@ -98,7 +115,7 @@ package body TP7.Crt is
          --             (Gtk.Text_View.Get_Buffer (Aera_Text),
          --              Current_Iter,
          --              Get_Insert (Gtk.Text_View.Get_Buffer (Aera_Text)));
-         ResultWhereX := Byte (Get_Line (Current_Iter) + 1);
+         ResultWhereX := Byte (Gtk.Text_Iter.Get_Line (Current_Iter)) + 1;
          --GetPen(P'access);
          --ResultWhereX := Byte(P.h   /   CCharSize);
          null;
@@ -117,7 +134,7 @@ package body TP7.Crt is
          --             (Gtk.Text_View.Get_Buffer (Aera_Text),
          --              Current_Iter,
          --              Get_Insert (Gtk.Text_View.Get_Buffer (Aera_Text)));
-         ResultWhereY := Byte (Get_Chars_In_Line (Current_Iter));
+         ResultWhereY := Byte (Gtk.Text_Iter.Get_Chars_In_Line (Current_Iter));
          --GetPen(P'access);
          --ResultWhereY := Byte(P.v   /   CCharSize);
          null;
@@ -211,62 +228,12 @@ package body TP7.Crt is
    end NoSound;
 
    procedure Init is
-   -- TIPS : AssignCRT(Input); Reset(Input); AssignCRT(Output); Rewrite(Output);
    begin
-      CheckBreak  := True;    -- Enable Ctrl-Break
-      CheckEOF    := False;      -- Enable Ctrl-Z
-      DirectVideo := True;   -- Enable direct video addressing
-      CheckSnow   := True;     -- Enable snow filtering
-      LastMode    := CO80;         -- Current text mode
-      TextAttr    := Black * 16 + White;         -- Current text attribute
-      WindMin     := 0;          -- Window upper left coordinates
-      WindMax     := 24 * 256 + 79;          -- Window lower right coordinates
-
-      IntPalette.Size                  := 15;
-      IntPalette.Colors (Black)        := Parse ("black");
-      IntPalette.Colors (Blue)         := Parse ("blue");
-      IntPalette.Colors (Green)        := Parse ("green");
-      IntPalette.Colors (Cyan)         := Parse ("cyan");
-      IntPalette.Colors (Red)          := Parse ("red");
-      IntPalette.Colors (Magenta)      := Parse ("magenta");
-      IntPalette.Colors (Brown)        := Parse ("brown");
-      IntPalette.Colors (LightGray)    := Parse ("LightGray");
-      IntPalette.Colors (DarkGray)     := Parse ("DarkGray");
-      IntPalette.Colors (LightBlue)    := Parse ("LightBlue");
-      IntPalette.Colors (LightGreen)   := Parse ("LightGreen");
-      IntPalette.Colors (LightCyan)    := Parse ("LightCyan");
-      IntPalette.Colors (LightRed)     := Parse ("LightCoral");
-      IntPalette.Colors (LightMagenta) := Parse ("LightPink");
-      IntPalette.Colors (Yellow)       := Parse ("yellow");
-      IntPalette.Colors (White)        := Parse ("white");
-
-      Activate_Win_CRT;
       AssignCrt (TP7.System.Input);
       AssignCrt (TP7.System.Output);
-
-      Show_All_Ctrl;
-      Put_Line ("Turbo Pascal emulated console:");
-
-      --HELP!! WITH
-      declare
-   --R: aliased Rect;
-   --Largeur, Hauteur: Short_Integer;
-
-   --  r : <type> RENAMES  thePort.all.PortBits.Bounds ;
-      begin
-      --Largeur := R.Right - R.Left;
-      --Hauteur := R.Bottom - R.Top;
-         null;
-         --SetRect(R'access, 0, Hauteur   /   2, Largeur, Hauteur);
-         --InsetRect(R'access, 3, 3);
-         --SetTextRect(R);
-      end;
-      --ShowText;
-      --TextFont(Courier);
-      --TextSize(CCharSize);
-      --NormVideo;
-      --ClrScr;
-      null;
+      TP7.Put_Line ("Turbo Pascal emulated console:");
    end Init;
 
+begin
+   TP7.Init_CRT (Init'Access);
 end TP7.Crt;

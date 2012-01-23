@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7-dos.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.0b
--- DATE DE LA DERNIERE MISE A JOUR  : 16 octobre 2011
+-- VERSION DU CSU                   : 2.1a
+-- DATE DE LA DERNIERE MISE A JOUR  : 26 décembre 2011
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -21,37 +21,44 @@
 with Ada.Calendar;
 with Ada.Calendar.Formatting;
 with TP7.System;
+with GNAT.Directory_Operations.Iteration;
+with Ada.Environment_Variables;
 
 package body TP7.Dos is
 
-   function DosVersion return Word is
-      ResultDosVersion : Word;
+   package Environment_Vector is new Ada.Containers.Vectors (
+      Positive,
+      Ada.Strings.Unbounded.Unbounded_String,
+      Ada.Strings.Unbounded."=");
+   Environment_Pairs : Environment_Vector.Vector;
+   procedure Add (Name, Value : String) is
+      use Environment_Vector, Ada.Strings.Unbounded;
    begin
-      declare
-      begin
-         if Debug then
-            TP7.System.Writeln ("La fonction DosVersion n'est pas définie !");
-         end if;
-         ResultDosVersion := 0;
-         null;
-      end;
-      return ResultDosVersion;
+      Environment_Pairs.Append (To_Unbounded_String (Name & '=' & Value));
+   end Add;
+
+   function DosVersion return Word is
+   begin
+      if Debug then
+         TP7.System.Writeln ("La fonction DosVersion n'est pas définie !");
+      end if;
+      return 0;
    end DosVersion;
 
    procedure Intr (IntNo : Byte; Regs : in out Registers) is
+      pragma Unreferenced (Regs, IntNo);
    begin
       if Debug then
          TP7.System.Writeln ("La fonction Intr n'est pas définie !");
       end if;
-      null;
    end Intr;
 
    procedure MsDos (Regs : in out Registers) is
+      pragma Unreferenced (Regs);
    begin
       if Debug then
          TP7.System.Writeln ("La fonction MsDos n'est pas définie !");
       end if;
-      null;
    end MsDos;
 
    procedure GetDate (Year, Month, Day, DayOfWeek : out Word) is
@@ -81,18 +88,11 @@ package body TP7.Dos is
    end GetDate;
 
    procedure SetDate (Year, Month, Day : Word) is
-      pragma Compile_Time_Warning (True, "SetDate not implemented"); -- TBF
-      Date : Ada.Calendar.Time :=
-         Ada.Calendar.Time_Of (Year, Month, Day, Ada.Calendar.Seconds (Ada.Calendar.Clock));
-      pragma Unreferenced (Date);
-   --  			Date: aliased DateTimeRec;
+      pragma Unreferenced (Day, Month, Year);
    begin
-      --  	GetTime(Date'access);
-      --  	Date.Year := Short_Integer(Year);
-      --  	Date.Month := Short_Integer(Month);
-      --  	Date.Day := Short_Integer(Day);
-      --  	SetTime(Date'access);
-      null;
+      if Debug then
+         TP7.System.Writeln ("La fonction SetDate n'est pas définie !");
+      end if;
    end SetDate;
 
    procedure GetTime (Hour, Minute, Second, Sec100 : out Word) is
@@ -107,185 +107,176 @@ package body TP7.Dos is
    end GetTime;
 
    procedure SetTime (Hour, Minute, Second, Sec100 : Word) is
-      pragma Compile_Time_Warning (True, "SetDate not implemented"); -- TBF
-      Today : constant Ada.Calendar.Time := Ada.Calendar.Clock;
-      Date  : Ada.Calendar.Time          :=
-         Ada.Calendar.Time_Of
-           (Ada.Calendar.Year (Today),
-            Ada.Calendar.Month (Today),
-            Ada.Calendar.Day (Today),
-            Hour * 3600.0 + Minute * 60.0 + Second * 1.0 + Duration (Sec100) / 100.0);
-      pragma Unreferenced (Date);
-   --  			Date: aliased DateTimeRec;
+      pragma Unreferenced (Sec100, Second, Minute, Hour);
    begin
-      --  	GetTime(Date'access);
-      --  	Date.Hour := Short_Integer(Hour);
-      --  	Date.Minute := Short_Integer(Minute);
-      --  	Date.Second := Short_Integer(Second);
-      --  	SetTime(Date'access);
-      null;
+      if Debug then
+         TP7.System.Writeln ("La fonction SetTime n'est pas définie !");
+      end if;
    end SetTime;
 
    procedure GetCBreak (Break : out Boolean) is
    begin
-      if Debug then
-         TP7.System.Writeln ("La fonction GetCBreak n'est pas définie !");
-      end if;
-      Break := True;
-      null;
+      Break := False;
    end GetCBreak;
 
    procedure SetCBreak (Break : Boolean) is
+      pragma Unreferenced (Break);
    begin
       if Debug then
          TP7.System.Writeln ("La fonction SetCBreak n'est pas définie !");
       end if;
-      null;
    end SetCBreak;
 
    procedure GetVerify (Verify : out Boolean) is
    begin
-      if Debug then
-         TP7.System.Writeln ("La fonction GetVerify n'est pas définie !");
-      end if;
-      Verify := True;
-      null;
+      Verify := False;
    end GetVerify;
 
    procedure SetVerify (Verify : Boolean) is
+      pragma Unreferenced (Verify);
    begin
       if Debug then
          TP7.System.Writeln ("La fonction SetVerify n'est pas définie !");
       end if;
-      null;
    end SetVerify;
 
    function DiskFree (Drive : Byte) return Longint is
-      ResultDiskFree : Longint;
+      pragma Unreferenced (Drive);
    begin
-      declare
-      begin
-         if Debug then
-            TP7.System.Writeln ("La fonction CSeg n'est pas définie !");
-         end if;
-         ResultDiskFree := 0;
-         null;
-      end;
-      return ResultDiskFree;
+      if Debug then
+         TP7.System.Writeln ("La fonction DiskFree n'est pas définie !");
+      end if;
+      return -1;
    end DiskFree;
 
    function DiskSize (Drive : Byte) return Longint is
-      ResultDiskSize : Longint;
+      pragma Unreferenced (Drive);
    begin
-      declare
-      begin
-         if Debug then
-            TP7.System.Writeln ("La fonction CSeg n'est pas définie !");
-         end if;
-         ResultDiskSize := 0;
-         null;
-      end;
-      return ResultDiskSize;
+      if Debug then
+         TP7.System.Writeln ("La fonction DiskSize n'est pas définie !");
+      end if;
+      return -1;
    end DiskSize;
 
-   procedure GetFAttr (F : in out File; Attr : out Word) is
+   procedure GetFAttr (F : File; Attr : out Word1) is
    begin
-      if Debug then
-         TP7.System.Writeln ("La fonction CSeg n'est pas définie !");
+      Attr := 0;
+      if GNAT.OS_Lib.Is_Directory (F.Name.all) then
+         Attr := Attr or Directory;
       end if;
-      null;
+      if GNAT.OS_Lib.Is_Readable_File (F.Name.all)
+        and then not GNAT.OS_Lib.Is_Writable_File (F.Name.all)
+      then
+         Attr := Attr or ReadOnly;
+      end if;
    end GetFAttr;
 
-   procedure SetFAttr (F : in out File; Attr : Word) is
+   procedure SetFAttr (F : File; Attr : Word1) is
+      pragma Unreferenced (Attr, F);
    begin
       if Debug then
-         TP7.System.Writeln ("La fonction SetFAttr1 n'est pas définie !");
+         TP7.System.Writeln ("La fonction SetFAttr n'est pas définie !");
       end if;
-      null;
    end SetFAttr;
 
-   procedure GetFTime (F : in out File; Time : out Longint) is
+   procedure GetFTime (F : File; Time : out Longint) is
+      Y, Mo, D, H, Mi, S : Standard.Integer;
+      use GNAT.OS_Lib;
    begin
-      if Debug then
-         TP7.System.Writeln ("La fonction CSeg n'est pas définie !");
+      if F.File /= 0 then
+         GNAT.OS_Lib.GM_Split (GNAT.OS_Lib.File_Time_Stamp (F.File), Y, Mo, D, H, Mi, S);
+         PackTime ((Y, Mo, D, H, Mi, S), Time);
+      else
+         Time := 0;
       end if;
-      null;
    end GetFTime;
 
-   procedure SetFTime (F : in out File; Time : Longint) is
+   procedure SetFTime (F : File; Time : Longint) is
+      pragma Unreferenced (Time, F);
    begin
       if Debug then
-         TP7.System.Writeln ("La fonction CSeg n'est pas définie !");
+         TP7.System.Writeln ("La fonction SetFTime n'est pas définie !");
       end if;
-      null;
    end SetFTime;
 
-   procedure FindFirst (Path : PathStr; Attr : Word; F : in out SearchRec) is
+   procedure FillSearchRec (F : in out SearchRec) is
+      use type Ada.Containers.Count_Type;
    begin
-      if Debug then
-         TP7.System.Writeln ("La fonction CSeg n'est pas définie !");
+      if F.Fill.Length > 0 then
+         declare
+            Item               : constant String :=
+               Ada.Strings.Unbounded.To_String (F.Fill.Element (1));
+            Y, Mo, D, H, Mi, S : Standard.Integer;
+         begin
+            F.Attr := 0; -- Not set at the moment without openning the file
+            GNAT.OS_Lib.GM_Split (GNAT.OS_Lib.File_Time_Stamp (Item), Y, Mo, D, H, Mi, S);
+            PackTime ((Y, Mo, D, H, Mi, S), F.Time);
+            F.Size := 0; -- Not set at the moment without openning the file
+            Assign_String (F.Name, GNAT.Directory_Operations.Base_Name (Item));
+            F.Fill.Delete_First;
+            DosError := 0;
+         end;
+      else
+         DosError := 18;
       end if;
-      null;
+   end FillSearchRec;
+
+   procedure FindFirst (Path : PathStr; Attr : Word1; F : out SearchRec) is
+      pragma Unreferenced (Attr); -- Not used at the moment
+      procedure Action (Item : String; Index : Positive; Quit : in out Boolean) is
+         pragma Unreferenced (Quit, Index);
+      begin
+         F.Fill.Append (Ada.Strings.Unbounded.To_Unbounded_String (Item));
+      end Action;
+      procedure Find is new GNAT.Directory_Operations.Iteration.Wildcard_Iterator (Action);
+   begin
+      Find (To_String (Path));
+      FillSearchRec (F);
    end FindFirst;
 
    procedure FindNext (F : in out SearchRec) is
    begin
-      if Debug then
-         TP7.System.Writeln ("La fonction CSeg n'est pas définie !");
-      end if;
-      null;
+      FillSearchRec (F);
    end FindNext;
 
-   type IntDateTime is record
-      Heure : Integer range 0 .. 31;
-      Min   : Integer range 0 .. 63;
-      Sec   : Integer range 0 .. 31;
-      Annee : Integer range 0 .. 127;
-      Mois  : Integer range 0 .. 15;
-      Jour  : Integer range 0 .. 32;
-   end record;
-
-   procedure UnpackTime (P : Longint; T : in out DateTime) is
-      Dum : IntDateTime;
+   procedure UnpackTime (P : Longint; T : out DateTime) is
+      Dum : Longint := P;
    begin
-      --Dum.Ext := P;
-      T.Year  := Dum.Annee;
-      T.Month := Dum.Mois;
-      T.Day   := Dum.Jour;
-      T.Hour  := Dum.Heure;
-      T.Min   := Dum.Min;
-      T.Sec   := Dum.Sec * 2;
-      null;
+      T.Sec   := Dum mod 60;
+      Dum     := Dum / 60;
+      T.Min   := Dum mod 60;
+      Dum     := Dum / 60;
+      T.Hour  := Dum mod 24;
+      Dum     := Dum / 24;
+      T.Day   := Dum mod 32;
+      Dum     := Dum / 32;
+      T.Month := Dum mod 13;
+      Dum     := Dum / 13;
+      T.Year  := Dum + 2000;
    end UnpackTime;
 
-   procedure PackTime (T : in out DateTime; P : in out Longint) is
-      Dum : IntDateTime;
+   procedure PackTime (T : DateTime; P : out Longint) is
    begin
-      Dum.Annee := T.Year;
-      Dum.Mois  := T.Month;
-      Dum.Jour  := T.Day;
-      Dum.Heure := T.Hour;
-      Dum.Min   := T.Min;
-      Dum.Sec   := T.Sec / 2;
-      --P := Dum.Ext;
-      null;
+      P := T.Sec +
+           60 *
+           (T.Min + 60 * (T.Hour + 24 * (T.Day + 32 * (T.Month + 13 * (T.Year - 2000)))));
    end PackTime;
 
-   procedure GetIntVec (IntNo : Byte; Vector : in out Pointer) is
+   procedure GetIntVec (IntNo : Byte; Vector : out Pointer) is
+      pragma Unreferenced (IntNo);
    begin
       if Debug then
          TP7.System.Writeln ("La fonction GetIntVec n'est pas définie !");
       end if;
       Vector := nil;
-      null;
    end GetIntVec;
 
    procedure SetIntVec (IntNo : Byte; Vector : Pointer) is
+      pragma Unreferenced (Vector, IntNo);
    begin
       if Debug then
          TP7.System.Writeln ("La fonction SetIntVec n'est pas définie !");
       end if;
-      null;
    end SetIntVec;
 
    procedure SwapVectors is
@@ -293,118 +284,102 @@ package body TP7.Dos is
       if Debug then
          TP7.System.Writeln ("La fonction SwapVectors n'est pas définie !");
       end if;
-      null;
    end SwapVectors;
 
    procedure Keep (ExitCode : Word) is
+      pragma Unreferenced (ExitCode);
    begin
       if Debug then
          TP7.System.Writeln ("La fonction Keep n'est pas définie !");
       end if;
-      null;
    end Keep;
 
    procedure Exec (Path : PathStr; ComLine : ComStr) is
+      Args : GNAT.OS_Lib.String_List_Access :=
+         GNAT.OS_Lib.Argument_String_To_List (To_String (ComLine));
    begin
-      if Debug then
-         TP7.System.Writeln ("La fonction Exec n'est pas définie !");
-      end if;
-      null;
+      DosError := GNAT.OS_Lib.Spawn (To_String (Path), Args.all);
+      GNAT.OS_Lib.Free (Args);
    end Exec;
 
    function DosExitCode return Word is
-      ResultDosExitCode : Word;
    begin
-      declare
-      begin
-         if Debug then
-            TP7.System.Writeln ("La fonction DosExitCode n'est pas définie !");
-         end if;
-         ResultDosExitCode := 0;
-         null;
-      end;
-      return ResultDosExitCode;
+      if Debug then
+         TP7.System.Writeln ("La fonction DosExitCode n'est pas définie !");
+      end if;
+      return 0;
    end DosExitCode;
 
    function FSearch (Path : PathStr; DirList : String) return PathStr is
+      NameAccess : GNAT.OS_Lib.String_Access :=
+         GNAT.OS_Lib.Locate_Regular_File (To_String (Path), To_String (DirList));
+      use type GNAT.OS_Lib.String_Access;
    begin
-      if Debug then
-         TP7.System.Writeln ("La fonction CSeg n'est pas définie !");
+      if NameAccess /= null then
+         declare
+            Name : constant PathStr :=
+               To_TPString
+                 (PathStr'Length - 1,
+                  GNAT.OS_Lib.Locate_Regular_File (To_String (Path), To_String (DirList)).all);
+         begin
+            GNAT.OS_Lib.Free (NameAccess);
+            return Name;
+         end;
+      else
+         return To_TPString (PathStr'Length - 1, "");
       end if;
-      return (others => ' ');
    end FSearch;
 
    function FExpand (Path : PathStr) return PathStr is
    begin
-      if Debug then
-         TP7.System.Writeln ("La fonction CSeg n'est pas définie !");
-      end if;
-      return (others => ' ');
+      return To_TPString (PathStr'Length - 1, GNAT.OS_Lib.Normalize_Pathname (To_String (Path)));
    end FExpand;
 
    procedure FSplit
      (Path : PathStr;
-      Dir  : in out DirStr;
-      Name : in out NameStr;
-      Ext  : in out ExtStr)
+      Dir  : out DirStr;
+      Name : out NameStr;
+      Ext  : out ExtStr)
    is
-      Ind1, Ind2 : Integer;
+      Ind1, Ind2 : Integer := TP7.System.Length (Path);
    begin
-      Ind1 := Path'Length;
-      Ind2 := Ind1;
-      -- 	while  (Ind2 > 0)  and  (Path(Ind2) /= '.')  and  (Path(Ind2) /=
-      --':')  loop
-      --
-      -- 		Ind2 := Ind2 - 1;end loop;
-      --
-      -- 	if  Path(Ind2) = '.' then
-      -- 		Ext := ExtStr(Path(Ind2 .. 1 + Ind1 - Ind2))
-      -- 	;else
-      -- 		Ext := (others => ' ');end if;
-      -- 	if  Path(Ind2) /= ':' then
-      --
-      -- 		Ind1 := Ind2 - 1;
-      -- 		while  (Ind2 > 0)  and  (Path(Ind2) /= ':')  loop
-      --
-      -- 			Ind2 := Ind2 - 1;end loop;
-      --
-      -- 		 null; end if;
-      -- 	if  Ind2 /= Ind1 then
-      -- 		Name := NameStr(Path(Ind2 + 1 .. 1 + Ind1 - Ind2))
-      -- 	;else
-      -- 		Name := (others => ' ');end if;
-      -- 	Dir := DirStr(Path(1.. Ind1));
-      null;
+      while Ind2 > 0 and then Path (Ind2) /= '.' and then Path (Ind2) /= '/' loop
+         Ind2 := Ind2 - 1;
+      end loop;
+      if Ind2 > 0 and then Path (Ind2) = '.' then
+         Assign_String (Ext, Path (Ind2 .. Ind1));
+         Ind1 := Ind2 - 1;
+      else
+         Assign_String (Ext, Null_TPString);
+      end if;
+      if Ind2 > 0 and then Path (Ind2) /= '/' then
+         while Ind2 > 0 and then Path (Ind2) /= '/' loop
+            Ind2 := Ind2 - 1;
+         end loop;
+      end if;
+      if Ind2 /= Ind1 then
+         Assign_String (Name, Path (Ind2 + 1 .. Ind1));
+      else
+         Assign_String (Name, Null_TPString);
+      end if;
+      Assign_String (Dir, Path (1 .. Ind2));
    end FSplit;
 
    function EnvCount return Integer is
-      ResultEnvCount : Integer;
    begin
-      declare
-      begin
-         if Debug then
-            TP7.System.Writeln ("La fonction EnvCount n'est pas définie !");
-         end if;
-         ResultEnvCount := 0;
-         null;
-      end;
-      return ResultEnvCount;
+      return Integer (Environment_Pairs.Length);
    end EnvCount;
 
    function EnvStr (Index : Integer) return String is
    begin
-      if Debug then
-         TP7.System.Writeln ("La fonction EnvStr n'est pas définie !");
-      end if;
-      return "";
+      return Ada.Strings.Unbounded.To_String (Environment_Pairs.Element (Index));
    end EnvStr;
 
    function GetEnv (EnvVar : String) return String is
    begin
-      if Debug then
-         TP7.System.Writeln ("La fonction GetEnv n'est pas définie !");
-      end if;
-      return "";
+      return To_TPString (GNAT.OS_Lib.Getenv (To_String (EnvVar)).all);
    end GetEnv;
 
+begin
+   Ada.Environment_Variables.Iterate (Add'Access);
 end TP7.Dos;

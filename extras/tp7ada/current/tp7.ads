@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (spécification)       : tp7.ads
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.3a
--- DATE DE LA DERNIERE MISE A JOUR  : 16 décembre 2011
+-- VERSION DU CSU                   : 2.4a
+-- DATE DE LA DERNIERE MISE A JOUR  : 26 décembre 2011
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -137,7 +137,7 @@ package TP7 is
 private
    -- Internal types
    type File is new Ada.Finalization.Limited_Controlled with record
-      File : GNAT.OS_Lib.File_Descriptor;
+      File : GNAT.OS_Lib.File_Descriptor := 0;
       Name : GNAT.OS_Lib.String_Access;
    end record;
    procedure Finalize (F : in out File);
@@ -151,7 +151,7 @@ private
 
    -- Internal procedures for adding widgets in control window
    procedure Add_Ctrl (Widget : access Gtk.Widget.Gtk_Widget_Record'Class);
-   procedure Show_All_Ctrl;
+   --     procedure Show_All_Ctrl;
 
    -- Internal procedure for halt
    procedure Stop;
@@ -165,6 +165,8 @@ private
    procedure Get_Line;
    function Is_Key_Pressed return Boolean;
    function Read_Key return Char;
-   procedure Activate_Win_CRT;
+
+   -- Internal registeration for init proc in CRT child unit
+   procedure Init_CRT (InitProc : TPProc);
 
 end TP7;

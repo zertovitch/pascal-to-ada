@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.3a
--- DATE DE LA DERNIERE MISE A JOUR  : 16 décembre 2011
+-- VERSION DU CSU                   : 2.4a
+-- DATE DE LA DERNIERE MISE A JOUR  : 26 décembre 2011
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -20,7 +20,6 @@
 
 with Ada.Exceptions;
 with Ada.Strings.Fixed;
-
 with Gtk.Main;
 with Gtk.Handlers;
 with Gtk.Button;
@@ -246,7 +245,7 @@ package body TP7 is
       end select;
    exception
       when E : others =>
-         -- Output to Stdout as Text window may not be readable
+         -- Write to Stdout as CRT text window may not be readable
          Ada.Text_IO.Put_Line (Ada.Exceptions.Exception_Information (E));
    end Principal;
 
@@ -280,6 +279,7 @@ package body TP7 is
    procedure Add_Ctrl (Widget : access Gtk.Widget.Gtk_Widget_Record'Class) is
    begin
       IntVBBox_Ctrl.Pack_Start (Widget);
+      Win_Ctrl.Show_All;
    end Add_Ctrl;
 
    procedure Show_All_Ctrl is
@@ -336,7 +336,7 @@ package body TP7 is
       Arg1 : constant Gdk.Event.Gdk_Event    := Gtk.Arguments.To_Event (Params, 1);
       Key  : constant Gdk.Types.Gdk_Key_Type := Gdk.Event.Get_Key_Val (Arg1);
       Ch   : constant String                 := Gdk.Event.Get_String (Arg1);
-      use type Ada.Text_IO.Count;
+      --        use type Ada.Text_IO.Count;
       use Gdk.Types.Keysyms;
    begin
       if Ch'Length > 1 then -- UTF8 char
@@ -354,7 +354,6 @@ package body TP7 is
             Write_Key (Ada.Characters.Latin_1.HT);
          when GDK_F1 .. GDK_F15 =>
             Write_Key (Ada.Characters.Latin_1.NUL);
-         --              Write_Key(Tab....);
          when others =>
             null;
             --              Ada.Integer_Text_IO.Put(Standard.Integer(Key), 9, 16);
@@ -391,8 +390,6 @@ package body TP7 is
         (Win_Text,
          "key_press_event",
          On_Key_Press_Event'Access);
-
-      Show_All_Ctrl;
    end Activate_Win_CRT;
 
    procedure Put (S : String) is
@@ -469,7 +466,7 @@ package body TP7 is
    end Get_line;
 
    function Get return String is
-      S     : String (1 .. 256); -- Turbo Pascal string length
+      S     : String (1 .. 255 + 1); -- Turbo Pascal string size
       Index : Positive := S'First;
       Ch    : Char;
    begin
@@ -511,6 +508,13 @@ package body TP7 is
       end loop;
    end Get_line;
 
+   CRT_Init_Proc : TPProc := null;
+
+   procedure Init_CRT (InitProc : TPProc) is
+   begin
+      CRT_Init_Proc := InitProc;
+   end Init_CRT;
+
    procedure Init (My_Principal_Proc : TPProc) is
    begin
       IntPrincipalProc := My_Principal_Proc;
@@ -529,18 +533,21 @@ package body TP7 is
          Button_Callback.To_Marshaller (On_Quit_Clicked'Access),
          False);
 
+      Gtk.Check_Button.Gtk_New (IntDebugButton, "Debug");
+
       Gtk.Window.Gtk_New (Win_Ctrl);
       Gtk.Window.Set_Title (Win_Ctrl, "Win Ctrl");
       Gtk.Vbutton_Box.Gtk_New (IntVBBox_Ctrl);
       Win_Ctrl.Add (IntVBBox_Ctrl);
 
-      Gtk.Check_Button.Gtk_New (IntDebugButton, "Debug");
-
       Add_Ctrl (IntStartButton);
       Add_Ctrl (IntQuitButton);
       Add_Ctrl (IntDebugButton);
 
-      Win_Ctrl.Show_All;
+      if CRT_Init_Proc /= null then
+         Activate_Win_CRT;
+         CRT_Init_Proc.all;
+      end if;
    end Init;
 
 end TP7;

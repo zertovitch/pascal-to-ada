@@ -2,7 +2,6 @@ with Ada.Text_IO;
 with Ada.Exceptions;
 with Gtk.Main;
 with Gdk.Threads;
-with TP7.Crt;
 with TP7.Test;
 with Exemples_TP7;
 with BGIDemo;
@@ -19,7 +18,6 @@ begin
    TP7.Test.Add (BGIDemo'Access, "BGI Demo");
    TP7.Test.Add (Arty'Access, "Art Demo");
    TP7.Test.SelectAll;
-   TP7.Crt.Init;
    Gdk.Threads.Enter;
    Gtk.Main.Main;
    Gdk.Threads.Leave;
