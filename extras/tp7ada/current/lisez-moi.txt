@@ -111,7 +111,8 @@ mais renvoies un message d'avertissement si Debug est activé.
 
 	6) Description de l'unité CRT :
 
-	À venir.
+	Contient l'ensemble des procédures liées à la gestion
+de la fenêtre texte, du clavier et du son.
 
 	7) Description de l'unité Test :
 
@@ -125,25 +126,27 @@ Ces procédures sélectionnées sont alors exécutées en séquence.
      Au préalable, le compilateur GNAT et la bibliothèque GTKAda
 doivent être installés, voir par ailleurs sur Blady.
 
-	Les sources de la bibliothèque version 2.4a sont :
+	Les sources de la bibliothèque version 2.5a sont :
 arty.adb
 bgidemo.adb
 exemples_tp7.adb
+hello_gtkada.adb
 main.adb
-tp7-crt.adb	 2.3a
-tp7-crt.ads	 2.3a
+main_mini.adb
+tp7-crt.adb	 2.4a
+tp7-crt.ads	 2.4a
 tp7-dos.adb	 2.1a
 tp7-dos.ads	 2.1a
 tp7-graph.adb	 2.2a
 tp7-graph.ads	 2.0b
 tp7-printer.adb	 2.1a
 tp7-printer.ads	 2.1a
-tp7-system.adb	 2.2a
-tp7-system.ads	 2.1a
+tp7-system.adb	 2.3a
+tp7-system.ads	 2.2a
 tp7-test.adb	 1.1a
 tp7-test.ads	 1.0a
-tp7.adb		 2.4a
-tp7.ads		 2.4a
+tp7.adb		 2.5a
+tp7.ads		 2.5a
 
      Tout d'abord votre programme principal Ada issu de Turbo Pascal (avec
 l'utilitaire P2Ada par exemple) doit être référencé dans le programme main.adb
@@ -155,7 +158,8 @@ $ gnatmake main `gtkada-config`
 $ ./main
 
      La bibliothèque contient un programme principal par défaut
-utilisé pour le test des unités : TP7.Test.Execute, voir main.adb.
+utilisé pour le test des unités : TP7.Test.Execute, voir main.adb et
+un programme de test minimal, voir main_mini.adb.
      Le programme se compose d'une fenêtre de contrôle : démarrage et
 arrêt du programme, d'une fenêtre texte (affichage et saisie)
 si l'unité TP7.CRT est appelée sinon utilisation du Terminal,
@@ -190,26 +194,30 @@ programmes graphiques sur Macintosh, Unix ou Windows.
 
      VII Historique :
 
+- 2.5a : codage complet de l'unité TP7.CRT; ajout de la gestion des tags dans TP7;
+                ajout de Readln d'un entier dans TP7.System, ajout d'un exemple minimal
+		d'utilisation du Terminal ou de TP7.CRT;
 - 2.4a : codage complet de l'unité TP7.DOS; ajout mécanisme automatique de l'init de TP7.CRT;
 		modif itération dans TP7.Test pour éviter un Programm_Error lors d'un abort;
 		modif de l'init de TP7.CRT;
 - 2.3a : codage complet de l'unité TP7.Graph avec les exemples graphiques BGIDemo et Arty;
 		ajout de l'unité TP7.Test; ajout d'une fonction dans l'unité TP7
 		de construction d'une chaine de taille différente de la longueur;
-		utilisation de l'unité TP7.Test dans main; 
+		utilisation de l'unité TP7.Test dans main;
 - 2.2a : intégration de la saisie de texte à la fenêtre d'affichage du texte
 		et rebasculement des affichages et saisies dans TP7 avec modification
-		des entrées/sorties de TP7.System
+		des entrées/sorties de TP7.System;
 - 2.1a : codage complet de l'unité TP7.System; ajout d'une fonction
 		et d'une case à cocher Debug, basculement des affichages GTK
 		dans CRT et redéfinition des types fichiers de l'unité TP7;
 		adaptation de Lst dans l'unité TP7.Printer; codage des fonctions
 		Linexx, Arc, Circle, Ellipse dans l'unité TP7.Graph; ajustement
 		des interfaces de l'unité TP7.Dos; reprise des affichages GTK
-		dans l'unité TP7.CRT
-- 2.0a : première version basée sur GTKAda
-- 1.0a : première version basée sur CarbonAda
+		dans l'unité TP7.CRT;
+- 2.0a : première version basée sur GTKAda;
+- 1.0a : première version basée sur CarbonAda.
 
-Pascal Pignard, juin 1994, octobre 2002, septembre-décembre 2011.
+Pascal Pignard,
+juin 1994, octobre 2002, septembre-décembre 2011, janvier-février 2012.
 http://blady.pagesperso-orange.fr
 

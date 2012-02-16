@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (spécification)       : tp7-system.ads
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.1a
--- DATE DE LA DERNIERE MISE A JOUR  : 18 octobre 2011
+-- VERSION DU CSU                   : 2.2a
+-- DATE DE LA DERNIERE MISE A JOUR  : 18 janvier 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -13,7 +13,7 @@
 --
 -- NOTES                            :
 --
--- COPYRIGHT                        : (c) Pascal Pignard 2002-2011
+-- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
@@ -29,7 +29,7 @@
 
 -- Pascal to Ada translation by Pascal Pignard August 2002
 
-with Ada.Numerics.Long_Long_Elementary_Functions;
+private with Ada.Numerics.Long_Long_Elementary_Functions;
 
 package TP7.System is
    pragma Elaborate_Body;
@@ -250,6 +250,7 @@ package TP7.System is
    procedure Readln (F : Text; C : out Char);
    procedure Readln (S : out String);
    procedure Readln (F : Text; S : out String);
+   procedure Readln (I : out Integer);
    procedure Readln;
    procedure Readln (F : Text);
 

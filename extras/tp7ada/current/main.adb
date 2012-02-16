@@ -6,6 +6,7 @@ with TP7.Test;
 with Exemples_TP7;
 with BGIDemo;
 with Arty;
+with Hello_GTKAda;
 
 procedure main is
 
@@ -17,6 +18,7 @@ begin
    TP7.Test.Add (Exemples_TP7'Access, "Exemples TP7");
    TP7.Test.Add (BGIDemo'Access, "BGI Demo");
    TP7.Test.Add (Arty'Access, "Art Demo");
+   TP7.Test.Add (Hello_GTKAda'Access, "Hello GtkAda");
    TP7.Test.SelectAll;
    Gdk.Threads.Enter;
    Gtk.Main.Main;

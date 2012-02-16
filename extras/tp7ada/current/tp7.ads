@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (spécification)       : tp7.ads
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.4a
--- DATE DE LA DERNIERE MISE A JOUR  : 26 décembre 2011
+-- VERSION DU CSU                   : 2.5a
+-- DATE DE LA DERNIERE MISE A JOUR  : 5 février 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -13,7 +13,7 @@
 --
 -- NOTES                            :
 --
--- COPYRIGHT                        : (c) Pascal Pignard 2002-2011
+-- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
@@ -25,6 +25,7 @@ private with Ada.Text_IO;
 private with Ada.Finalization;
 private with GNAT.OS_Lib;
 private with Gtk.Widget;
+private with Gtk.Text_Tag;
 
 package TP7 is
    pragma Elaborate_Body;
@@ -165,8 +166,18 @@ private
    procedure Get_Line;
    function Is_Key_Pressed return Boolean;
    function Read_Key return Char;
+   procedure Goto_XY (X, Y : Byte);
+   function Where_X return Byte;
+   function Where_Y return Byte;
+   procedure Clr_Scr;
+   procedure Clr_Eol;
+   procedure Ins_Line;
+   procedure Del_Line;
 
-   -- Internal registeration for init proc in CRT child unit
-   procedure Init_CRT (InitProc : TPProc);
+   -- Internal registration for init proc in CRT child unit
+   type TPProcGetTag is access procedure
+     (Tag    : out Gtk.Text_Tag.Gtk_Text_Tag;
+      NewTag : out Boolean);
+   procedure Init_CRT (InitProc : TPProc; GetTag : TPProcGetTag);
 
 end TP7;

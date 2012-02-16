@@ -1,9 +1,8 @@
----------------------------------------------------------------------------
-------
+-------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7-system.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.2a
--- DATE DE LA DERNIERE MISE A JOUR  : 28 octobre 2011
+-- VERSION DU CSU                   : 2.3a
+-- DATE DE LA DERNIERE MISE A JOUR  : 18 janvier 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -14,23 +13,21 @@
 --
 -- NOTES                            :
 --
--- COPYRIGHT                        : (c) Pascal Pignard 2002-2011
+-- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
 
 with Ada.Characters.Handling;
-with Ada.Exceptions;               use Ada.Exceptions;
-with Ada.Directories;              use Ada.Directories;
-with Ada.Command_Line;             use Ada.Command_Line;
+with Ada.Exceptions;
+with Ada.Directories;
+with Ada.Command_Line;
 with Ada.Numerics.Discrete_Random;
 with Ada.Numerics.Float_Random;
 with Ada.Strings.Fixed;
 with Ada.Integer_Text_IO;
 
 package body TP7.System is
-   use Ada.Text_IO;
-   use GNAT.OS_Lib;
 
    IntCheck : constant Boolean := False;
    noErr    : constant Word    := 0;
@@ -79,10 +76,10 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            if Is_Open (F.File) then
-               Reset (F.File, In_File);
+            if Ada.Text_IO.Is_Open (F.File) then
+               Ada.Text_IO.Reset (F.File, Ada.Text_IO.In_File);
             else
-               Open (F.File, In_File, F.Name.all);
+               Ada.Text_IO.Open (F.File, Ada.Text_IO.In_File, F.Name.all);
             end if;
          when Stdinout =>
             null;
@@ -99,10 +96,10 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            if Is_Open (F.File) then
-               Reset (F.File, Out_File);
+            if Ada.Text_IO.Is_Open (F.File) then
+               Ada.Text_IO.Reset (F.File, Ada.Text_IO.Out_File);
             else
-               Create (F.File, Out_File, F.Name.all);
+               Ada.Text_IO.Create (F.File, Ada.Text_IO.Out_File, F.Name.all);
             end if;
          when Stdinout =>
             null;
@@ -119,10 +116,10 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            if Is_Open (F.File) then
-               Reset (F.File, Append_File);
+            if Ada.Text_IO.Is_Open (F.File) then
+               Ada.Text_IO.Reset (F.File, Ada.Text_IO.Append_File);
             else
-               Open (F.File, Append_File, F.Name.all);
+               Ada.Text_IO.Open (F.File, Ada.Text_IO.Append_File, F.Name.all);
             end if;
          when Stdinout =>
             null;
@@ -139,7 +136,7 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            Close (F.File);
+            Ada.Text_IO.Close (F.File);
          when Stdinout =>
             null;
          when Win_CRT =>
@@ -155,7 +152,7 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            return End_Of_File (F.File);
+            return Ada.Text_IO.End_Of_File (F.File);
          when Stdinout =>
             return False;
          when Win_CRT =>
@@ -167,7 +164,7 @@ package body TP7.System is
    begin
       case Input.Device is
          when File_System =>
-            return End_Of_File;
+            return Ada.Text_IO.End_Of_File;
          when Stdinout =>
             return False;
          when Win_CRT =>
@@ -183,7 +180,7 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            return End_Of_Line (F.File);
+            return Ada.Text_IO.End_Of_Line (F.File);
          when Stdinout =>
             return False;
          when Win_CRT =>
@@ -199,7 +196,7 @@ package body TP7.System is
    begin
       case Input.Device is
          when File_System =>
-            return End_Of_Line;
+            return Ada.Text_IO.End_Of_Line;
          when Stdinout =>
             return False;
          when Win_CRT =>
@@ -218,12 +215,12 @@ package body TP7.System is
       case F.Device is
          when File_System =>
             while not EOL and then (C = ' ' or else C = Ada.Characters.Latin_1.HT) loop
-               Look_Ahead (F.File, C, EOL);
+               Ada.Text_IO.Look_Ahead (F.File, C, EOL);
                if not EOL and then (C = ' ' or else C = Ada.Characters.Latin_1.HT) then
-                  Get (F.File, C);
+                  Ada.Text_IO.Get (F.File, C);
                end if;
             end loop;
-            return End_Of_File (F.File);
+            return Ada.Text_IO.End_Of_File (F.File);
          when Stdinout =>
             return False;
          when Win_CRT =>
@@ -242,9 +239,9 @@ package body TP7.System is
       case F.Device is
          when File_System =>
             while not EOL and then (C = ' ' or else C = Ada.Characters.Latin_1.HT) loop
-               Look_Ahead (F.File, C, EOL);
+               Ada.Text_IO.Look_Ahead (F.File, C, EOL);
                if not EOL and then (C = ' ' or else C = Ada.Characters.Latin_1.HT) then
-                  Get (F.File, C);
+                  Ada.Text_IO.Get (F.File, C);
                end if;
             end loop;
             return EOL;
@@ -271,7 +268,7 @@ package body TP7.System is
    procedure Reset (F : in out File; TailleRec : Word := 0) is
       pragma Unreferenced (TailleRec);
    begin
-      F.File := Open_Read (F.Name.all, Binary);
+      F.File := GNAT.OS_Lib.Open_Read (F.Name.all, GNAT.OS_Lib.Binary);
    end Reset;
 
    -------------
@@ -281,7 +278,7 @@ package body TP7.System is
    procedure Rewrite (F : in out File; TailleRec : Word := 0) is
       pragma Unreferenced (TailleRec);
    begin
-      F.File := Create_File (F.Name.all, Binary);
+      F.File := GNAT.OS_Lib.Create_File (F.Name.all, GNAT.OS_Lib.Binary);
    end Rewrite;
 
    -----------
@@ -290,7 +287,7 @@ package body TP7.System is
 
    procedure Close (F : in out File) is
    begin
-      Close (F.File);
+      GNAT.OS_Lib.Close (F.File);
    end Close;
 
    ---------------
@@ -362,7 +359,7 @@ package body TP7.System is
 
    function FileSize (F : File) return Longint is
    begin
-      return Longint (File_Length (F.File));
+      return Longint (GNAT.OS_Lib.File_Length (F.File));
    end FileSize;
 
    --------------
@@ -384,7 +381,7 @@ package body TP7.System is
    procedure Erase (F : in out File) is
       Success : Boolean;
    begin
-      Delete_File (To_String (F.Name.all), Success);
+      GNAT.OS_Lib.Delete_File (To_String (F.Name.all), Success);
       if not Success then
          FSError (FNOErr, To_String (F.Name.all));
       end if;
@@ -397,7 +394,7 @@ package body TP7.System is
    procedure Rename (F : in out File; NewName : String) is
       Success : Boolean;
    begin
-      Rename_File (To_String (F.Name.all), To_String (NewName), Success);
+      GNAT.OS_Lib.Rename_File (To_String (F.Name.all), To_String (NewName), Success);
       if not Success then
          FSError (FNOErr, To_String (F.Name.all + ", " + NewName));
       end if;
@@ -422,7 +419,7 @@ package body TP7.System is
 
    procedure Seek (F : in out File; N : Longint) is
    begin
-      Lseek (F.File, Standard.Long_Integer (N), Seek_Set);
+      GNAT.OS_Lib.Lseek (F.File, Standard.Long_Integer (N), GNAT.OS_Lib.Seek_Set);
    end Seek;
 
    --------------
@@ -444,9 +441,9 @@ package body TP7.System is
    begin
       case Output.Device is
          when File_System =>
-            Put (Output.File, S);
+            Ada.Text_IO.Put (Output.File, S);
          when Stdinout =>
-            Put (S);
+            Ada.Text_IO.Put (Ada.Text_IO.Standard_Output, S);
          when Win_CRT =>
             TP7.Put (S);
       end case;
@@ -460,9 +457,9 @@ package body TP7.System is
    begin
       case Output.Device is
          when File_System =>
-            Put_Line (Output.File, S);
+            Ada.Text_IO.Put_Line (Output.File, S);
          when Stdinout =>
-            Put_Line (Ada.Text_IO.Standard_Output, S);
+            Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Output, S);
          when Win_CRT =>
             TP7.Put_Line (S);
       end case;
@@ -476,9 +473,9 @@ package body TP7.System is
    begin
       case Output.Device is
          when File_System =>
-            New_Line (Output.File);
+            Ada.Text_IO.New_Line (Output.File);
          when Stdinout =>
-            New_Line (Ada.Text_IO.Standard_Output);
+            Ada.Text_IO.New_Line (Ada.Text_IO.Standard_Output);
          when Win_CRT =>
             TP7.New_Line;
       end case;
@@ -492,9 +489,9 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            Put (F.File, S);
+            Ada.Text_IO.Put (F.File, S);
          when Stdinout =>
-            Put (Ada.Text_IO.Standard_Output, S);
+            Ada.Text_IO.Put (Ada.Text_IO.Standard_Output, S);
          when Win_CRT =>
             TP7.Put (S);
       end case;
@@ -508,9 +505,9 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            Put_Line (F.File, S);
+            Ada.Text_IO.Put_Line (F.File, S);
          when Stdinout =>
-            Put_Line (Ada.Text_IO.Standard_Output, S);
+            Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Output, S);
          when Win_CRT =>
             TP7.Put_Line (S);
       end case;
@@ -524,9 +521,9 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            New_Line (F.File);
+            Ada.Text_IO.New_Line (F.File);
          when Stdinout =>
-            New_Line (Ada.Text_IO.Standard_Output);
+            Ada.Text_IO.New_Line (Ada.Text_IO.Standard_Output);
          when Win_CRT =>
             TP7.New_Line;
       end case;
@@ -627,9 +624,9 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            Flush (F.File);
+            Ada.Text_IO.Flush (F.File);
          when Stdinout =>
-            Flush (Ada.Text_IO.Standard_Input);
+            Ada.Text_IO.Flush (Ada.Text_IO.Standard_Input);
          when Win_CRT =>
             null;
       end case;
@@ -643,9 +640,9 @@ package body TP7.System is
    begin
       case Input.Device is
          when File_System =>
-            Skip_Line (Input.File);
+            Ada.Text_IO.Skip_Line (Input.File);
          when Stdinout =>
-            Skip_Line (Ada.Text_IO.Standard_Input);
+            Ada.Text_IO.Skip_Line (Ada.Text_IO.Standard_Input);
          when Win_CRT =>
             TP7.Get_Line;
       end case;
@@ -659,9 +656,9 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            Skip_Line (F.File);
+            Ada.Text_IO.Skip_Line (F.File);
          when Stdinout =>
-            Skip_Line (Ada.Text_IO.Standard_Input);
+            Ada.Text_IO.Skip_Line (Ada.Text_IO.Standard_Input);
          when Win_CRT =>
             TP7.Get_Line;
       end case;
@@ -743,6 +740,26 @@ package body TP7.System is
       end case;
    end Readln;
 
+   ------------
+   -- Readln --
+   ------------
+
+   procedure Readln (I : out Integer) is
+   begin
+      case Input.Device is
+         when File_System =>
+            Ada.Integer_Text_IO.Get (Input.File, I);
+         when Stdinout =>
+            Ada.Integer_Text_IO.Get (I);
+         when Win_CRT =>
+            declare
+               S : constant String := TP7.Get;
+            begin
+               I := Integer'Value (To_String (S));
+            end;
+      end case;
+   end Readln;
+
    ----------
    -- Read --
    ----------
@@ -751,9 +768,9 @@ package body TP7.System is
    begin
       case Input.Device is
          when File_System =>
-            Get (Input.File, C);
+            Ada.Text_IO.Get (Input.File, C);
          when Stdinout =>
-            Get (Ada.Text_IO.Standard_Input, C);
+            Ada.Text_IO.Get (Ada.Text_IO.Standard_Input, C);
          when Win_CRT =>
             declare
                S : constant String := TP7.Get;
@@ -771,9 +788,9 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            Get (F.File, S);
+            Ada.Text_IO.Get (F.File, S);
          when Stdinout =>
-            Get (Ada.Text_IO.Standard_Input, S);
+            Ada.Text_IO.Get (Ada.Text_IO.Standard_Input, S);
          when Win_CRT =>
             Assign_String (S, TP7.Get);
       end case;
@@ -787,9 +804,9 @@ package body TP7.System is
    begin
       case Input.Device is
          when File_System =>
-            Get (Input.File, S);
+            Ada.Text_IO.Get (Input.File, S);
          when Stdinout =>
-            Get (Ada.Text_IO.Standard_Input, S);
+            Ada.Text_IO.Get (Ada.Text_IO.Standard_Input, S);
          when Win_CRT =>
             Assign_String (S, TP7.Get);
       end case;
@@ -803,9 +820,9 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            Get (F.File, C);
+            Ada.Text_IO.Get (F.File, C);
          when Stdinout =>
-            Get (Ada.Text_IO.Standard_Input, C);
+            Ada.Text_IO.Get (Ada.Text_IO.Standard_Input, C);
          when Win_CRT =>
             declare
                S : constant String := TP7.Get;
@@ -830,7 +847,7 @@ package body TP7.System is
             declare
                S : constant String := TP7.Get;
             begin
-               I := Integer'Value (S);
+               I := Integer'Value (To_String (S));
             end;
       end case;
    end Read;
@@ -929,35 +946,35 @@ package body TP7.System is
 
    procedure ChDir (S : String) is
    begin
-      Set_Directory (To_String (S));
+      Ada.Directories.Set_Directory (To_String (S));
    exception
       when E : others =>
-         FSError (DirErr, Exception_Information (E));
+         FSError (DirErr, Ada.Exceptions.Exception_Information (E));
    end ChDir;
 
    procedure GetDir (D : Byte; S : out String) is
       pragma Unreferenced (D);
    begin
-      Assign_String (S, To_TPString (Current_Directory));
+      Assign_String (S, To_TPString (Ada.Directories.Current_Directory));
    exception
       when E : others =>
-         FSError (DirErr, Exception_Information (E));
+         FSError (DirErr, Ada.Exceptions.Exception_Information (E));
    end GetDir;
 
    procedure MkDir (S : String) is
    begin
-      Create_Directory (To_String (S));
+      Ada.Directories.Create_Directory (To_String (S));
    exception
       when E : others =>
-         FSError (DirErr, Exception_Information (E));
+         FSError (DirErr, Ada.Exceptions.Exception_Information (E));
    end MkDir;
 
    procedure RmDir (S : String) is
    begin
-      Delete_Directory (To_String (S));
+      Ada.Directories.Delete_Directory (To_String (S));
    exception
       when E : others =>
-         FSError (DirErr, Exception_Information (E));
+         FSError (DirErr, Ada.Exceptions.Exception_Information (E));
    end RmDir;
 
    function CSeg return Word is
@@ -1294,12 +1311,12 @@ package body TP7.System is
 
    function ParamCount return Word is
    begin
-      return Word (Argument_Count);
+      return Word (Ada.Command_Line.Argument_Count);
    end ParamCount;
 
    function ParamStr (Indice : Word) return String is
    begin
-      return To_TPString (Argument (Positive (Indice)));
+      return To_TPString (Ada.Command_Line.Argument (Positive (Indice)));
    end ParamStr;
 
    function Ptr (Seg, Dep : Word) return Pointer is

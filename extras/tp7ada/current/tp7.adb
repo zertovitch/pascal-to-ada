@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.4a
--- DATE DE LA DERNIERE MISE A JOUR  : 26 décembre 2011
+-- VERSION DU CSU                   : 2.5a
+-- DATE DE LA DERNIERE MISE A JOUR  : 5 février 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -13,7 +13,7 @@
 --
 -- NOTES                            :
 --
--- COPYRIGHT                        : (c) Pascal Pignard 2002-2011
+-- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
@@ -24,7 +24,6 @@ with Gtk.Main;
 with Gtk.Handlers;
 with Gtk.Button;
 with Gtk.Vbutton_Box;
-with Gtk.Enums;
 with Gtk.Window;
 with Gtk.Check_Button;
 with Gtk.Text_Buffer;
@@ -40,6 +39,7 @@ with Gtk.Text_Iter;
 with Gdk.Types.Keysyms;
 --  with Ada.Integer_Text_IO;
 with Glib.Convert;
+with Gtk.Text_Tag_Table;
 
 package body TP7 is
 
@@ -227,22 +227,26 @@ package body TP7 is
    --     end Ordonanceur;
 
    IntPrincipalProc : TPProc := null;
+   IntStartButton   : Gtk.Button.Gtk_Button;
 
    task Principal is
       entry Start;
    end Principal;
    task body Principal is
    begin
-      select
-         accept Start;
-         if IntPrincipalProc = null then
-            Ada.Text_IO.Put_Line ("Error: principal proc not initialised properly!");
-         else
-            IntPrincipalProc.all;
-         end if;
-      or
-         terminate;
-      end select;
+      loop
+         select
+            accept Start;
+            if IntPrincipalProc = null then
+               Ada.Text_IO.Put_Line ("Error: principal proc not initialised properly!");
+            else
+               IntPrincipalProc.all;
+               IntStartButton.Set_Sensitive;
+            end if;
+         or
+            terminate;
+         end select;
+      end loop;
    exception
       when E : others =>
          -- Write to Stdout as CRT text window may not be readable
@@ -256,11 +260,9 @@ package body TP7 is
 
    package Button_Callback is new Gtk.Handlers.Callback (Gtk.Button.Gtk_Button_Record);
 
-   IntStartButton : Gtk.Button.Gtk_Button;
-
    procedure On_Start_Clicked (Object : access Gtk.Button.Gtk_Button_Record'Class) is
    begin
-      Object.Set_State (Gtk.Enums.State_Insensitive);
+      Object.Set_Sensitive (False);
       Principal.Start;
    end On_Start_Clicked;
 
@@ -365,10 +367,12 @@ package body TP7 is
       return True;
    end On_Key_Press_Event;
 
-   Win_Text    : Gtk.Window.Gtk_Window;
-   IntScrolled : Gtk.Scrolled_Window.Gtk_Scrolled_Window;
-   Aera_Text   : Gtk.Text_View.Gtk_Text_View;
-   IntMark     : Gtk.Text_Mark.Gtk_Text_Mark;
+   Win_Text      : Gtk.Window.Gtk_Window;
+   IntScrolled   : Gtk.Scrolled_Window.Gtk_Scrolled_Window;
+   Aera_Text     : Gtk.Text_View.Gtk_Text_View;
+   IntCursorMark : Gtk.Text_Mark.Gtk_Text_Mark;
+   IntTag        : Gtk.Text_Tag.Gtk_Text_Tag;
+   IntGetTag     : TPProcGetTag;
 
    procedure Activate_Win_CRT is
       Index : Gtk.Text_Iter.Gtk_Text_Iter;
@@ -378,7 +382,7 @@ package body TP7 is
       Gtk.Scrolled_Window.Gtk_New (IntScrolled);
       IntScrolled.Add (Aera_Text);
       Gtk.Text_Buffer.Get_End_Iter (Gtk.Text_View.Get_Buffer (Aera_Text), Index);
-      IntMark :=
+      IntCursorMark :=
          Gtk.Text_Buffer.Create_Mark (Gtk.Text_View.Get_Buffer (Aera_Text), "", Index, False);
 
       Gtk.Window.Gtk_New (Win_Text);
@@ -393,41 +397,77 @@ package body TP7 is
    end Activate_Win_CRT;
 
    procedure Put (S : String) is
-      Index : Gtk.Text_Iter.Gtk_Text_Iter;
+      Index  : Gtk.Text_Iter.Gtk_Text_Iter;
+      NewTag : Boolean;
    begin
       Gdk.Threads.Enter;
-      Gtk.Text_Buffer.Get_End_Iter (Gtk.Text_View.Get_Buffer (Aera_Text), Index);
-      Gtk.Text_Buffer.Insert
+      IntGetTag (IntTag, NewTag);
+      if NewTag then
+         Gtk.Text_Tag_Table.Add
+           (Gtk.Text_Buffer.Get_Tag_Table (Gtk.Text_View.Get_Buffer (Aera_Text)),
+            IntTag);
+      end if;
+      Gtk.Text_Buffer.Get_Iter_At_Mark
         (Gtk.Text_View.Get_Buffer (Aera_Text),
          Index,
-         Glib.Convert.Locale_To_UTF8 (To_String (S)));
-      Gtk.Text_View.Scroll_To_Mark (Aera_Text, IntMark);
+         IntCursorMark);
+      Gtk.Text_Buffer.Insert_With_Tags
+        (Gtk.Text_View.Get_Buffer (Aera_Text),
+         Index,
+         Glib.Convert.Locale_To_UTF8 (To_String (S)),
+         IntTag);
+      Gtk.Text_View.Scroll_To_Mark (Aera_Text, IntCursorMark);
+      Gtk.Text_Buffer.Place_Cursor (Gtk.Text_View.Get_Buffer (Aera_Text), Index);
       Gdk.Threads.Leave;
    end Put;
 
    procedure Put_Line (S : String) is
-      Index : Gtk.Text_Iter.Gtk_Text_Iter;
+      Index  : Gtk.Text_Iter.Gtk_Text_Iter;
+      NewTag : Boolean;
    begin
       Gdk.Threads.Enter;
-      Gtk.Text_Buffer.Get_End_Iter (Gtk.Text_View.Get_Buffer (Aera_Text), Index);
-      Gtk.Text_Buffer.Insert
+      IntGetTag (IntTag, NewTag);
+      if NewTag then
+         Gtk.Text_Tag_Table.Add
+           (Gtk.Text_Buffer.Get_Tag_Table (Gtk.Text_View.Get_Buffer (Aera_Text)),
+            IntTag);
+      end if;
+      Gtk.Text_Buffer.Get_Iter_At_Mark
         (Gtk.Text_View.Get_Buffer (Aera_Text),
          Index,
-         Glib.Convert.Locale_To_UTF8 (To_String (S)) & Ada.Characters.Latin_1.LF);
-      Gtk.Text_View.Scroll_To_Mark (Aera_Text, IntMark);
+         IntCursorMark);
+      Gtk.Text_Buffer.Insert_With_Tags
+        (Gtk.Text_View.Get_Buffer (Aera_Text),
+         Index,
+         Glib.Convert.Locale_To_UTF8 (To_String (S)) & Ada.Characters.Latin_1.LF,
+         IntTag);
+      Gtk.Text_View.Scroll_To_Mark (Aera_Text, IntCursorMark);
+      Gtk.Text_Buffer.Place_Cursor (Gtk.Text_View.Get_Buffer (Aera_Text), Index);
       Gdk.Threads.Leave;
    end Put_Line;
 
    procedure New_Line is
-      Index : Gtk.Text_Iter.Gtk_Text_Iter;
+      Index  : Gtk.Text_Iter.Gtk_Text_Iter;
+      NewTag : Boolean;
    begin
       Gdk.Threads.Enter;
-      Gtk.Text_Buffer.Get_End_Iter (Gtk.Text_View.Get_Buffer (Aera_Text), Index);
-      Gtk.Text_Buffer.Insert
+      IntGetTag (IntTag, NewTag);
+      if NewTag then
+         Gtk.Text_Tag_Table.Add
+           (Gtk.Text_Buffer.Get_Tag_Table (Gtk.Text_View.Get_Buffer (Aera_Text)),
+            IntTag);
+      end if;
+      Gtk.Text_Buffer.Get_Iter_At_Mark
         (Gtk.Text_View.Get_Buffer (Aera_Text),
          Index,
-         (1 => Ada.Characters.Latin_1.LF));
-      Gtk.Text_View.Scroll_To_Mark (Aera_Text, IntMark);
+         IntCursorMark);
+      Gtk.Text_Buffer.Insert_With_Tags
+        (Gtk.Text_View.Get_Buffer (Aera_Text),
+         Index,
+         (1 => Ada.Characters.Latin_1.LF),
+         IntTag);
+      Gtk.Text_View.Scroll_To_Mark (Aera_Text, IntCursorMark);
+      Gtk.Text_Buffer.Place_Cursor (Gtk.Text_View.Get_Buffer (Aera_Text), Index);
       Gdk.Threads.Leave;
    end New_Line;
 
@@ -437,9 +477,13 @@ package body TP7 is
       pragma Unreferenced (Ok);
    begin
       Gdk.Threads.Enter;
-      Gtk.Text_Buffer.Get_End_Iter (Gtk.Text_View.Get_Buffer (Aera_Text), Index);
+      Gtk.Text_Buffer.Get_Iter_At_Mark
+        (Gtk.Text_View.Get_Buffer (Aera_Text),
+         Index,
+         IntCursorMark);
       Ok := Gtk.Text_Buffer.Backspace (Gtk.Text_View.Get_Buffer (Aera_Text), Index, True, True);
-      Gtk.Text_View.Scroll_To_Mark (Aera_Text, IntMark);
+      Gtk.Text_View.Scroll_To_Mark (Aera_Text, IntCursorMark);
+      Gtk.Text_Buffer.Place_Cursor (Gtk.Text_View.Get_Buffer (Aera_Text), Index);
       Gdk.Threads.Leave;
    end BackSpace;
 
@@ -508,11 +552,104 @@ package body TP7 is
       end loop;
    end Get_line;
 
+   function Where_X return Byte is
+      Current_Iter : Gtk.Text_Iter.Gtk_Text_Iter;
+   begin
+      Gtk.Text_Buffer.Get_Iter_At_Mark
+        (Gtk.Text_View.Get_Buffer (Aera_Text),
+         Current_Iter,
+         IntCursorMark);
+      return Byte (Gtk.Text_Iter.Get_Line_Offset (Current_Iter)) + 1;
+   end Where_X;
+
+   function Where_Y return Byte is
+      Current_Iter : Gtk.Text_Iter.Gtk_Text_Iter;
+   begin
+      Gtk.Text_Buffer.Get_Iter_At_Mark
+        (Gtk.Text_View.Get_Buffer (Aera_Text),
+         Current_Iter,
+         IntCursorMark);
+      return Byte (Gtk.Text_Iter.Get_Line (Current_Iter)) + 1;
+   end Where_Y;
+
+   procedure Goto_XY (X, Y : Byte) is
+      Target_Iter : Gtk.Text_Iter.Gtk_Text_Iter;
+   begin
+      Gdk.Threads.Enter;
+      Gtk.Text_Buffer.Get_Iter_At_Mark
+        (Gtk.Text_View.Get_Buffer (Aera_Text),
+         Target_Iter,
+         IntCursorMark);
+      Gtk.Text_Iter.Set_Line (Target_Iter, Glib.Gint (Y - 1));
+      Gtk.Text_Iter.Set_Line_Offset (Target_Iter, Glib.Gint (X - 1));
+      Gtk.Text_Buffer.Move_Mark
+        (Gtk.Text_View.Get_Buffer (Aera_Text),
+         IntCursorMark,
+         Target_Iter);
+      Gdk.Threads.Leave;
+   end Goto_XY;
+
+   procedure Clr_Scr is
+   begin
+      Gdk.Threads.Enter;
+      --        Gtk.Text_Buffer.Set_Text (Gtk.Text_View.Get_Buffer (Aera_Text), "");
+      Gdk.Threads.Leave;
+   end Clr_Scr;
+
+   procedure Clr_Eol is
+      Y                    : constant Byte := Where_Y;
+      Start_Iter, End_Iter : Gtk.Text_Iter.Gtk_Text_Iter;
+   begin
+      Gdk.Threads.Enter;
+      Gtk.Text_Buffer.Get_Iter_At_Mark
+        (Gtk.Text_View.Get_Buffer (Aera_Text),
+         Start_Iter,
+         IntCursorMark);
+      Gtk.Text_Buffer.Get_Iter_At_Line
+        (Gtk.Text_View.Get_Buffer (Aera_Text),
+         End_Iter,
+         Glib.Gint (Y));
+      Gtk.Text_Buffer.Delete (Gtk.Text_View.Get_Buffer (Aera_Text), Start_Iter, End_Iter);
+      Gtk.Text_Buffer.Insert_With_Tags
+        (Gtk.Text_View.Get_Buffer (Aera_Text),
+         End_Iter,
+         (1 => Ada.Characters.Latin_1.LF),
+         IntTag);
+      Gdk.Threads.Leave;
+   end Clr_Eol;
+
+   procedure Ins_Line is
+      X : constant Byte := Where_X;
+      Y : constant Byte := Where_Y;
+   begin
+      Goto_XY (1, Y + 1);
+      New_Line;
+      Goto_XY (X, Y);
+   end Ins_Line;
+
+   procedure Del_Line is
+      Y                    : constant Byte := Where_Y;
+      Start_Iter, End_Iter : Gtk.Text_Iter.Gtk_Text_Iter;
+   begin
+      Gdk.Threads.Enter;
+      Gtk.Text_Buffer.Get_Iter_At_Line
+        (Gtk.Text_View.Get_Buffer (Aera_Text),
+         Start_Iter,
+         Glib.Gint (Y - 1));
+      Gtk.Text_Buffer.Get_Iter_At_Line
+        (Gtk.Text_View.Get_Buffer (Aera_Text),
+         End_Iter,
+         Glib.Gint (Y));
+      Gtk.Text_Buffer.Delete (Gtk.Text_View.Get_Buffer (Aera_Text), Start_Iter, End_Iter);
+      Gdk.Threads.Leave;
+   end Del_Line;
+
    CRT_Init_Proc : TPProc := null;
 
-   procedure Init_CRT (InitProc : TPProc) is
+   procedure Init_CRT (InitProc : TPProc; GetTag : TPProcGetTag) is
    begin
       CRT_Init_Proc := InitProc;
+      IntGetTag     := GetTag;
    end Init_CRT;
 
    procedure Init (My_Principal_Proc : TPProc) is
