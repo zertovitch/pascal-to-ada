@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7-dos.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.1a
--- DATE DE LA DERNIERE MISE A JOUR  : 26 décembre 2011
+-- VERSION DU CSU                   : 2.2a
+-- DATE DE LA DERNIERE MISE A JOUR  : 12 mars 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -13,7 +13,7 @@
 --
 -- NOTES                            :
 --
--- COPYRIGHT                        : (c) Pascal Pignard 2002-2011
+-- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
@@ -23,19 +23,9 @@ with Ada.Calendar.Formatting;
 with TP7.System;
 with GNAT.Directory_Operations.Iteration;
 with Ada.Environment_Variables;
+with Ada.Unchecked_Conversion;
 
 package body TP7.Dos is
-
-   package Environment_Vector is new Ada.Containers.Vectors (
-      Positive,
-      Ada.Strings.Unbounded.Unbounded_String,
-      Ada.Strings.Unbounded."=");
-   Environment_Pairs : Environment_Vector.Vector;
-   procedure Add (Name, Value : String) is
-      use Environment_Vector, Ada.Strings.Unbounded;
-   begin
-      Environment_Pairs.Append (To_Unbounded_String (Name & '=' & Value));
-   end Add;
 
    function DosVersion return Word is
    begin
@@ -181,7 +171,7 @@ package body TP7.Dos is
 
    procedure GetFTime (F : File; Time : out Longint) is
       Y, Mo, D, H, Mi, S : Standard.Integer;
-      use GNAT.OS_Lib;
+      use type GNAT.OS_Lib.File_Descriptor;
    begin
       if F.File /= 0 then
          GNAT.OS_Lib.GM_Split (GNAT.OS_Lib.File_Time_Stamp (F.File), Y, Mo, D, H, Mi, S);
@@ -214,10 +204,10 @@ package body TP7.Dos is
             F.Size := 0; -- Not set at the moment without openning the file
             Assign_String (F.Name, GNAT.Directory_Operations.Base_Name (Item));
             F.Fill.Delete_First;
-            DosError := 0;
+            DosError := deOk;
          end;
       else
-         DosError := 18;
+         DosError := deNoMoreFiles;
       end if;
    end FillSearchRec;
 
@@ -239,27 +229,48 @@ package body TP7.Dos is
       FillSearchRec (F);
    end FindNext;
 
+   type TimePacked is record
+      Year  : Word range 1980 .. 2107;
+      Month : Word range 1 .. 12;
+      Day   : Word range 1 .. 31;
+      Hour  : Word range 0 .. 23;
+      Min   : Word range 0 .. 59;
+      Sec2  : Word range 0 .. 29; -- double of seconds
+   end record;
+   for TimePacked use record
+      Sec2  at 0 range 0 .. 4;
+      Min   at 0 range 5 .. 10;
+      Hour  at 0 range 11 .. 15;
+      Day   at 0 range 16 .. 20;
+      Month at 0 range 21 .. 24;
+      Year  at 0 range 25 .. 31;
+   end record;
+   for TimePacked'Size use 32;
+   function To_TimePacked is new Ada.Unchecked_Conversion (Longint, TimePacked);
+   function To_Longint is new Ada.Unchecked_Conversion (TimePacked, Longint);
+
    procedure UnpackTime (P : Longint; T : out DateTime) is
-      Dum : Longint := P;
+      Dum : constant TimePacked := To_TimePacked (P);
    begin
-      T.Sec   := Dum mod 60;
-      Dum     := Dum / 60;
-      T.Min   := Dum mod 60;
-      Dum     := Dum / 60;
-      T.Hour  := Dum mod 24;
-      Dum     := Dum / 24;
-      T.Day   := Dum mod 32;
-      Dum     := Dum / 32;
-      T.Month := Dum mod 13;
-      Dum     := Dum / 13;
-      T.Year  := Dum + 2000;
+      T :=
+        (Sec   => Dum.Sec2 * 2,
+         Min   => Dum.Min,
+         Hour  => Dum.Hour,
+         Day   => Dum.Day,
+         Month => Dum.Month,
+         Year  => Dum.Year);
    end UnpackTime;
 
    procedure PackTime (T : DateTime; P : out Longint) is
+      Dum : constant TimePacked :=
+        (Sec2  => T.Sec / 2,
+         Min   => T.Min,
+         Hour  => T.Hour,
+         Day   => T.Day,
+         Month => T.Month,
+         Year  => T.Year);
    begin
-      P := T.Sec +
-           60 *
-           (T.Min + 60 * (T.Hour + 24 * (T.Day + 32 * (T.Month + 13 * (T.Year - 2000)))));
+      P := To_Longint (Dum);
    end PackTime;
 
    procedure GetIntVec (IntNo : Byte; Vector : out Pointer) is
@@ -365,6 +376,13 @@ package body TP7.Dos is
       Assign_String (Dir, Path (1 .. Ind2));
    end FSplit;
 
+   package Environment_Vector is new Ada.Containers.Vectors (
+      Positive,
+      Ada.Strings.Unbounded.Unbounded_String,
+      Ada.Strings.Unbounded."=");
+
+   Environment_Pairs : Environment_Vector.Vector;
+
    function EnvCount return Integer is
    begin
       return Integer (Environment_Pairs.Length);
@@ -377,8 +395,14 @@ package body TP7.Dos is
 
    function GetEnv (EnvVar : String) return String is
    begin
-      return To_TPString (GNAT.OS_Lib.Getenv (To_String (EnvVar)).all);
+      return To_TPString (Ada.Environment_Variables.Value (To_String (EnvVar)));
    end GetEnv;
+
+   procedure Add (Name, Value : String) is
+      use Environment_Vector, Ada.Strings.Unbounded;
+   begin
+      Environment_Pairs.Append (To_Unbounded_String (Name & '=' & Value));
+   end Add;
 
 begin
    Ada.Environment_Variables.Iterate (Add'Access);

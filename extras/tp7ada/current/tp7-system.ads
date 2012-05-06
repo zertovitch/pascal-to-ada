@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (spécification)       : tp7-system.ads
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.2a
--- DATE DE LA DERNIERE MISE A JOUR  : 18 janvier 2012
+-- VERSION DU CSU                   : 2.3a
+-- DATE DE LA DERNIERE MISE A JOUR  : 4 mai 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -165,7 +165,7 @@ package TP7.System is
    procedure Val (S : String; V : out Longint; Erreur : out Integer);
 
    procedure FreeMem (P : in out Pointer; Taille : Word);
-   procedure GetMem (P : in out Pointer; Taille : Word);
+   procedure GetMem (P : out Pointer; Taille : Word);
    function MaxAvail return Longint;
    function MemAvail return Longint;
    function Assigned (P : Pointer) return Boolean;
@@ -177,9 +177,9 @@ package TP7.System is
    function SPtr return Word;
    function SSeg return Word;
 
-   procedure FillChar (X : in out String; Nombre : Word; Ch : Char);
+   procedure FillChar (X : out String; Nombre : Word; Ch : Char);
    type TTabByte is array (Positive range <>) of Byte1;
-   procedure FillChar (X : in out TTabByte; Nombre : Word; Val : Byte);
+   procedure FillChar (X : out TTabByte; Nombre : Word; Val : Byte);
    function Hi (X : Word) return Byte;
    function Lo (X : Word) return Byte;
    procedure Move (Source, Dest : Pointer; Nombre : Word);
@@ -237,6 +237,8 @@ package TP7.System is
 
    procedure Write (S : String);
    procedure Write (F : Text; S : String);
+   procedure Write (I : Integer; MinWidth : Integer := 0);
+   procedure Write (R : Real; MinWidth : Integer := 0; DecPlaces : Integer := 0);
    procedure Writeln (S : String);
    procedure Writeln (F : Text; S : String);
    procedure Writeln;
@@ -251,6 +253,7 @@ package TP7.System is
    procedure Readln (S : out String);
    procedure Readln (F : Text; S : out String);
    procedure Readln (I : out Integer);
+   procedure Readln (R : out Real);
    procedure Readln;
    procedure Readln (F : Text);
 
@@ -259,8 +262,8 @@ package TP7.System is
    procedure MkDir (S : String);
    procedure RmDir (S : String);
 
-   procedure Mark (Object : in out Pointer);
-   procedure Release (Object : in out Pointer);
+   procedure Mark (Object : out Pointer);
+   procedure Release (Object : Pointer);
 
 private
    function Exp (V : Real) return Real renames Ada.Numerics.Long_Long_Elementary_Functions.Exp;

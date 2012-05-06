@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (spécification)       : tp7-dos.ads
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.1a
--- DATE DE LA DERNIERE MISE A JOUR  : 26 décembre 2011
+-- VERSION DU CSU                   : 2.2a
+-- DATE DE LA DERNIERE MISE A JOUR  : 12 mars 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -13,7 +13,7 @@
 --
 -- NOTES                            :
 --
--- COPYRIGHT                        : (c) Pascal Pignard 2002-2011
+-- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
@@ -133,7 +133,17 @@ package TP7.Dos is
       Year, Month, Day, Hour, Min, Sec : Word;
    end record;
 
-   -- Error status variable
+   -- Error status constants and variable
+
+   deOk                 : constant := 0; -- No error
+   deFileNotFound       : constant := 2; -- File not found
+   dePathNotFound       : constant := 3; -- Path not found
+   deAccessDenied       : constant := 5; -- Access denied
+   deInvalidFileHhandle : constant := 6; -- Invalid file handle
+   deNotEnoughMemory    : constant := 8; -- Not enough memory
+   deInvalidEnvironment : constant := 10; -- Invalid environment
+   deInvalidFormat      : constant := 11; -- Invalid format
+   deNoMoreFiles        : constant := 18; -- No more files
 
    DosError : Integer := 0;
 

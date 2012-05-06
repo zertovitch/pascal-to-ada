@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (spécification)       : tp7-graph.ads
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.0b
--- DATE DE LA DERNIERE MISE A JOUR  : 16 octobre 2011
+-- VERSION DU CSU                   : 2.0c
+-- DATE DE LA DERNIERE MISE A JOUR  : 12 mars 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -13,7 +13,7 @@
 --
 -- NOTES                            :
 --
--- COPYRIGHT                        : (c) Pascal Pignard 2002-2011
+-- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
@@ -315,7 +315,7 @@ package TP7.Graph is
    procedure Bar (x1, y1, x2, y2 : Integer);
    procedure Bar3D (x1, y1, x2, y2 : Integer; Depth : Word; Top : Boolean);
    procedure DrawPoly (NumPoints : Word; PolyPoints : PolygonType);
-   procedure FillPoly (NumPoints : Word; PolyPoints : in PolygonType);
+   procedure FillPoly (NumPoints : Word; PolyPoints : PolygonType);
    procedure GetFillSettings (FillInfo : out FillSettingsType);
    procedure GetFillPattern (FillPattern : out FillPatternType);
    procedure SetFillStyle (Pattern : Word; Color : Word);
@@ -338,7 +338,7 @@ package TP7.Graph is
    procedure SetColor (Color : Word);
    function GetBkColor return Word;
    function GetColor return Word;
-   procedure SetAllPalette (Palette : in PaletteType);
+   procedure SetAllPalette (Palette : PaletteType);
    procedure SetPalette (ColorNum : Word; Color : Shortint);
    procedure GetPalette (Palette : out PaletteType);
    function GetPaletteSize return Integer;
@@ -348,8 +348,8 @@ package TP7.Graph is
 
    -- *** bit-image routines ***
    function ImageSize (x1, y1, x2, y2 : Integer) return Longint;
-   procedure GetImage (x1, y1, x2, y2 : Integer; BitMap : in out Pointer);
-   procedure PutImage (X, Y : Integer; BitMap : in Pointer; BitBlt : Word);
+   procedure GetImage (x1, y1, x2, y2 : Integer; BitMap : out Pointer);
+   procedure PutImage (X, Y : Integer; BitMap : Pointer; BitBlt : Word);
 
    -- *** text routines ***
    procedure GetTextSettings (TextInfo : out TextSettingsType);

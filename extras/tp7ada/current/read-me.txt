@@ -41,6 +41,6 @@ All parts indicated belong to their copyright holder.
 see Licence_CeCILL_V2-en.txt.
 
 Pascal Pignard,
-June 1994, October 2002, September-December 2011, January-February 2012.
+December 1998, June 1994, October 2002, September-December 2011, January-May 2012.
 http://blady.pagesperso-orange.fr
 

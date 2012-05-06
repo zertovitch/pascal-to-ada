@@ -107,7 +107,7 @@ taille en Y.
 	Contient l'ensemble des procédures liées au DOS et à la gestion
 des fichiers, de la date et de l'heure, des variables d'environnement.
 	Certaines non plus de sens sous Unix, elles sont présentes
-mais renvoies un message d'avertissement si Debug est activé.
+mais renvoient un message d'avertissement si Debug est activé.
 
 	6) Description de l'unité CRT :
 
@@ -120,33 +120,48 @@ de la fenêtre texte, du clavier et du son.
 L'utilisateur peut sélectionner les procédures avec des cases à cocher.
 Ces procédures sélectionnées sont alors exécutées en séquence.
 
+	8) Description de l'unité Mouse :
+
+	L'unité Mouse contient l'ensemble des procédures issues de la
+gestion de la souris DOS. Inspirée d'une unité Turbo Pascal, inspirée
+elle-même d'un article paru dans Soft & Micro. Certaines n'ont plus de
+sens ou pas de correspondance avec GTK, elles sont présentes mais
+renvoient un message d'avertissement si Debug est activé.
+
 
      III Mise en oeuvre des unités TP7Ada :
 
      Au préalable, le compilateur GNAT et la bibliothèque GTKAda
 doivent être installés, voir par ailleurs sur Blady.
 
-	Les sources de la bibliothèque version 2.5a sont :
+	Les sources de la bibliothèque version 2.6a sont :
 arty.adb
 bgidemo.adb
+courbes.adb
 exemples_tp7.adb
 hello_gtkada.adb
+lisez-moi.txt
 main.adb
 main_mini.adb
+read-me.txt
+sudoku.adb
+surfaces.adb
 tp7-crt.adb	 2.4a
 tp7-crt.ads	 2.4a
-tp7-dos.adb	 2.1a
-tp7-dos.ads	 2.1a
-tp7-graph.adb	 2.2a
-tp7-graph.ads	 2.0b
+tp7-dos.adb	 2.2a
+tp7-dos.ads	 2.2a
+tp7-graph.adb	 2.3a
+tp7-graph.ads	 2.0c
+tp7-mouse.adb    1.0a
+tp7-mouse.ads    1.0a
 tp7-printer.adb	 2.1a
 tp7-printer.ads	 2.1a
-tp7-system.adb	 2.3a
-tp7-system.ads	 2.2a
+tp7-system.adb	 2.3b
+tp7-system.ads	 2.3a
 tp7-test.adb	 1.1a
 tp7-test.ads	 1.0a
-tp7.adb		 2.5a
-tp7.ads		 2.5a
+tp7.adb		 2.6a
+tp7.ads		 2.6a
 
      Tout d'abord votre programme principal Ada issu de Turbo Pascal (avec
 l'utilitaire P2Ada par exemple) doit être référencé dans le programme main.adb
@@ -179,7 +194,7 @@ voir Licence_CeCILL_V2-fr.txt.
 
      V Améliorations :
 
-     L'unité peut être améliorée :
+     L'unité TP7.Graph peut être améliorée :
      . en gérant les erreurs graphiques
      . en gérant plus d'une page graphique
      . en incluant un gestionnaire de polices vectorielles.
@@ -194,6 +209,13 @@ programmes graphiques sur Macintosh, Unix ou Windows.
 
      VII Historique :
 
+- 2.6a : ajout de copier (ctrl-c) et coller (ctrl-v) pour le presse-papier GTK avec TP7.CRT,
+		la gestion des touches fléchées et de fonctions F1..F10 avec <shift>, <ctrl> et <alt>,
+		d'un bouton Stop pour arrêter le programme en cours dans TP7,
+		des procédures d'écriture et de lecture de nombres entiers et réels dans TP7.System,
+		de la saisie clavier et de la souris dans TP7.Graph,
+		de la gestion de la souris avec TP7.Mouse et de la gestion des erreurs dans TP7.DOS,
+		ajout des exemples graphiques Courbes, Surfaces et Sudoku.
 - 2.5a : codage complet de l'unité TP7.CRT; ajout de la gestion des tags dans TP7;
                 ajout de Readln d'un entier dans TP7.System, ajout d'un exemple minimal
 		d'utilisation du Terminal ou de TP7.CRT;
@@ -218,6 +240,6 @@ programmes graphiques sur Macintosh, Unix ou Windows.
 - 1.0a : première version basée sur CarbonAda.
 
 Pascal Pignard,
-juin 1994, octobre 2002, septembre-décembre 2011, janvier-février 2012.
+décembre 1988, juin 1994, octobre 2002, septembre-décembre 2011, janvier-mai 2012.
 http://blady.pagesperso-orange.fr
 

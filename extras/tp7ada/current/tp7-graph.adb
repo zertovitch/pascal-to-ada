@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7-graph.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.2a
--- DATE DE LA DERNIERE MISE A JOUR  : 16 décembre 2011
+-- VERSION DU CSU                   : 2.3a
+-- DATE DE LA DERNIERE MISE A JOUR  : 4 mai 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -13,7 +13,7 @@
 --
 -- NOTES                            :
 --
--- COPYRIGHT                        : (c) Pascal Pignard 2002-2011
+-- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
@@ -21,25 +21,21 @@
 with Ada.Numerics.Elementary_Functions;
 with Ada.Numerics;
 with Ada.Unchecked_Deallocation;
-with Cairo;
-with Glib;
+with Cairo.Image_Surface;
+with Pango.Layout;
+with Pango.Font;
+with Pango.Cairo;
 with Glib.Convert;
 with Gdk.Color;
 with Gdk.Cairo;
-with Gtk.Handlers;
 with Gdk.Event;
-with Gtk.Drawing_Area;
 with Gdk.Threads;
+with Gtk.Drawing_Area;
 with Gtk.Window;
-with Cairo.Image_Surface;
+with Gtk.Enums;
+with Gtk.Widget;
+with Gtkada.Handlers;
 with TP7.System;
-with Pango.Layout;
-with Pango.Font;
---  with Pango.Enums;
-with Pango.Cairo;
-with Gdk.Window;
---  with Gtk.Enums;
---  with Gtk.Style;
 pragma Elaborate_All (Gdk.Color);
 
 package body TP7.Graph is
@@ -53,43 +49,22 @@ package body TP7.Graph is
    function Sin (X : Float) return Float renames Ada.Numerics.Elementary_Functions.Sin;
    function Cos (X : Float) return Float renames Ada.Numerics.Elementary_Functions.Cos;
 
-   Win_Draw  : Gtk.Window.Gtk_Window := null;
-   Area_Draw : Gtk.Drawing_Area.Gtk_Drawing_Area;
-   --     IntSurface : Cairo_Surface;
-   Cr : Cairo.Cairo_Context;
-   --     IntPixmap  : Gdk.Pixmap.Gdk_Pixmap;
-   IntSurface  : Cairo.Cairo_Surface;
-   IntLayout   : Pango.Layout.Pango_Layout;
-   IntFontDesc : Pango.Font.Pango_Font_Description;
-   IntX, IntY  : aliased GDouble := 0.0;
+   Win_Draw        : Gtk.Window.Gtk_Window := null;
+   Area_Draw       : Gtk.Drawing_Area.Gtk_Drawing_Area;
+   Cr              : Cairo.Cairo_Context;
+   IntCairoSurface : Cairo.Cairo_Surface;
+   IntPangoLayout  : Pango.Layout.Pango_Layout;
+   IntFontDesc     : Pango.Font.Pango_Font_Description;
+   IntX, IntY      : aliased GDouble       := 0.0;
 
-   package Event_Cb is new Gtk.Handlers.Return_Callback (
-      Gtk.Drawing_Area.Gtk_Drawing_Area_Record,
-      Boolean);
-
-   function Expose_Cb
-     (Area  : access Gtk.Drawing_Area.Gtk_Drawing_Area_Record'Class;
-      Event : Gdk.Event.Gdk_Event)
-      return  Boolean
-   is
-      pragma Unreferenced (Event);
-      LCr : Cairo.Cairo_Context;
-   begin
-      LCr := Gdk.Cairo.Create (Gtk.Drawing_Area.Get_Window (Area));
-      Cairo.Set_Source_Surface (LCr, IntSurface, 0.0, 0.0);
-      Cairo.Paint (LCr);
-      Cairo.Destroy (LCr);
-      return False;
-   end Expose_Cb;
-
-   type IntTabColors is array (0 .. Word (MaxColors)) of Gdk.Color.Gdk_Color;
+   type IntTabColors is array (0 .. MaxColors) of Gdk.Color.Gdk_Color;
    type IntColorPaletteType is record
-      Size   : Word;
+      Size   : Byte;
       Colors : IntTabColors;
    end record;
 
    IntColorPalette : IntColorPaletteType :=
-     (Size   => 16,
+     (Size   => MaxColors + 1,
       Colors => (Black        => Gdk.Color.Parse ("black"),
                  Blue         => Gdk.Color.Parse ("blue"),
                  Green        => Gdk.Color.Parse ("green"),
@@ -198,6 +173,7 @@ package body TP7.Graph is
    IntMaxRect     : Rect;
    IntPixMapList  : PPixMapList;
    IntGraphResult : Integer := grError;
+   IntOperator    : Cairo.Cairo_Operator;
 
    -- Procedure interne renvoyant le motif de remplissage courant
    subtype Pattern is Word;
@@ -383,6 +359,22 @@ package body TP7.Graph is
       R := (Left => X1, Top => Y1, Right => X2, Bottom => Y2);
    end SetRect;
 
+   function On_Expose_Event
+     (Area  : access Gtk.Widget.Gtk_Widget_Record'Class;
+      Event : Gdk.Event.Gdk_Event)
+      return  Boolean
+   is
+      pragma Unreferenced (Event);
+      LCr : Cairo.Cairo_Context;
+   begin
+      LCr := Gdk.Cairo.Create (Gtk.Widget.Get_Window (Area));
+      Cairo.Set_Source_Surface (LCr, IntCairoSurface, 0.0, 0.0);
+      Cairo.Set_Operator (LCr, Cairo.Cairo_Operator_Over);
+      Cairo.Paint (LCr);
+      Cairo.Destroy (LCr);
+      return False;
+   end On_Expose_Event;
+
    -- *** high-level error handling ***
    function GraphErrorMsg (ErrorCode : Integer) return String is
    begin
@@ -451,11 +443,9 @@ package body TP7.Graph is
    is
       pragma Unreferenced (PathToDriver);
       use type Gtk.Window.Gtk_Window;
-   -- Options choisies : . driver VGA
-   --                            . mode VGAhi
-   --                            . pas de gestion d'erreur
-   --                            . ratio 1: 1
-   --                            . polices et motifs du Macintosh
+      use type Gtkada.Handlers.Return_Callback.Event_Marshaller.Handler;
+      use type Gdk.Event.Gdk_Event_Mask;
+      MEH, KPEH : Gtkada.Handlers.Return_Callback.Event_Marshaller.Handler := null;
    begin
       GraphGetMemPtr  := nil;
       GraphFreeMemPtr := nil;
@@ -466,23 +456,52 @@ package body TP7.Graph is
          Gdk.Threads.Enter;
          Gtk.Window.Gtk_New (Win_Draw);
          Gtk.Window.Set_Title (Win_Draw, "Win Graph");
-         Win_Draw.Set_Default_Size (680, 400);
+         Win_Draw.Set_Default_Size (640, 480);
          Gtk.Drawing_Area.Gtk_New (Area_Draw);
          Win_Draw.Add (Area_Draw);
-         Event_Cb.Connect (Area_Draw, "expose_event", Event_Cb.To_Marshaller (Expose_Cb'Access));
+         IntCairoSurface :=
+            Cairo.Image_Surface.Create (Cairo.Image_Surface.Cairo_Format_ARGB32, 640, 480);
+         Cr              := Cairo.Create (IntCairoSurface);
+         IntPangoLayout  := Gtk.Drawing_Area.Create_Pango_Layout (Area_Draw);
+         Gtkada.Handlers.Return_Callback.Connect
+           (Area_Draw,
+            Gtk.Widget.Signal_Expose_Event,
+            Gtkada.Handlers.Return_Callback.To_Marshaller (On_Expose_Event'Access));
+         TP7.Get_Key_Event (KPEH);
+         if KPEH /= null then
+            Gtkada.Handlers.Return_Callback.Connect
+              (Win_Draw,
+               Gtk.Widget.Signal_Key_Press_Event,
+               Gtkada.Handlers.Return_Callback.To_Marshaller (KPEH));
+         end if;
+         TP7.Get_Mouse_Event (MEH);
+         if MEH /= null then
+            Gtkada.Handlers.Return_Callback.Connect
+              (Area_Draw,
+               Gtk.Widget.Signal_Button_Press_Event,
+               Gtkada.Handlers.Return_Callback.To_Marshaller (MEH));
+            Gtkada.Handlers.Return_Callback.Connect
+              (Area_Draw,
+               Gtk.Widget.Signal_Button_Release_Event,
+               Gtkada.Handlers.Return_Callback.To_Marshaller (MEH));
+            Gtkada.Handlers.Return_Callback.Connect
+              (Area_Draw,
+               Gtk.Widget.Signal_Scroll_Event,
+               Gtkada.Handlers.Return_Callback.To_Marshaller (MEH));
+            Gtk.Widget.Set_Events
+              (Gtk.Widget.Gtk_Widget (Area_Draw),
+               Gdk.Event.Button_Press_Mask or
+               Gdk.Event.Button_Release_Mask or
+               Gdk.Event.Scroll_Mask);
+         end if;
          Win_Draw.Show_All;
-         IntSurface :=
-            Cairo.Image_Surface.Create (Cairo.Image_Surface.Cairo_Format_ARGB32, 680, 400);
-         Cr         := Cairo.Create (IntSurface);
-         IntLayout  := Gtk.Drawing_Area.Create_Pango_Layout (Area_Draw);
-         --           Cairo.Save (CR);
+         TP7.Set_Graph (Gtk.Widget.Get_Window (Gtk.Widget.Gtk_Widget (Area_Draw)));
          Gdk.Threads.Leave;
       end if;
       --CreatePalette;
       GraphDefaults;
       ClearDevice;
       IntGraphResult := grOk;
-      --end if;
    end InitGraph;
 
    function RegisterBGIfont (Font : Pointer) return Integer is
@@ -491,7 +510,7 @@ package body TP7.Graph is
       if Debug then
          TP7.System.Writeln ("La fonction RegisterBGIfont n'est pas définie !");
       end if;
-      IntGraphResult := grOk;
+      IntGraphResult := grInvalidFont;
       return 0;
    end RegisterBGIfont;
 
@@ -501,7 +520,7 @@ package body TP7.Graph is
       if Debug then
          TP7.System.Writeln ("La fonction RegisterBGIdriver n'est pas définie !");
       end if;
-      IntGraphResult := grOk;
+      IntGraphResult := grInvalidDriver;
       return 0;
    end RegisterBGIdriver;
 
@@ -511,7 +530,7 @@ package body TP7.Graph is
       if Debug then
          TP7.System.Writeln ("La fonction InstallUserDriver n'est pas définie !");
       end if;
-      IntGraphResult := grOk;
+      IntGraphResult := grInvalidDriver;
       return VGA;
    end InstallUserDriver;
 
@@ -521,7 +540,7 @@ package body TP7.Graph is
       if Debug then
          TP7.System.Writeln ("La fonction InstallUserFont n'est pas définie !");
       end if;
-      IntGraphResult := grOk;
+      IntGraphResult := grInvalidFont;
       return DefaultFont;
    end InstallUserFont;
 
@@ -531,7 +550,7 @@ package body TP7.Graph is
       if Debug then
          TP7.System.Writeln ("La fonction SetGraphBufSize n'est pas définie !");
       end if;
-      IntGraphResult := grOk;
+      IntGraphResult := grError;
    end SetGraphBufSize;
 
    function GetMaxMode return Integer is
@@ -578,7 +597,7 @@ package body TP7.Graph is
    begin
       IntX := 0.0;
       IntY := 0.0;
-      SetRect (IntMaxRect, 0, 0, 679, 399);
+      SetRect (IntMaxRect, 0, 0, 639, 479);
       SetViewPort (0, 0, GetMaxX, GetMaxY, ClipOn);
       GetDefaultPalette (IntPalette);
       SetColor (White);
@@ -607,11 +626,7 @@ package body TP7.Graph is
 
    procedure CloseGraph is
    begin
-      DeletePixMap;
-      --DisposeHandle(Handle(IntCTable));
-      --      DisposePalette(IntPaletteHdl);
-      --      DisposeWindow(IntCWind);
-      --ShowText;
+      --        DeletePixMap;
       IntGraphResult := grOk;
    end CloseGraph;
 
@@ -637,14 +652,16 @@ package body TP7.Graph is
 
    -- *** Screen, viewport, page routines ***
    procedure ClearDevice is
+      LCr : Cairo.Cairo_Context;
    begin
+      IntX := 0.0;
+      IntY := 0.0;
       Gdk.Threads.Enter;
-      Cairo.Set_Operator (Cr, Cairo.Cairo_Operator_Clear);
-      Cairo.Rectangle (Cr, 0.0, 0.0, 680.0, 400.0);
-      Cairo.Fill (Cr);
-      Cairo.Stroke (Cr);
+      LCr := Cairo.Create (IntCairoSurface);
+      Cairo.Set_Operator (LCr, Cairo.Cairo_Operator_Clear);
+      Cairo.Paint (LCr);
+      Cairo.Destroy (LCr);
       Win_Draw.Queue_Draw;
-      Cairo.Set_Operator (Cr, Cairo.Cairo_Operator_Source);
       Gdk.Threads.Leave;
    end ClearDevice;
 
@@ -686,8 +703,8 @@ package body TP7.Graph is
          Glib.Gdouble (IntViewPort.y2 - IntViewPort.y1));
       Cairo.Fill (Cr);
       Cairo.Stroke (Cr);
+      Cairo.Set_Operator (Cr, IntOperator);
       Win_Draw.Queue_Draw;
-      Cairo.Set_Operator (Cr, Cairo.Cairo_Operator_Source);
       Gdk.Threads.Leave;
       IntGraphResult := grOk;
    end ClearViewPort;
@@ -710,17 +727,16 @@ package body TP7.Graph is
 
    -- *** point-oriented routines ***
    procedure PutPixel (X, Y : Integer; Pixel : Word) is
-      pragma Unreferenced (Y, X);
-   --        CRGB : aliased rgbcolor;
    begin
-      if Pixel <= Word (IntPalette.Size - 1) then
-         --        GetEntryColor(IntPaletteHdl, Short_Integer(Pixel),
-         --CRGB'access);
-         --        SetCPIxel(X, Y, CRGB'access);
-         null;
-      end if;
-      if Debug then
-         TP7.System.Writeln ("La fonction PutPixel n'est encore pas définie !");
+      if Pixel <= IntPalette.Size - 1 then
+         Gdk.Threads.Enter;
+         Cairo.Move_To (Cr, GDouble (X), GDouble (Y));
+         Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (Pixel));
+         Cairo.Line_To (Cr, GDouble (X + 1), GDouble (Y + 1));
+         Cairo.Stroke (Cr);
+         Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
+         Win_Draw.Queue_Draw;
+         Gdk.Threads.Leave;
       end if;
    end PutPixel;
 
@@ -743,10 +759,14 @@ package body TP7.Graph is
       case WriteMode is
          when CopyPut =>
             Cairo.Set_Operator (Cr, Cairo.Cairo_Operator_Source);
+            IntOperator    := Cairo.Cairo_Operator_Source;
+            IntGraphResult := grOk;
          when XORPut =>
             Cairo.Set_Operator (Cr, Cairo.Cairo_Operator_Xor);
+            IntOperator    := Cairo.Cairo_Operator_Xor;
+            IntGraphResult := grOk;
          when others =>
-            null;
+            IntGraphResult := grError;
       end case;
       Gdk.Threads.Leave;
    end SetWriteMode;
@@ -810,9 +830,9 @@ package body TP7.Graph is
    end GetLineSettings;
 
    procedure SetLineStyle (LineStyle : Word; Pattern : Word; Thickness : Word) is
-      Dotted_Array : constant Cairo.Dash_Array := (2.0, 8.0);
-      Center_Array : constant Cairo.Dash_Array := (6.0, 6.0, 2.0, 6.0);
-      Dashed_Array : constant Cairo.Dash_Array := (10.0, 8.0);
+      Dotted_Array : constant Cairo.Dash_Array := (2.0, 2.0);
+      Center_Array : constant Cairo.Dash_Array := (4.0, 3.0, 6.0, 3.0);
+      Dashed_Array : constant Cairo.Dash_Array := (5.0, 3.0);
       Ind          : Integer                   := 15;
       function Length (Val : Boolean) return Cairo.Dash_Array is
          Len : Natural := 0;
@@ -829,7 +849,7 @@ package body TP7.Graph is
          end if;
       end Length;
       function Normalize (Line : Cairo.Dash_Array) return Cairo.Dash_Array is
-         -- we avoid beginning with a null first On value
+         -- we avoid beginning with a null first On value and only one value
          use type Cairo.Dash_Array;
       begin
          -- if fisrt bit is 0 we have a first On null value
@@ -842,6 +862,9 @@ package body TP7.Graph is
             else
                return Line (Line'First + 2 .. Line'Last) & Line (Line'First + 1);
             end if;
+         -- if there are only ones then set no dashes
+         elsif Line'Length = 1 then
+            return Cairo.No_Dashes;
          end if;
          return Line;
       end Normalize;
@@ -849,28 +872,32 @@ package body TP7.Graph is
       IntLineInfo.LineStyle := LineStyle;
       IntLineInfo.Pattern   := Pattern;
       IntLineInfo.Thickness := Thickness;
+      Gdk.Threads.Enter;
       Cairo.Set_Line_Width (Cr, GDouble (Thickness));
       case LineStyle is
          when SolidLn =>
             Cairo.Set_Dash (Cr, Cairo.No_Dashes, 0.0);
+            IntGraphResult := grOk;
          when DottedLn =>
             Cairo.Set_Dash (Cr, Dotted_Array, 0.0);
+            IntGraphResult := grOk;
          when CenterLn =>
             Cairo.Set_Dash (Cr, Center_Array, 0.0);
+            IntGraphResult := grOk;
          when DashedLn =>
             Cairo.Set_Dash (Cr, Dashed_Array, 0.0);
+            IntGraphResult := grOk;
          when UserBitLn =>
             if Pattern /= 0 then
                Cairo.Set_Dash (Cr, Normalize (Length (True)), 0.0);
+               IntGraphResult := grOk;
             else
                IntGraphResult := grError;
-               return;
             end if;
          when others =>
             IntGraphResult := grError;
-            return;
       end case;
-      IntGraphResult := grOk;
+      Gdk.Threads.Leave;
    end SetLineStyle;
 
    -- *** polygon, fills and figures ***
@@ -887,7 +914,9 @@ package body TP7.Graph is
    begin
       Gdk.Threads.Enter;
       Cairo.Rectangle (Cr, GDouble (x1), GDouble (y1), GDouble (x2 - x1), GDouble (y2 - y1));
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
       Cairo.Fill (Cr);
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
       Cairo.Stroke (Cr);
       Win_Draw.Queue_Draw;
       Gdk.Threads.Leave;
@@ -900,7 +929,9 @@ package body TP7.Graph is
    begin
       Gdk.Threads.Enter;
       Cairo.Rectangle (Cr, GDouble (x1), GDouble (y1), GDouble (x2 - x1), GDouble (y2 - y1));
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
       Cairo.Fill (Cr);
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
       Cairo.Move_To (Cr, GDouble (x2), GDouble (y2));
       Cairo.Line_To (Cr, GDouble (x1), GDouble (y2));
       Cairo.Line_To (Cr, GDouble (x1), GDouble (y2));
@@ -936,15 +967,15 @@ package body TP7.Graph is
    end DrawPoly;
 
    procedure FillPoly (NumPoints : Word; PolyPoints : PolygonType) is
-   --      PH  : PolyHandle;
-   --        Pat : aliased Pattern := GetIntPat;
    begin
       Gdk.Threads.Enter;
       Cairo.Move_To (Cr, GDouble (PolyPoints (1).X), GDouble (PolyPoints (1).Y));
       for Ind in 2 .. Positive (NumPoints) loop
          Cairo.Line_To (Cr, GDouble (PolyPoints (Ind).X), GDouble (PolyPoints (Ind).Y));
       end loop;
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
       Cairo.Fill (Cr);
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
       Cairo.Stroke (Cr);
       Win_Draw.Queue_Draw;
       Gdk.Threads.Leave;
@@ -965,7 +996,7 @@ package body TP7.Graph is
    begin
       IntFillInfo.Pattern := Pattern;
       IntFillInfo.Color   := Color;
-      IntGraphResult      := grOk;
+      IntGraphResult      := grError;
       if Debug then
          TP7.System.Writeln ("La fonction SetFillStyle n'est encore pas définie !");
       end if;
@@ -976,7 +1007,7 @@ package body TP7.Graph is
       IntFillPat          := Pattern;
       IntFillInfo.Pattern := UserFill;
       IntFillInfo.Color   := Color;
-      IntGraphResult      := grOk;
+      IntGraphResult      := grError;
       if Debug then
          TP7.System.Writeln ("La fonction SetFillPattern n'est encore pas définie !");
       end if;
@@ -1137,7 +1168,9 @@ package body TP7.Graph is
          Cairo.Translate (Cr, GDouble (X), GDouble (Y));
          Cairo.Scale (Cr, GDouble (XRadius), GDouble (YRadius));
          Cairo.Arc (Cr, 0.0, 0.0, 1.0, 0.0, GDouble (2 * Pi));
+         Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
          Cairo.Fill (Cr);
+         Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
          Cairo.Restore (Cr);
       end if;
       Cairo.Stroke (Cr);
@@ -1182,7 +1215,9 @@ package body TP7.Graph is
          GDouble (360 - EndAngle) * Pi / 180.0,
          GDouble (360 - StAngle) * Pi / 180.0);
       Cairo.Line_To (Cr, GDouble (X), GDouble (Y));
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
       Cairo.Fill (Cr);
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
       Cairo.Stroke (Cr);
       Win_Draw.Queue_Draw;
       Gdk.Threads.Leave;
@@ -1223,7 +1258,9 @@ package body TP7.Graph is
             GDouble (360 - EndAngle) * Pi / 180.0,
             GDouble (360 - StAngle) * Pi / 180.0);
          Cairo.Line_To (Cr, 0.0, 0.0);
+         Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
          Cairo.Fill (Cr);
+         Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
          Cairo.Restore (Cr);
       end if;
       Cairo.Stroke (Cr);
@@ -1233,28 +1270,16 @@ package body TP7.Graph is
 
    -- *** color and palette routines ***
    procedure SetBkColor (ColorNum : Word) is
-   -- TBF
-   --  DumCT4 : CT4.CTabHandle;
-   --DumRGB : aliased rgbcolor;
-   --     IntStyle : Gtk.Style.Gtk_Style;
    begin
-      if ColorNum <= Word (IntPalette.Size - 1) then
+      if ColorNum <= IntPalette.Size - 1 then
          IntBkColor := ColorNum;
-         Gdk.Window.Set_Background
-           (Gtk.Drawing_Area.Get_Window (Area_Draw),
+         Gdk.Threads.Enter;
+         Gtk.Widget.Modify_Bg
+           (Gtk.Widget.Gtk_Widget (Area_Draw),
+            Gtk.Enums.State_Normal,
             IntColorPalette.Colors (IntBkColor));
-         --           gtk.Widget.Modify_Bg(gtk.Widget.Gtk_Widget(Win_Draw),
-         --gtk.Enums.State_Normal, IntColorPalette.Colors(IntBkColor));
-         --           gtk.Style.Gtk_New(IntStyle);
-         --           gtk.Style.Set_Background(IntStyle, gtk.Enums.State_Normal,
-         --IntColorPalette.Colors(IntBkColor));
-         --           gtk.Style.Set_Background(IntStyle, get_window(area_Draw),
-         --gtk.Enums.State_Normal);
-         Win_Draw.Show_All;
-         --DumCT4 := CT4.Convert(IntCTable);
-         --        DumRGB :=
-         --IntCT4.all.all.CtTable(Standard.Integer(ColorNum)).RGB;
-         --AnimateEntry(IntCWind, 0, DumRGB'access);		-- Fond de la fenêtre
+         Win_Draw.Queue_Draw;
+         Gdk.Threads.Leave;
       end if;
    end SetBkColor;
 
@@ -1278,7 +1303,7 @@ package body TP7.Graph is
       return IntColor;
    end GetColor;
 
-   procedure SetAllPalette (Palette : in PaletteType) is
+   procedure SetAllPalette (Palette : PaletteType) is
    --DumRGB : aliased rgbcolor;
    begin
       -- Check consitency of incoming palette
@@ -1306,7 +1331,7 @@ package body TP7.Graph is
          end if;
       end loop;
       --  ActivatePalette(IntCWind);
-      IntGraphResult := grOk;
+      IntGraphResult := grError;
       if Debug then
          TP7.System.Writeln ("La fonction SetAllPalette n'est encore pas définie !");
       end if;
@@ -1315,11 +1340,11 @@ package body TP7.Graph is
    procedure SetPalette (ColorNum : Word; Color : Shortint) is
    --DumRGB : aliased rgbcolor;
    begin
-      if ColorNum <= Word (IntPalette.Size - 1)
-        and then Color <= Shortint (IntPalette.Size - 1)
+      if ColorNum <= IntPalette.Size - 1
+        and then Color <= IntPalette.Size - 1
         and then Color >= 0
       then
-         IntPalette.Colors (Byte (ColorNum))  := Color;
+         IntPalette.Colors (ColorNum) := Color;
       --        DumRGB :=
       --IntCT4.all.all.CtTable(Standard.Integer(Color)).RGB;
       --        AnimateEntry(IntCWind, Integer(ColorNum), DumRGB'access);
@@ -1328,7 +1353,7 @@ package body TP7.Graph is
       else
          IntGraphResult := grError;
       end if;
-      IntGraphResult := grOk;
+      IntGraphResult := grError;
       if Debug then
          TP7.System.Writeln ("La fonction SetPalette n'est encore pas définie !");
       end if;
@@ -1341,7 +1366,7 @@ package body TP7.Graph is
 
    function GetPaletteSize return Integer is
    begin
-      return Integer (IntPalette.Size);
+      return IntPalette.Size;
    end GetPaletteSize;
 
    procedure GetDefaultPalette (Palette : out PaletteType) is
@@ -1354,14 +1379,14 @@ package body TP7.Graph is
 
    function GetMaxColor return Word is
    begin
-      return Word (IntPalette.Size - 1);
+      return IntPalette.Size - 1;
    end GetMaxColor;
 
    procedure SetRGBPalette (ColorNum, RedValue, GreenValue, BlueValue : Integer) is
       --CRGB : aliased rgbcolor;
       aColor : Gdk.Color.Gdk_Color;
    begin
-      if ColorNum <= Integer (IntPalette.Size - 1) then
+      if ColorNum <= IntPalette.Size - 1 then
          --        CRGB.Red := Word(RedValue);
          --        CRGB.Green := Word(GreenValue);
          --        CRGB.Blue := Word(BlueValue);
@@ -1391,14 +1416,14 @@ package body TP7.Graph is
       --(((LongInt(GetPortPixMap(GetWindowPort(IntCWind)).all.PixelSize) *
       --LongInt(x2 - x1) + 15) / 16) * 2) * LongInt(y2 - y1) +
       --PixMapHandle'Size / 8;
-      IntGraphResult := grOk;
+      IntGraphResult := grError;
       if Debug then
          TP7.System.Writeln ("La fonction ImageSize n'est encore pas définie !");
       end if;
       return 0;
    end ImageSize;
 
-   procedure GetImage (X1, Y1, X2, Y2 : Integer; BitMap : in out Pointer) is
+   procedure GetImage (X1, Y1, X2, Y2 : Integer; BitMap : out Pointer) is
       pragma Unreferenced (BitMap, y2, x2, y1, x1);
    --      function Convert is new Unchecked_Conversion(Pointer,
    --PIntPixMap);
@@ -1490,17 +1515,20 @@ package body TP7.Graph is
             null;
       end case;
       Gdk.Threads.Enter;
-      Pango.Layout.Set_Text (IntLayout, Glib.Convert.Locale_To_UTF8 (To_String (TextString)));
+      Pango.Layout.Set_Text
+        (IntPangoLayout,
+         Glib.Convert.Locale_To_UTF8 (To_String (TextString)));
       Cairo.Move_To (Cr, Glib.Gdouble (X1), Glib.Gdouble (Y1));
-      Pango.Cairo.Show_Layout (Cr, IntLayout);
+      Pango.Cairo.Show_Layout (Cr, IntPangoLayout);
       Cairo.Stroke (Cr);
       Win_Draw.Queue_Draw;
       Gdk.Threads.Leave;
    end DrawHText;
 
    procedure DrawVText (X, Y : Integer; TextString : String) is
-      X1 : Integer := X;
-      Y1 : Integer := Y;
+      X1 : Integer          := X;
+      Y1 : Integer          := Y;
+      TH : constant Integer := TextHeight (+'M');
    begin
       case IntTextInfo.Horiz is
          when LeftText =>
@@ -1514,20 +1542,22 @@ package body TP7.Graph is
       end case;
       case IntTextInfo.Vert is
          when BottomText =>
-            Y1 := Y1 - TextHeight (+'M') * TextString'Length;
+            Y1 := Y1 - TextHeight (+'M') * TP7.System.Length (TextString);
          when CenterText =>
-            Y1 := Y1 - (TextHeight (+'M') * TextString'Length) / 2;
+            Y1 := Y1 - (TextHeight (+'M') * TP7.System.Length (TextString)) / 2;
          when TopText =>
             null;
          when others =>
             null;
       end case;
       Gdk.Threads.Enter;
-      for Ind in 1 .. TextString'Length loop
-         Pango.Layout.Set_Text (IntLayout, Glib.Convert.Locale_To_UTF8 (+TextString (Ind)));
+      for Ind in 1 .. TP7.System.Length (TextString) loop
+         Pango.Layout.Set_Text
+           (IntPangoLayout,
+            Glib.Convert.Locale_To_UTF8 (+TextString (Ind)));
          Cairo.Move_To (Cr, Glib.Gdouble (X1), Glib.Gdouble (Y1));
-         Pango.Cairo.Show_Layout (Cr, IntLayout);
-         Y1 := Y1 + TextHeight (+TextString (Ind));
+         Pango.Cairo.Show_Layout (Cr, IntPangoLayout);
+         Y1 := Y1 + TH;
       end loop;
       Cairo.Stroke (Cr);
       Win_Draw.Queue_Draw;
@@ -1566,9 +1596,20 @@ package body TP7.Graph is
 
    procedure SetTextJustify (Horiz, Vert : Word) is
    begin
-      IntTextInfo.Horiz := Horiz;
-      IntTextInfo.Vert  := Vert;
-      IntGraphResult    := grOk;
+      case Horiz is
+         when LeftText | CenterText | RightText =>
+            IntTextInfo.Horiz := Horiz;
+            IntGraphResult    := grOk;
+         when others =>
+            IntGraphResult := grError;
+      end case;
+      case Vert is
+         when BottomText | CenterText | TopText =>
+            IntTextInfo.Vert := Vert;
+            IntGraphResult   := grOk;
+         when others =>
+            IntGraphResult := grError;
+      end case;
    end SetTextJustify;
 
    procedure SetTextStyle (Font, Direction : Word; CharSize : Word) is
@@ -1576,12 +1617,14 @@ package body TP7.Graph is
       IntTextInfo.Font      := Font;
       IntTextInfo.Direction := Direction;
       IntTextInfo.CharSize  := CharSize;
+      Gdk.Threads.Enter;
       Pango.Font.Free (IntFontDesc);
       if CharSize = UserCharSize then
          IntTextsize := CCharSize;
       else
          IntTextsize := CharSize * CCharSize;
       end if;
+      IntGraphResult := grOk;
       case Font is
          when DefaultFont =>
             IntFontDesc := Pango.Font.From_String ("Courier" & IntTextsize'Img);
@@ -1594,10 +1637,10 @@ package body TP7.Graph is
          when GothicFont =>
             IntFontDesc := Pango.Font.From_String ("Zapfino" & IntTextsize'Img);
          when others =>
-            null;
+            IntGraphResult := grError;
       end case;
-      Pango.Layout.Set_Font_Description (IntLayout, IntFontDesc);
-      IntGraphResult := grOk;
+      Pango.Layout.Set_Font_Description (IntPangoLayout, IntFontDesc);
+      Gdk.Threads.Leave;
    end SetTextStyle;
 
    procedure SetUserCharSize (MultX, DivX, MultY, DivY : Word) is
@@ -1622,16 +1665,24 @@ package body TP7.Graph is
    function TextHeight (TextString : String) return Word is
       Width, Height : Glib.Gint;
    begin
-      Pango.Layout.Set_Text (IntLayout, Glib.Convert.Locale_To_UTF8 (To_String (TextString)));
-      Pango.Layout.Get_Pixel_Size (IntLayout, Width, Height);
+      Gdk.Threads.Enter;
+      Pango.Layout.Set_Text
+        (IntPangoLayout,
+         Glib.Convert.Locale_To_UTF8 (To_String (TextString)));
+      Pango.Layout.Get_Pixel_Size (IntPangoLayout, Width, Height);
+      Gdk.Threads.Leave;
       return Word (Height);
    end TextHeight;
 
    function TextWidth (TextString : String) return Word is
       Width, Height : Glib.Gint;
    begin
-      Pango.Layout.Set_Text (IntLayout, Glib.Convert.Locale_To_UTF8 (To_String (TextString)));
-      Pango.Layout.Get_Pixel_Size (IntLayout, Width, Height);
+      Gdk.Threads.Enter;
+      Pango.Layout.Set_Text
+        (IntPangoLayout,
+         Glib.Convert.Locale_To_UTF8 (To_String (TextString)));
+      Pango.Layout.Get_Pixel_Size (IntPangoLayout, Width, Height);
+      Gdk.Threads.Leave;
       return Word (Width);
    end TextWidth;
 

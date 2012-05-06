@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (spécification)       : tp7.ads
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.5a
--- DATE DE LA DERNIERE MISE A JOUR  : 5 février 2012
+-- VERSION DU CSU                   : 2.6a
+-- DATE DE LA DERNIERE MISE A JOUR  : 4 mai 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -19,13 +19,15 @@
 -------------------------------------------------------------------------------
 
 with System;
-with System.Address_Image;
-with Ada.Characters.Latin_1;
+private with System.Address_Image;
+private with Ada.Characters.Latin_1;
 private with Ada.Text_IO;
 private with Ada.Finalization;
 private with GNAT.OS_Lib;
+private with Gdk.Window;
 private with Gtk.Widget;
 private with Gtk.Text_Tag;
+private with Gtkada.Handlers;
 
 package TP7 is
    pragma Elaborate_Body;
@@ -93,8 +95,8 @@ package TP7 is
 
    -- Tips : Pointer type size maybe 32 or 64 bits, take care in record components
    subtype Pointer is System.Address;
-   nil : System.Address renames System.Null_Address;
-   function Pointer_Image (A : Pointer) return String renames System.Address_Image;
+   nil : Pointer renames System.Null_Address;
+   function Pointer_Image (A : Pointer) return String;
 
    type File is limited private;
    type Text is limited private;
@@ -114,7 +116,7 @@ package TP7 is
    function To_String (Source : TPString) return String;
    -- String assignment, could be of any type, Ada string or zero terminated string
    procedure Assign_String (Dest : out String; Source : String);
-   Null_TPString : constant String := (1 => Ada.Characters.Latin_1.NUL);
+   Null_TPString : constant String;
 
    function Is_Equal (Left, Right : String) return Boolean;
    --function "/=" (Left, Right: String) return Boolean;
@@ -136,7 +138,8 @@ package TP7 is
    function Debug return Boolean;
 
 private
-   -- Internal types
+   -- Private constants, types and subprograms
+   function Pointer_Image (A : Pointer) return String renames System.Address_Image;
    type File is new Ada.Finalization.Limited_Controlled with record
       File : GNAT.OS_Lib.File_Descriptor := 0;
       Name : GNAT.OS_Lib.String_Access;
@@ -149,20 +152,19 @@ private
       Name   : GNAT.OS_Lib.String_Access;
    end record;
    procedure Finalize (F : in out Text);
+   Null_TPString : constant String := (1 => Ada.Characters.Latin_1.NUL);
 
    -- Internal procedures for adding widgets in control window
    procedure Add_Ctrl (Widget : access Gtk.Widget.Gtk_Widget_Record'Class);
-   --     procedure Show_All_Ctrl;
 
-   -- Internal procedure for halt
-   procedure Stop;
+   -- Internal exception for halt
+   Halt : exception;
 
    -- Internal I/O procedures to GTK.Text_View
    procedure Put (S : String);
    procedure Put_Line (S : String);
    procedure New_Line;
-   procedure Get_line (S : out String);
-   function Get return String;
+   function Get_Line return String;
    procedure Get_Line;
    function Is_Key_Pressed return Boolean;
    function Read_Key return Char;
@@ -179,5 +181,15 @@ private
      (Tag    : out Gtk.Text_Tag.Gtk_Text_Tag;
       NewTag : out Boolean);
    procedure Init_CRT (InitProc : TPProc; GetTag : TPProcGetTag);
+
+   -- Internal registration for event and window connections in Graph child unit
+   procedure Set_Mouse_Event
+     (Event_Handler : Gtkada.Handlers.Return_Callback.Event_Marshaller.Handler);
+   procedure Get_Mouse_Event
+     (Event_Handler : out Gtkada.Handlers.Return_Callback.Event_Marshaller.Handler);
+   procedure Get_Key_Event
+     (Event_Handler : out Gtkada.Handlers.Return_Callback.Event_Marshaller.Handler);
+   procedure Set_Graph (Window : Gdk.Window.Gdk_Window);
+   procedure Get_Graph (Window : out Gdk.Window.Gdk_Window);
 
 end TP7;

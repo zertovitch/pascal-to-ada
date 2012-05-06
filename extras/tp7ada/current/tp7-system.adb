@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7-system.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.3a
--- DATE DE LA DERNIERE MISE A JOUR  : 18 janvier 2012
+-- VERSION DU CSU                   : 2.3b
+-- DATE DE LA DERNIERE MISE A JOUR  : 4 mai 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -26,6 +26,7 @@ with Ada.Numerics.Discrete_Random;
 with Ada.Numerics.Float_Random;
 with Ada.Strings.Fixed;
 with Ada.Integer_Text_IO;
+with Ada.Long_Long_Float_Text_IO;
 
 package body TP7.System is
 
@@ -33,10 +34,6 @@ package body TP7.System is
    noErr    : constant Word    := 0;
    FNOErr   : constant Word    := 103;
    DirErr   : constant Word    := 107;
-
-   package RandomWord is new Ada.Numerics.Discrete_Random (Word);
-   IntWordGenerator : RandomWord.Generator;
-   IntRealGenerator : Ada.Numerics.Float_Random.Generator;
 
    procedure FSError (Num : Word; S : String) is
    begin
@@ -497,6 +494,47 @@ package body TP7.System is
       end case;
    end Write;
 
+   -----------
+   -- Write --
+   -----------
+
+   procedure Write (I : Integer; MinWidth : Integer := 0) is
+      S : String (1 .. Standard.Integer'Max (MinWidth, Integer'Width));
+   begin
+      case Output.Device is
+         when File_System =>
+            Ada.Integer_Text_IO.Put (Output.File, I, MinWidth);
+         when Stdinout =>
+            Ada.Integer_Text_IO.Put (Ada.Text_IO.Standard_Output, I, MinWidth);
+         when Win_CRT =>
+            Ada.Integer_Text_IO.Put (S, I);
+            TP7.Put (S);
+      end case;
+   end Write;
+
+   -----------
+   -- Write --
+   -----------
+
+   procedure Write (R : Real; MinWidth : Integer := 0; DecPlaces : Integer := 0) is
+      S : String (1 .. Standard.Integer'Max (MinWidth, Real'Width));
+   begin
+      case Output.Device is
+         when File_System =>
+            Ada.Long_Long_Float_Text_IO.Put (Output.File, R, MinWidth, DecPlaces, 0);
+         when Stdinout =>
+            Ada.Long_Long_Float_Text_IO.Put
+              (Ada.Text_IO.Standard_Output,
+               R,
+               MinWidth,
+               DecPlaces,
+               0);
+         when Win_CRT =>
+            Ada.Long_Long_Float_Text_IO.Put (S, R, DecPlaces, 0);
+            TP7.Put (S);
+      end case;
+   end Write;
+
    -------------
    -- Writeln --
    -------------
@@ -565,7 +603,7 @@ package body TP7.System is
    -- Mark --
    ----------
 
-   procedure Mark (Object : in out Pointer) is
+   procedure Mark (Object : out Pointer) is
       pragma Unreferenced (Object);
    begin
       if Debug then
@@ -577,13 +615,17 @@ package body TP7.System is
    -- Release --
    -------------
 
-   procedure Release (Object : in out Pointer) is
+   procedure Release (Object : Pointer) is
       pragma Unreferenced (Object);
    begin
       if Debug then
          Writeln ("La fonction Release n'est pas définie !");
       end if;
    end Release;
+
+   ----------
+   -- Abs1 --
+   ----------
 
    function Abs1 (V : Real) return Real is
    begin
@@ -676,7 +718,7 @@ package body TP7.System is
          when Stdinout =>
             Assign_String (S, Ada.Text_IO.Get_Line (Ada.Text_IO.Standard_Input));
          when Win_CRT =>
-            TP7.Get_line (S);
+            Assign_String (S, TP7.Get_Line);
       end case;
    end Readln;
 
@@ -692,7 +734,7 @@ package body TP7.System is
          when Stdinout =>
             Assign_String (S, Ada.Text_IO.Get_Line (Ada.Text_IO.Standard_Input));
          when Win_CRT =>
-            TP7.Get_line (S);
+            Assign_String (S, TP7.Get_Line);
       end case;
    end Readln;
 
@@ -711,7 +753,7 @@ package body TP7.System is
             Ada.Text_IO.Skip_Line (Input.File);
          when Win_CRT =>
             declare
-               S : constant String := TP7.Get;
+               S : constant String := TP7.Get_Line;
             begin
                C := S (S'First);
             end;
@@ -733,7 +775,7 @@ package body TP7.System is
             Ada.Text_IO.Skip_Line (Input.File);
          when Win_CRT =>
             declare
-               S : constant String := TP7.Get;
+               S : constant String := TP7.Get_Line;
             begin
                C := S (S'First);
             end;
@@ -753,9 +795,29 @@ package body TP7.System is
             Ada.Integer_Text_IO.Get (I);
          when Win_CRT =>
             declare
-               S : constant String := TP7.Get;
+               S : constant String := TP7.Get_Line;
             begin
                I := Integer'Value (To_String (S));
+            end;
+      end case;
+   end Readln;
+
+   ------------
+   -- Readln --
+   ------------
+
+   procedure Readln (R : out Real) is
+   begin
+      case Input.Device is
+         when File_System =>
+            Ada.Long_Long_Float_Text_IO.Get (Input.File, R);
+         when Stdinout =>
+            Ada.Long_Long_Float_Text_IO.Get (R);
+         when Win_CRT =>
+            declare
+               S : constant String := TP7.Get_Line;
+            begin
+               R := Real'Value (To_String (S));
             end;
       end case;
    end Readln;
@@ -773,7 +835,7 @@ package body TP7.System is
             Ada.Text_IO.Get (Ada.Text_IO.Standard_Input, C);
          when Win_CRT =>
             declare
-               S : constant String := TP7.Get;
+               S : constant String := TP7.Get_Line;
             begin
                C := S (S'First);
             end;
@@ -792,7 +854,7 @@ package body TP7.System is
          when Stdinout =>
             Ada.Text_IO.Get (Ada.Text_IO.Standard_Input, S);
          when Win_CRT =>
-            Assign_String (S, TP7.Get);
+            Assign_String (S, TP7.Get_Line);
       end case;
    end Read;
 
@@ -808,7 +870,7 @@ package body TP7.System is
          when Stdinout =>
             Ada.Text_IO.Get (Ada.Text_IO.Standard_Input, S);
          when Win_CRT =>
-            Assign_String (S, TP7.Get);
+            Assign_String (S, TP7.Get_Line);
       end case;
    end Read;
 
@@ -825,7 +887,7 @@ package body TP7.System is
             Ada.Text_IO.Get (Ada.Text_IO.Standard_Input, C);
          when Win_CRT =>
             declare
-               S : constant String := TP7.Get;
+               S : constant String := TP7.Get_Line;
             begin
                C := S (S'First);
             end;
@@ -845,7 +907,7 @@ package body TP7.System is
             Ada.Integer_Text_IO.Get (I);
          when Win_CRT =>
             declare
-               S : constant String := TP7.Get;
+               S : constant String := TP7.Get_Line;
             begin
                I := Integer'Value (To_String (S));
             end;
@@ -869,8 +931,7 @@ package body TP7.System is
    ----------
 
    function Copy (S : String; Pos, Len : Integer) return String is
-      Index : constant Natural :=
-         Ada.Strings.Fixed.Index (S, (1 => Ada.Characters.Latin_1.NUL));
+      Index : constant Natural := Ada.Strings.Fixed.Index (S, Null_TPString);
    begin
       if Index = 0 then
          return S (Pos .. Pos + Len - 1) & Ada.Characters.Latin_1.NUL;
@@ -897,8 +958,7 @@ package body TP7.System is
    ------------
 
    procedure Delete (S : in out String; Pos, Len : Integer) is
-      Index : constant Natural :=
-         Ada.Strings.Fixed.Index (S, (1 => Ada.Characters.Latin_1.NUL));
+      Index : constant Natural := Ada.Strings.Fixed.Index (S, Null_TPString);
    begin
       if Index = 0 then
          Ada.Strings.Fixed.Delete (S, Pos, Pos + Len - 1);
@@ -917,8 +977,7 @@ package body TP7.System is
    ------------
 
    procedure Insert (Src : String; Dest : in out String; pos : Integer) is
-      Index : constant Natural :=
-         Ada.Strings.Fixed.Index (Src, (1 => Ada.Characters.Latin_1.NUL));
+      Index : constant Natural := Ada.Strings.Fixed.Index (Src, Null_TPString);
    begin
       if Index = 0 then
          Assign_String (Dest, Ada.Strings.Fixed.Insert (Dest, Pos, Src));
@@ -934,8 +993,7 @@ package body TP7.System is
    ------------
 
    function Length (S : String) return Integer is
-      Index : constant Natural :=
-         Ada.Strings.Fixed.Index (S, (1 => Ada.Characters.Latin_1.NUL));
+      Index : constant Natural := Ada.Strings.Fixed.Index (S, Null_TPString);
    begin
       if Index = 0 then
          return S'Length;
@@ -1095,18 +1153,14 @@ package body TP7.System is
       Val := Val - N;
    end Dec;
 
-   procedure FillChar (X : in out String; Nombre : Word; Ch : Char) is
+   procedure FillChar (X : out String; Nombre : Word; Ch : Char) is
    begin
-      for Ind in 0 .. Nombre - 1 loop
-         X (X'First + Ind) := Ch;
-      end loop;
+      X (X'First .. X'First + Nombre - 1) := (others => Ch);
    end FillChar;
 
-   procedure FillChar (X : in out TTabByte; Nombre : Word; Val : Byte) is
+   procedure FillChar (X : out TTabByte; Nombre : Word; Val : Byte) is
    begin
-      for Ind in 0 .. Nombre - 1 loop
-         X (X'First + Ind) := Byte1 (Val);
-      end loop;
+      X (X'First .. X'First + Nombre - 1) := (others => Byte1 (Val));
    end FillChar;
 
    function Frac (X : Real) return Real is
@@ -1123,7 +1177,7 @@ package body TP7.System is
       P := nil;
    end FreeMem;
 
-   procedure GetMem (P : in out Pointer; Taille : Word) is
+   procedure GetMem (P : out Pointer; Taille : Word) is
       pragma Unreferenced (Taille);
    begin
       if Debug then
@@ -1152,9 +1206,8 @@ package body TP7.System is
       end loop;
       if Debug then
          Writeln ("Code de sortie = " + CodeSortie'Img);
-      else
-         Stop;
       end if;
+      raise TP7.Halt;
    end Halt;
 
    procedure Halt is
@@ -1328,9 +1381,12 @@ package body TP7.System is
       return nil;
    end Ptr;
 
+   package RandomWord is new Ada.Numerics.Discrete_Random (Word);
+   IntWordGenerator : RandomWord.Generator;
+   IntRealGenerator : Ada.Numerics.Float_Random.Generator;
+
    procedure Randomize is
    begin
-      --      RandSeed := LongInt(TickCount);      --  Random seed
       if RandSeed = 0 then
          RandomWord.Reset (IntWordGenerator);
          Ada.Numerics.Float_Random.Reset (IntRealGenerator);
@@ -1379,8 +1435,7 @@ package body TP7.System is
    end UpCase;
 
    function Pos (Substr, S : String) return Byte is
-      Index : constant Natural :=
-         Ada.Strings.Fixed.Index (Substr, (1 => Ada.Characters.Latin_1.NUL));
+      Index : constant Natural := Ada.Strings.Fixed.Index (Substr, Null_TPString);
    begin
       if Index = 0 then
          return Ada.Strings.Fixed.Index (S, Substr);

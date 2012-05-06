@@ -7,6 +7,9 @@ with Exemples_TP7;
 with BGIDemo;
 with Arty;
 with Hello_GTKAda;
+with Courbes;
+with Sudoku;
+with Surfaces;
 
 procedure main is
 
@@ -19,7 +22,10 @@ begin
    TP7.Test.Add (BGIDemo'Access, "BGI Demo");
    TP7.Test.Add (Arty'Access, "Art Demo");
    TP7.Test.Add (Hello_GTKAda'Access, "Hello GtkAda");
-   TP7.Test.SelectAll;
+   TP7.Test.Add (Courbes'Access, "Curves Plotting Demo");
+   TP7.Test.Add (Sudoku'Access, "Sudoku");
+   TP7.Test.Add (Surfaces'Access, "Surfaces Plotting Demo");
+   --     TP7.Test.SelectAll;
    Gdk.Threads.Enter;
    Gtk.Main.Main;
    Gdk.Threads.Leave;
