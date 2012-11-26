@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.6a
--- DATE DE LA DERNIERE MISE A JOUR  : 4 mai 2012
+-- VERSION DU CSU                   : 2.7a
+-- DATE DE LA DERNIERE MISE A JOUR  : 18 juin 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -11,7 +11,7 @@
 -- FONCTIONS LOCALES DU CSU         :
 --
 --
--- NOTES                            :
+-- NOTES                            : Ada 2005, GTKAda 2.24.2
 --
 -- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
@@ -38,6 +38,7 @@ with Gdk.Types.Keysyms;
 with Gdk.Threads;
 with Gdk.Types;
 with Gdk.Event;
+with Gtkada.Dialogs;
 with Glib.Convert;
 
 package body TP7 is
@@ -333,7 +334,7 @@ package body TP7 is
          if Char'Pos (Ch (1)) = Char'Pos ('V') - Char'Pos ('@') then
             declare
                S : constant String :=
-                  Glib.Convert.Locale_From_UTF8 (Gtk.Clipboard.Wait_For_Text (Gtk.Clipboard.Get));
+                 Glib.Convert.Locale_From_UTF8 (Gtk.Clipboard.Wait_For_Text (Gtk.Clipboard.Get));
             begin
                for Ind in S'Range loop
                   Write_Key (S (Ind));
@@ -441,6 +442,19 @@ package body TP7 is
       return True;
    end On_Key_Press_Event;
 
+   function On_Win_Delete_Event
+     (Object : access Gtk.Widget.Gtk_Widget_Record'Class)
+      return   Boolean
+   is
+      OK : Gtkada.Dialogs.Message_Dialog_Buttons :=
+        Gtkada.Dialogs.Message_Dialog
+           (Msg     => "Use Quit button in control window!",
+            Buttons => Gtkada.Dialogs.Button_OK);
+      pragma Unreferenced (Object, OK);
+   begin
+      return True;
+   end On_Win_Delete_Event;
+
    Win_Text      : Gtk.Window.Gtk_Window;
    IntScrolled   : Gtk.Scrolled_Window.Gtk_Scrolled_Window;
    IntCursorMark : Gtk.Text_Mark.Gtk_Text_Mark;
@@ -462,16 +476,21 @@ package body TP7 is
       Win_Text.Show_All;
       Gtkada.Handlers.Return_Callback.Connect
         (Win_Text,
+         Gtk.Widget.Signal_Delete_Event,
+         On_Win_Delete_Event'Access,
+         False);
+      Gtkada.Handlers.Return_Callback.Connect
+        (Win_Text,
          Gtk.Widget.Signal_Key_Press_Event,
          Gtkada.Handlers.Return_Callback.To_Marshaller (On_Key_Press_Event'Access));
    end Activate_Win_CRT;
 
-   IntTag    : Gtk.Text_Tag.Gtk_Text_Tag;
    IntGetTag : TPProcGetTag;
 
    procedure Put (S : String) is
       Index  : Gtk.Text_Iter.Gtk_Text_Iter;
       NewTag : Boolean;
+      IntTag : Gtk.Text_Tag.Gtk_Text_Tag;
    begin
       Gdk.Threads.Enter;
       IntGetTag (IntTag, NewTag);
@@ -504,58 +523,115 @@ package body TP7 is
       Put_Line (Null_TPString);
    end New_Line;
 
-   procedure BackSpace is
-      Index : Gtk.Text_Iter.Gtk_Text_Iter;
-      Ok    : Boolean;
-      pragma Unreferenced (Ok);
+   function Get_Line return String is
+      S                           : String   := (1 .. 255 + 1 => '@'); -- Turbo Pascal string size
+      Last                        : Positive := S'First;
+      Current                     : Positive := S'First;
+      StartIndex, EndIndex, Index : Gtk.Text_Iter.Gtk_Text_Iter;
+      IntTag                      : Gtk.Text_Tag.Gtk_Text_Tag;
+      Ch                          : Char;
+      Ok, NewTag                  : Boolean;
    begin
       Gdk.Threads.Enter;
+      IntGetTag (IntTag, NewTag);
+      if NewTag then
+         Gtk.Text_Tag_Table.Add
+           (Gtk.Text_Buffer.Get_Tag_Table (Gtk.Text_View.Get_Buffer (Aera_Text)),
+            IntTag);
+      end if;
       Gtk.Text_Buffer.Get_Iter_At_Mark
         (Gtk.Text_View.Get_Buffer (Aera_Text),
          Index,
          IntCursorMark);
-      Ok := Gtk.Text_Buffer.Backspace (Gtk.Text_View.Get_Buffer (Aera_Text), Index, True, True);
-      Gtk.Text_View.Scroll_To_Mark (Aera_Text, IntCursorMark);
-      Gtk.Text_Buffer.Place_Cursor (Gtk.Text_View.Get_Buffer (Aera_Text), Index);
       Gdk.Threads.Leave;
-   end BackSpace;
-
-   function Get_Line return String is
-      S     : String (1 .. 255 + 1); -- Turbo Pascal string size
-      Index : Positive := S'First;
-      Ch    : Char;
-   begin
       loop
          Ch := Read_Key;
-         if Ch = Ada.Characters.Latin_1.BS then
-            if Index > S'First then
-               Index := Index - 1;
-               BackSpace;
-            end if;
-         elsif Ch = Ada.Characters.Latin_1.ESC then
-            if Index > S'First then
-               Index := Index - 1;
-               BackSpace;
-            end if;
-         else
-            Put ((1 => Ch));
-            exit when Ch = Ada.Characters.Latin_1.CR;
-            if Index < S'Last then
-               S (Index) := Ch;
-            end if;
-            Index := Index + 1;
-         end if;
+         Gdk.Threads.Enter;
+         case Ch is
+            when Ada.Characters.Latin_1.NUL =>
+               case Read_Key is
+                  when 'G' =>  -- Home
+                     Gtk.Text_Iter.Backward_Chars (Index, Glib.Gint (Current - S'First), Ok);
+                     Current := S'First;
+                  when 'K' => -- Left
+                     if Current > S'First then
+                        Gtk.Text_Iter.Backward_Char (Index, Ok);
+                        Current := Current - 1;
+                     end if;
+                  when 'H' =>
+                     null; -- Up
+                  when 'M' =>  -- Right
+                     if Current < Last then
+                        Gtk.Text_Iter.Forward_Char (Index, Ok);
+                        Current := Current + 1;
+                     end if;
+                  when 'P' =>
+                     null; -- Down
+                  when 'O' =>  -- End
+                     Gtk.Text_Iter.Forward_Chars (Index, Glib.Gint (Last - Current), Ok);
+                     Current := Last;
+                  when others =>
+                     null;
+               end case;
+            when Ada.Characters.Latin_1.BS => -- BackSpace
+               if Current > S'First then
+                  Current := Current - 1;
+                  Last    := Last - 1;
+                  Ok      :=
+                     Gtk.Text_Buffer.Backspace
+                       (Gtk.Text_View.Get_Buffer (Aera_Text),
+                        Index,
+                        True,
+                        True);
+                  S       := S (S'First .. Current - 1) &
+                             S (Current + 1 .. S'Last) &
+                             Ada.Characters.Latin_1.NUL;
+               end if;
+            when Ada.Characters.Latin_1.ESC => -- Escape
+               Gtk.Text_Iter.Backward_Chars (Index, Glib.Gint (Current - S'First), Ok);
+               Gtk.Text_Iter.Copy (Index, StartIndex);
+               Gtk.Text_Buffer.Get_Iter_At_Mark
+                 (Gtk.Text_View.Get_Buffer (Aera_Text),
+                  EndIndex,
+                  IntCursorMark);
+               Gtk.Text_Buffer.Delete
+                 (Gtk.Text_View.Get_Buffer (Aera_Text),
+                  StartIndex,
+                  EndIndex);
+               Gtk.Text_Buffer.Get_Iter_At_Mark
+                 (Gtk.Text_View.Get_Buffer (Aera_Text),
+                  Index,
+                  IntCursorMark);
+               Current := S'First;
+               Last    := S'First;
+            when others => -- Regular characters
+               Gtk.Text_Buffer.Insert_With_Tags
+                 (Gtk.Text_View.Get_Buffer (Aera_Text),
+                  Index,
+                  Glib.Convert.Locale_To_UTF8 ((1 => Ch)),
+                  IntTag);
+               exit when Ch = Ada.Characters.Latin_1.CR;
+               if Current < S'Last then
+                  S       := S (S'First .. Current - 1) & Ch & S (Current .. S'Last - 1);
+                  Last    := Last + 1;
+                  Current := Current + 1;
+               end if;
+         end case;
+         Ok := Gtk.Text_View.Scroll_To_Iter (Aera_Text, Index, 0.0, False, 0.0, 0.0);
+         Gtk.Text_Buffer.Place_Cursor (Gtk.Text_View.Get_Buffer (Aera_Text), Index);
+         Gdk.Threads.Leave;
       end loop;
-      S (Positive'Min (Index, S'Last))  := Ada.Characters.Latin_1.NUL;
+      Gdk.Threads.Leave;
+      S (Positive'Min (Last, S'Last))  := Ada.Characters.Latin_1.NUL;
       return S;
    end Get_Line;
 
-   procedure Get_line is
+   procedure Get_Line is
    begin
       loop
          exit when Read_Key = Ada.Characters.Latin_1.CR;
       end loop;
-   end Get_line;
+   end Get_Line;
 
    function Where_X return Byte is
       Current_Iter : Gtk.Text_Iter.Gtk_Text_Iter;
@@ -604,8 +680,16 @@ package body TP7 is
    procedure Clr_Eol is
       Y                    : constant Byte := Where_Y;
       Start_Iter, End_Iter : Gtk.Text_Iter.Gtk_Text_Iter;
+      IntTag               : Gtk.Text_Tag.Gtk_Text_Tag;
+      NewTag               : Boolean;
    begin
       Gdk.Threads.Enter;
+      IntGetTag (IntTag, NewTag);
+      if NewTag then
+         Gtk.Text_Tag_Table.Add
+           (Gtk.Text_Buffer.Get_Tag_Table (Gtk.Text_View.Get_Buffer (Aera_Text)),
+            IntTag);
+      end if;
       Gtk.Text_Buffer.Get_Iter_At_Mark
         (Gtk.Text_View.Get_Buffer (Aera_Text),
          Start_Iter,
@@ -741,6 +825,11 @@ package body TP7 is
       Win_Ctrl.Set_Title ("Win Ctrl");
       Gtk.Vbutton_Box.Gtk_New (IntVBBox_Ctrl);
       Win_Ctrl.Add (IntVBBox_Ctrl);
+      Gtkada.Handlers.Return_Callback.Connect
+        (Win_Ctrl,
+         Gtk.Widget.Signal_Delete_Event,
+         On_Win_Delete_Event'Access,
+         False);
 
       Add_Ctrl (IntStartButton);
       Add_Ctrl (IntStopButton);

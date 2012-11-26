@@ -13,18 +13,18 @@ from Turbo Pascal, I provide some bindings of Turbo Pascal 7.0 units.
    This package is a very first version of TP7 units based on GTKAda
 bindings.
 
-In the package you will find a test example.
+In the package you will find some test examples.
 
 
 II How to use this package
 
-   GNAT compiler and GTKAda library must be installed before,
+   GNAT compiler (with Ada 2005) and GTKAda library must be installed before,
 see on Blady web site.
    Your Ada program translated from Turbo Pascal (P2Ada is recommended)
 must be referenced in main.adb source with TP7.Init subprogram.
    Executable is built and run with following instructions for example:
 
-$ gnatmake main `gtkada-config`
+$ gnatmake -gnatW8 main `gtkada-config`
 $ ./main
 
   The program is composed of a control window : start and stop execution
@@ -41,6 +41,6 @@ All parts indicated belong to their copyright holder.
 see Licence_CeCILL_V2-en.txt.
 
 Pascal Pignard,
-December 1998, June 1994, October 2002, September-December 2011, January-May 2012.
+December 1998, June 1994, October 2002, September-December 2011, January-November 2012.
 http://blady.pagesperso-orange.fr
 

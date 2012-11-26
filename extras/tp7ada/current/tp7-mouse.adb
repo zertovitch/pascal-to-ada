@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7-mouse.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 1.0a
--- DATE DE LA DERNIERE MISE A JOUR  : 5 mai 2012
+-- VERSION DU CSU                   : 1.1a
+-- DATE DE LA DERNIERE MISE A JOUR  : 6 septembre 2012
 -- ROLE DU CSU                      : Unité d'émulation de la souris DOS.
 --
 --
@@ -11,7 +11,7 @@
 -- FONCTIONS LOCALES DU CSU         :
 --
 --
--- NOTES                            :
+-- NOTES                            : Ada 2005, GTKAda 2.24.2
 --
 -- COPYRIGHT                        : (c) Pascal Pignard 1988-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
@@ -165,11 +165,16 @@ package body TP7.Mouse is
    ----------------------
 
    procedure MouseNewPosition (NouvX, NouvY : Integer) is
-      pragma Unreferenced (NouvX, NouvY);
+      procedure Move_Pointer (x, Y : Glib.Gint);
+      pragma Import (C, Move_Pointer, "ada_gdk_move_pointer");
+      XW, YW : Glib.Gint;
+      Ok     : Boolean;
+      use type Glib.Gint;
    begin
-      if Debug then
-         TP7.System.Writeln ("La fonction MouseNewPosition n'est pas définie !");
-      end if;
+      Gdk.Threads.Enter;
+      Gdk.Window.Get_Origin (IntWindow, XW, YW, Ok);
+      Move_Pointer (XW + Glib.Gint (NouvX), YW + Glib.Gint (NouvY));
+      Gdk.Threads.Leave;
    end MouseNewPosition;
 
    -----------------

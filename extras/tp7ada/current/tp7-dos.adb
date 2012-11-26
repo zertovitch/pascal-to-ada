@@ -54,7 +54,7 @@ package body TP7.Dos is
    procedure GetDate (Year, Month, Day, DayOfWeek : out Word) is
       Today      : constant Ada.Calendar.Time                := Ada.Calendar.Clock;
       Today_Name : constant Ada.Calendar.Formatting.Day_Name :=
-         Ada.Calendar.Formatting.Day_Of_Week (Today);
+        Ada.Calendar.Formatting.Day_Of_Week (Today);
    begin
       Year  := Word (Ada.Calendar.Year (Today));
       Month := Word (Ada.Calendar.Month (Today));
@@ -195,7 +195,7 @@ package body TP7.Dos is
       if F.Fill.Length > 0 then
          declare
             Item               : constant String :=
-               Ada.Strings.Unbounded.To_String (F.Fill.Element (1));
+              Ada.Strings.Unbounded.To_String (F.Fill.Element (1));
             Y, Mo, D, H, Mi, S : Standard.Integer;
          begin
             F.Attr := 0; -- Not set at the moment without openning the file
@@ -307,7 +307,7 @@ package body TP7.Dos is
 
    procedure Exec (Path : PathStr; ComLine : ComStr) is
       Args : GNAT.OS_Lib.String_List_Access :=
-         GNAT.OS_Lib.Argument_String_To_List (To_String (ComLine));
+        GNAT.OS_Lib.Argument_String_To_List (To_String (ComLine));
    begin
       DosError := GNAT.OS_Lib.Spawn (To_String (Path), Args.all);
       GNAT.OS_Lib.Free (Args);
@@ -323,13 +323,13 @@ package body TP7.Dos is
 
    function FSearch (Path : PathStr; DirList : String) return PathStr is
       NameAccess : GNAT.OS_Lib.String_Access :=
-         GNAT.OS_Lib.Locate_Regular_File (To_String (Path), To_String (DirList));
+        GNAT.OS_Lib.Locate_Regular_File (To_String (Path), To_String (DirList));
       use type GNAT.OS_Lib.String_Access;
    begin
       if NameAccess /= null then
          declare
             Name : constant PathStr :=
-               To_TPString
+              To_TPString
                  (PathStr'Length - 1,
                   GNAT.OS_Lib.Locate_Regular_File (To_String (Path), To_String (DirList)).all);
          begin

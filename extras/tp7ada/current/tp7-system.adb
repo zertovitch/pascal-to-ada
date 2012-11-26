@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7-system.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.3b
--- DATE DE LA DERNIERE MISE A JOUR  : 4 mai 2012
+-- VERSION DU CSU                   : 2.3c
+-- DATE DE LA DERNIERE MISE A JOUR  : 29 octobre 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -438,9 +438,9 @@ package body TP7.System is
    begin
       case Output.Device is
          when File_System =>
-            Ada.Text_IO.Put (Output.File, S);
+            Ada.Text_IO.Put (Output.File, To_String (S));
          when Stdinout =>
-            Ada.Text_IO.Put (Ada.Text_IO.Standard_Output, S);
+            Ada.Text_IO.Put (Ada.Text_IO.Standard_Output, To_String (S));
          when Win_CRT =>
             TP7.Put (S);
       end case;
@@ -454,9 +454,9 @@ package body TP7.System is
    begin
       case Output.Device is
          when File_System =>
-            Ada.Text_IO.Put_Line (Output.File, S);
+            Ada.Text_IO.Put_Line (Output.File, To_String (S));
          when Stdinout =>
-            Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Output, S);
+            Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Output, To_String (S));
          when Win_CRT =>
             TP7.Put_Line (S);
       end case;
@@ -486,9 +486,9 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            Ada.Text_IO.Put (F.File, S);
+            Ada.Text_IO.Put (F.File, To_String (S));
          when Stdinout =>
-            Ada.Text_IO.Put (Ada.Text_IO.Standard_Output, S);
+            Ada.Text_IO.Put (Ada.Text_IO.Standard_Output, To_String (S));
          when Win_CRT =>
             TP7.Put (S);
       end case;
@@ -543,9 +543,9 @@ package body TP7.System is
    begin
       case F.Device is
          when File_System =>
-            Ada.Text_IO.Put_Line (F.File, S);
+            Ada.Text_IO.Put_Line (F.File, To_String (S));
          when Stdinout =>
-            Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Output, S);
+            Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Output, To_String (S));
          when Win_CRT =>
             TP7.Put_Line (S);
       end case;
@@ -976,7 +976,7 @@ package body TP7.System is
    -- Insert --
    ------------
 
-   procedure Insert (Src : String; Dest : in out String; pos : Integer) is
+   procedure Insert (Src : String; Dest : in out String; Pos : Integer) is
       Index : constant Natural := Ada.Strings.Fixed.Index (Src, Null_TPString);
    begin
       if Index = 0 then

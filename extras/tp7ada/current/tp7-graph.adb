@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7-graph.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.3a
--- DATE DE LA DERNIERE MISE A JOUR  : 4 mai 2012
+-- VERSION DU CSU                   : 2.4a
+-- DATE DE LA DERNIERE MISE A JOUR  : 24 novembre 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -11,7 +11,7 @@
 -- FONCTIONS LOCALES DU CSU         :
 --
 --
--- NOTES                            :
+-- NOTES                            : Ada 2005, GTKAda 2.24.2
 --
 -- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
@@ -22,10 +22,7 @@ with Ada.Numerics.Elementary_Functions;
 with Ada.Numerics;
 with Ada.Unchecked_Deallocation;
 with Cairo.Image_Surface;
-with Pango.Layout;
-with Pango.Font;
-with Pango.Cairo;
-with Glib.Convert;
+with Glib;
 with Gdk.Color;
 with Gdk.Cairo;
 with Gdk.Event;
@@ -35,27 +32,27 @@ with Gtk.Window;
 with Gtk.Enums;
 with Gtk.Widget;
 with Gtkada.Handlers;
+with Gtkada.Dialogs;
 with TP7.System;
 pragma Elaborate_All (Gdk.Color);
 
 package body TP7.Graph is
 
-   CCharSize : constant := 8;
-   Pi        : constant := Ada.Numerics.Pi;
    subtype GDouble is Glib.Gdouble;
    use type Glib.Gdouble;
    subtype GUInt16 is Glib.Guint16;
 
+   Pi : constant := Ada.Numerics.Pi;
    function Sin (X : Float) return Float renames Ada.Numerics.Elementary_Functions.Sin;
    function Cos (X : Float) return Float renames Ada.Numerics.Elementary_Functions.Cos;
 
+   CCharSize       : constant GDouble      := 8.0;
    Win_Draw        : Gtk.Window.Gtk_Window := null;
    Area_Draw       : Gtk.Drawing_Area.Gtk_Drawing_Area;
    Cr              : Cairo.Cairo_Context;
    IntCairoSurface : Cairo.Cairo_Surface;
-   IntPangoLayout  : Pango.Layout.Pango_Layout;
-   IntFontDesc     : Pango.Font.Pango_Font_Description;
    IntX, IntY      : aliased GDouble       := 0.0;
+   CoeffX, CoeffY  : GDouble               := 1.0;
 
    type IntTabColors is array (0 .. MaxColors) of Gdk.Color.Gdk_Color;
    type IntColorPaletteType is record
@@ -169,7 +166,6 @@ package body TP7.Graph is
 
    IntColor       : Word;
    IntBkColor     : Word;
-   IntTextsize    : Integer;
    IntMaxRect     : Rect;
    IntPixMapList  : PPixMapList;
    IntGraphResult : Integer := grError;
@@ -359,6 +355,72 @@ package body TP7.Graph is
       R := (Left => X1, Top => Y1, Right => X2, Bottom => Y2);
    end SetRect;
 
+   package FontCHR is
+      -- Decode CHR font files from Turbo Pascal
+      -- Font structure is :
+      -- ID1 : 4 characters -> "PK<BS><BS>"
+      -- ID2 : 4 characters -> "BGI "
+      -- Font description : chars until <CR><LF><EOF>
+      -- Header size : word
+      -- Font name : 4 chars
+      -- Font file size : word
+      -- Font driver major version : byte
+      -- Font driver minor version : byte
+      -- ID3 : word -> 16#0100#
+      -- Zeros : padding until end of the header
+      -- ID4 : byte -> 16#2B# (stroke font)
+      -- Number of character : word
+      -- Undefined : byte
+      -- First defined character : ASCII
+      -- Offset of character definitions : word
+      -- Scan flag : byte
+      -- Distance from origin to top of capital : byte
+      -- Distance from origin to baseline : byte
+      -- Distance from origin to bottom descender : byte
+      -- Undefined : 5 bytes
+      -- Offset to each character definition : n * word
+      -- Character widths : n * byte
+      -- Character definition : n * list of commands
+      --   Commands :
+      --        Byte 1     7   6   5   4   3   2   1   0     bit #
+      --                  op1  <seven bit signed X coord>
+      --        Byte 2     7   6   5   4   3   2   1   0     bit #
+      --                  op2  <seven bit signed Y coord>
+      --            Opcodes :
+      --          op1=0  op2=0  End of character definition.
+      --          op1=1  op2=0  Move the pointer to (x,y)
+      --          op1=1  op2=1  Draw from current pointer to (x,y)
+
+      type TabCharWidth is array (Byte range <>) of Byte;
+      type PTabCharWidth is access TabCharWidth;
+      type Commande is (Move, Line);
+      type DescCmd is record
+         Cmd  : Commande;
+         X, Y : Shortint;
+      end record;
+      type TabDescCmd is array (Positive range <>) of DescCmd;
+      type PTabDescCmd is access TabDescCmd;
+      type TabCharCmd is array (Byte range <>) of PTabDescCmd;
+      type PTabCharCmd is access TabCharCmd;
+
+      type StructDescFont is record
+         Description    : access String;
+         Name           : String (1 .. 4);
+         MajorVersion   : Byte;
+         MinorVersion   : Byte;
+         AscenderLine   : Shortint;
+         OffsetBaseLine : Shortint;
+         DescenderLine  : Shortint;
+         CharWidths     : PTabCharWidth;
+         CharCmds       : PTabCharCmd;
+      end record;
+      type DescFont is access StructDescFont;
+      function GetFont (Font : Word) return DescFont;
+      function To_CodePage437 (Ch : Byte) return Byte;
+   end FontCHR;
+
+   package body FontCHR is separate;
+
    function On_Expose_Event
      (Area  : access Gtk.Widget.Gtk_Widget_Record'Class;
       Event : Gdk.Event.Gdk_Event)
@@ -374,6 +436,19 @@ package body TP7.Graph is
       Cairo.Destroy (LCr);
       return False;
    end On_Expose_Event;
+
+   function On_Win_Delete_Event
+     (Object : access Gtk.Widget.Gtk_Widget_Record'Class)
+      return   Boolean
+   is
+      OK : Gtkada.Dialogs.Message_Dialog_Buttons :=
+        Gtkada.Dialogs.Message_Dialog
+           (Msg     => "Use Quit button in control window!",
+            Buttons => Gtkada.Dialogs.Button_OK);
+      pragma Unreferenced (Object, OK);
+   begin
+      return True;
+   end On_Win_Delete_Event;
 
    -- *** high-level error handling ***
    function GraphErrorMsg (ErrorCode : Integer) return String is
@@ -462,7 +537,11 @@ package body TP7.Graph is
          IntCairoSurface :=
             Cairo.Image_Surface.Create (Cairo.Image_Surface.Cairo_Format_ARGB32, 640, 480);
          Cr              := Cairo.Create (IntCairoSurface);
-         IntPangoLayout  := Gtk.Drawing_Area.Create_Pango_Layout (Area_Draw);
+         Gtkada.Handlers.Return_Callback.Connect
+           (Win_Draw,
+            Gtk.Widget.Signal_Delete_Event,
+            On_Win_Delete_Event'Access,
+            False);
          Gtkada.Handlers.Return_Callback.Connect
            (Area_Draw,
             Gtk.Widget.Signal_Expose_Event,
@@ -612,10 +691,10 @@ package body TP7.Graph is
       SetWriteMode (CopyPut);
       IntArcCoords.X      := 0;
       IntArcCoords.Y      := 0;
-      IntArcCoords.Xstart := 0;
-      IntArcCoords.Ystart := 0;
-      IntArcCoords.Xend   := 0;
-      IntArcCoords.Yend   := 0;
+      IntArcCoords.XStart := 0;
+      IntArcCoords.YStart := 0;
+      IntArcCoords.XEnd   := 0;
+      IntArcCoords.YEnd   := 0;
       IntPixMapList       := null;
    end GraphDefaults;
 
@@ -669,18 +748,18 @@ package body TP7.Graph is
    begin
       Gdk.Threads.Enter;
       -- Get back to the origin
-      Cairo.Translate (Cr, Glib.Gdouble (-IntViewPort.x1), Glib.Gdouble (-IntViewPort.y1));
-      IntViewPort.x1   := x1;
-      IntViewPort.y1   := y1;
-      IntViewPort.x2   := x2;
-      IntViewPort.y2   := y2;
+      Cairo.Translate (Cr, Glib.Gdouble (-IntViewPort.X1), Glib.Gdouble (-IntViewPort.Y1));
+      IntViewPort.X1   := X1;
+      IntViewPort.Y1   := Y1;
+      IntViewPort.X2   := X2;
+      IntViewPort.Y2   := Y2;
       IntViewPort.Clip := Clip;
-      Cairo.Translate (Cr, Glib.Gdouble (x1), Glib.Gdouble (y1));
+      Cairo.Translate (Cr, Glib.Gdouble (X1), Glib.Gdouble (Y1));
       IntX := 0.0;
       IntY := 0.0;
       Cairo.Reset_Clip (Cr);
       if Clip = ClipOn then
-         Cairo.Rectangle (Cr, 0.0, 0.0, Glib.Gdouble (x2 - x1), Glib.Gdouble (y2 - y1));
+         Cairo.Rectangle (Cr, 0.0, 0.0, Glib.Gdouble (X2 - X1), Glib.Gdouble (Y2 - Y1));
          Cairo.Clip (Cr);
       end if;
       Gdk.Threads.Leave;
@@ -699,8 +778,8 @@ package body TP7.Graph is
         (Cr,
          0.0,
          0.0,
-         Glib.Gdouble (IntViewPort.x2 - IntViewPort.x1),
-         Glib.Gdouble (IntViewPort.y2 - IntViewPort.y1));
+         Glib.Gdouble (IntViewPort.X2 - IntViewPort.X1),
+         Glib.Gdouble (IntViewPort.Y2 - IntViewPort.Y1));
       Cairo.Fill (Cr);
       Cairo.Stroke (Cr);
       Cairo.Set_Operator (Cr, IntOperator);
@@ -817,8 +896,8 @@ package body TP7.Graph is
    procedure Line (X1, Y1, X2, Y2 : Integer) is
    begin
       Gdk.Threads.Enter;
-      Cairo.Move_To (Cr, GDouble (x1), GDouble (y1));
-      Cairo.Line_To (Cr, GDouble (x2), GDouble (y2));
+      Cairo.Move_To (Cr, GDouble (X1), GDouble (Y1));
+      Cairo.Line_To (Cr, GDouble (X2), GDouble (Y2));
       Cairo.Stroke (Cr);
       Win_Draw.Queue_Draw;
       Gdk.Threads.Leave;
@@ -834,7 +913,7 @@ package body TP7.Graph is
       Center_Array : constant Cairo.Dash_Array := (4.0, 3.0, 6.0, 3.0);
       Dashed_Array : constant Cairo.Dash_Array := (5.0, 3.0);
       Ind          : Integer                   := 15;
-      function Length (Val : Boolean) return Cairo.Dash_Array is
+      function User_Array (Val : Boolean) return Cairo.Dash_Array is
          Len : Natural := 0;
          use type Cairo.Dash_Array;
       begin
@@ -845,9 +924,9 @@ package body TP7.Graph is
          if Ind < 0 then
             return (1 => GDouble (Len));
          else
-            return GDouble (Len) & Length (not Val);
+            return GDouble (Len) & User_Array (not Val);
          end if;
-      end Length;
+      end User_Array;
       function Normalize (Line : Cairo.Dash_Array) return Cairo.Dash_Array is
          -- we avoid beginning with a null first On value and only one value
          use type Cairo.Dash_Array;
@@ -889,7 +968,7 @@ package body TP7.Graph is
             IntGraphResult := grOk;
          when UserBitLn =>
             if Pattern /= 0 then
-               Cairo.Set_Dash (Cr, Normalize (Length (True)), 0.0);
+               Cairo.Set_Dash (Cr, Normalize (User_Array (True)), 0.0);
                IntGraphResult := grOk;
             else
                IntGraphResult := grError;
@@ -904,7 +983,7 @@ package body TP7.Graph is
    procedure Rectangle (X1, Y1, X2, Y2 : Integer) is
    begin
       Gdk.Threads.Enter;
-      Cairo.Rectangle (Cr, GDouble (x1), GDouble (y1), GDouble (x2 - x1), GDouble (y2 - y1));
+      Cairo.Rectangle (Cr, GDouble (X1), GDouble (Y1), GDouble (X2 - X1), GDouble (Y2 - Y1));
       Cairo.Stroke (Cr);
       Win_Draw.Queue_Draw;
       Gdk.Threads.Leave;
@@ -913,7 +992,7 @@ package body TP7.Graph is
    procedure Bar (X1, Y1, X2, Y2 : Integer) is
    begin
       Gdk.Threads.Enter;
-      Cairo.Rectangle (Cr, GDouble (x1), GDouble (y1), GDouble (x2 - x1), GDouble (y2 - y1));
+      Cairo.Rectangle (Cr, GDouble (X1), GDouble (Y1), GDouble (X2 - X1), GDouble (Y2 - Y1));
       Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
       Cairo.Fill (Cr);
       Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
@@ -928,23 +1007,23 @@ package body TP7.Graph is
       Y : constant Integer := GetY;
    begin
       Gdk.Threads.Enter;
-      Cairo.Rectangle (Cr, GDouble (x1), GDouble (y1), GDouble (x2 - x1), GDouble (y2 - y1));
+      Cairo.Rectangle (Cr, GDouble (X1), GDouble (Y1), GDouble (X2 - X1), GDouble (Y2 - Y1));
       Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
       Cairo.Fill (Cr);
       Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
-      Cairo.Move_To (Cr, GDouble (x2), GDouble (y2));
-      Cairo.Line_To (Cr, GDouble (x1), GDouble (y2));
-      Cairo.Line_To (Cr, GDouble (x1), GDouble (y2));
-      Cairo.Line_To (Cr, GDouble (x1), GDouble (y1));
-      Cairo.Line_To (Cr, GDouble (x2), GDouble (y1));
-      Cairo.Line_To (Cr, GDouble (x2), GDouble (y2));
-      Cairo.Line_To (Cr, GDouble (x2 + Depth), GDouble (y2 - Depth));
-      Cairo.Line_To (Cr, GDouble (x2 + Depth), GDouble (y1 - Depth));
+      Cairo.Move_To (Cr, GDouble (X2), GDouble (Y2));
+      Cairo.Line_To (Cr, GDouble (X1), GDouble (Y2));
+      Cairo.Line_To (Cr, GDouble (X1), GDouble (Y2));
+      Cairo.Line_To (Cr, GDouble (X1), GDouble (Y1));
+      Cairo.Line_To (Cr, GDouble (X2), GDouble (Y1));
+      Cairo.Line_To (Cr, GDouble (X2), GDouble (Y2));
+      Cairo.Line_To (Cr, GDouble (X2 + Depth), GDouble (Y2 - Depth));
+      Cairo.Line_To (Cr, GDouble (X2 + Depth), GDouble (Y1 - Depth));
       if Top = TopOn then
-         Cairo.Line_To (Cr, GDouble (x1 + Depth), GDouble (y1 - Depth));
-         Cairo.Line_To (Cr, GDouble (x1), GDouble (y1));
-         Cairo.Line_To (Cr, GDouble (x2), GDouble (y1));
-         Cairo.Line_To (Cr, GDouble (x2 + Depth), GDouble (y1 - Depth));
+         Cairo.Line_To (Cr, GDouble (X1 + Depth), GDouble (Y1 - Depth));
+         Cairo.Line_To (Cr, GDouble (X1), GDouble (Y1));
+         Cairo.Line_To (Cr, GDouble (X2), GDouble (Y1));
+         Cairo.Line_To (Cr, GDouble (X2 + Depth), GDouble (Y1 - Depth));
       end if;
       Cairo.Move_To (Cr, GDouble (X), GDouble (Y));
       Cairo.Stroke (Cr);
@@ -1072,13 +1151,13 @@ package body TP7.Graph is
       -- Save values for GetArcCoords
       IntArcCoords.X      := X;
       IntArcCoords.Y      := Y;
-      IntArcCoords.Xstart := X +
+      IntArcCoords.XStart := X +
                              Integer (Float (Radius) * Cos (Float (StAngle) * Pi / 180.0));
-      IntArcCoords.Ystart := Y -
+      IntArcCoords.YStart := Y -
                              Integer (Float (Radius) * Sin (Float (StAngle) * Pi / 180.0));
-      IntArcCoords.Xend   := X +
+      IntArcCoords.XEnd   := X +
                              Integer (Float (Radius) * Cos (Float (EndAngle) * Pi / 180.0));
-      IntArcCoords.Yend   := Y -
+      IntArcCoords.YEnd   := Y -
                              Integer (Float (Radius) * Sin (Float (EndAngle) * Pi / 180.0));
       Gdk.Threads.Enter;
       Cairo.Arc
@@ -1112,13 +1191,13 @@ package body TP7.Graph is
       -- Save values for GetArcCoords
       IntArcCoords.X      := X;
       IntArcCoords.Y      := Y;
-      IntArcCoords.Xstart := X +
+      IntArcCoords.XStart := X +
                              Integer (Float (XRadius) * Cos (Float (StAngle) * Pi / 180.0));
-      IntArcCoords.Ystart := Y -
+      IntArcCoords.YStart := Y -
                              Integer (Float (YRadius) * Sin (Float (StAngle) * Pi / 180.0));
-      IntArcCoords.Xend   := X +
+      IntArcCoords.XEnd   := X +
                              Integer (Float (XRadius) * Cos (Float (EndAngle) * Pi / 180.0));
-      IntArcCoords.Yend   := Y -
+      IntArcCoords.YEnd   := Y -
                              Integer (Float (YRadius) * Sin (Float (EndAngle) * Pi / 180.0));
       Gdk.Threads.Enter;
       if XRadius = 0 or else YRadius = 0 then
@@ -1151,10 +1230,10 @@ package body TP7.Graph is
       -- Save values for GetArcCoords
       IntArcCoords.X      := X;
       IntArcCoords.Y      := Y;
-      IntArcCoords.Xstart := X + Integer (XRadius);
-      IntArcCoords.Ystart := Y;
-      IntArcCoords.Xend   := X + Integer (XRadius);
-      IntArcCoords.Yend   := Y;
+      IntArcCoords.XStart := X + Integer (XRadius);
+      IntArcCoords.YStart := Y;
+      IntArcCoords.XEnd   := X + Integer (XRadius);
+      IntArcCoords.YEnd   := Y;
       Gdk.Threads.Enter;
       if XRadius = 0 or else YRadius = 0 then
          Cairo.Rectangle
@@ -1178,14 +1257,14 @@ package body TP7.Graph is
       Gdk.Threads.Leave;
    end FillEllipse;
 
-   procedure GetAspectRatio (Xasp, Yasp : out Word) is
+   procedure GetAspectRatio (XAsp, YAsp : out Word) is
    begin
-      Xasp := 1000;
-      Yasp := 1000;
+      XAsp := 1000;
+      YAsp := 1000;
    end GetAspectRatio;
 
-   procedure SetAspectRatio (Xasp, Yasp : Word) is
-      pragma Unreferenced (Yasp, Xasp);
+   procedure SetAspectRatio (XAsp, YAsp : Word) is
+      pragma Unreferenced (YAsp, XAsp);
    begin
       if Debug then
          TP7.System.Writeln ("La fonction SetAspectRatio n'est pas encore définie !");
@@ -1197,13 +1276,13 @@ package body TP7.Graph is
       -- Save values for GetArcCoords
       IntArcCoords.X      := X;
       IntArcCoords.Y      := Y;
-      IntArcCoords.Xstart := X +
+      IntArcCoords.XStart := X +
                              Integer (Float (Radius) * Cos (Float (StAngle) * Pi / 180.0));
-      IntArcCoords.Ystart := Y -
+      IntArcCoords.YStart := Y -
                              Integer (Float (Radius) * Sin (Float (StAngle) * Pi / 180.0));
-      IntArcCoords.Xend   := X +
+      IntArcCoords.XEnd   := X +
                              Integer (Float (Radius) * Cos (Float (EndAngle) * Pi / 180.0));
-      IntArcCoords.Yend   := Y -
+      IntArcCoords.YEnd   := Y -
                              Integer (Float (Radius) * Sin (Float (EndAngle) * Pi / 180.0));
       Gdk.Threads.Enter;
       Cairo.Move_To (Cr, GDouble (X), GDouble (Y));
@@ -1229,13 +1308,13 @@ package body TP7.Graph is
       -- Save values for GetArcCoords
       IntArcCoords.X      := X;
       IntArcCoords.Y      := Y;
-      IntArcCoords.Xstart := X +
+      IntArcCoords.XStart := X +
                              Integer (Float (XRadius) * Cos (Float (StAngle) * Pi / 180.0));
-      IntArcCoords.Ystart := Y -
+      IntArcCoords.YStart := Y -
                              Integer (Float (YRadius) * Sin (Float (StAngle) * Pi / 180.0));
-      IntArcCoords.Xend   := X +
+      IntArcCoords.XEnd   := X +
                              Integer (Float (XRadius) * Cos (Float (EndAngle) * Pi / 180.0));
-      IntArcCoords.Yend   := Y -
+      IntArcCoords.YEnd   := Y -
                              Integer (Float (YRadius) * Sin (Float (EndAngle) * Pi / 180.0));
       Gdk.Threads.Enter;
       if XRadius = 0 or else YRadius = 0 then
@@ -1409,7 +1488,7 @@ package body TP7.Graph is
 
    -- *** bit-image routines ***
    function ImageSize (X1, Y1, X2, Y2 : Integer) return Longint is
-      pragma Unreferenced (y2, x2, y1, x1);
+      pragma Unreferenced (Y2, X2, Y1, X1);
    begin
       --NormRect(x1, y1, x2, y2);
       --      return
@@ -1424,7 +1503,7 @@ package body TP7.Graph is
    end ImageSize;
 
    procedure GetImage (X1, Y1, X2, Y2 : Integer; BitMap : out Pointer) is
-      pragma Unreferenced (BitMap, y2, x2, y1, x1);
+      pragma Unreferenced (BitMap, Y2, X2, Y1, X1);
    --      function Convert is new Unchecked_Conversion(Pointer,
    --PIntPixMap);
    --      function Convert is new Unchecked_Conversion(PixMapHandle,
@@ -1490,76 +1569,172 @@ package body TP7.Graph is
       TextInfo := IntTextInfo;
    end GetTextSettings;
 
-   procedure DrawHText (X, Y : Integer; TextString : String) is
-      X1 : Integer := X;
-      Y1 : Integer := Y;
+   procedure DrawHChar (X, Y : GDouble; Ch : Byte) is
+      Font : constant FontCHR.DescFont := FontCHR.GetFont (IntTextInfo.Font);
+      use type FontCHR.DescFont;
+   begin
+      if Font /= null and then Ch in Font.CharCmds'Range then
+         for Ind in Font.CharCmds (Ch)'Range loop
+            case Font.CharCmds (Ch) (Ind).Cmd is
+               when FontCHR.Move =>
+                  Cairo.Move_To
+                    (Cr,
+                     X + GDouble (Font.CharCmds (Ch) (Ind).X) * CoeffX,
+                     Y - GDouble (Font.CharCmds (Ch) (Ind).Y) * CoeffY);
+               when FontCHR.Line =>
+                  Cairo.Line_To
+                    (Cr,
+                     X + GDouble (Font.CharCmds (Ch) (Ind).X) * CoeffX,
+                     Y - GDouble (Font.CharCmds (Ch) (Ind).Y) * CoeffY);
+            end case;
+         end loop;
+      end if;
+   end DrawHChar;
+
+   procedure DrawVChar (X, Y : GDouble; Ch : Byte) is
+      Font : constant FontCHR.DescFont := FontCHR.GetFont (IntTextInfo.Font);
+      use type FontCHR.DescFont;
+   begin
+      if Font /= null and then Ch in Font.CharCmds'Range then
+         for Ind in Font.CharCmds (Ch)'Range loop
+            case Font.CharCmds (Ch) (Ind).Cmd is
+               when FontCHR.Move =>
+                  Cairo.Move_To
+                    (Cr,
+                     X - GDouble (Font.CharCmds (Ch) (Ind).Y) * CoeffY,
+                     Y - GDouble (Font.CharCmds (Ch) (Ind).X) * CoeffX);
+               when FontCHR.Line =>
+                  Cairo.Line_To
+                    (Cr,
+                     X - GDouble (Font.CharCmds (Ch) (Ind).Y) * CoeffY,
+                     Y - GDouble (Font.CharCmds (Ch) (Ind).X) * CoeffX);
+            end case;
+         end loop;
+      end if;
+   end DrawVChar;
+
+   function CharWidth (Ch : Byte) return Word is
+      Font : constant FontCHR.DescFont := FontCHR.GetFont (IntTextInfo.Font);
+      use type FontCHR.DescFont;
+   begin
+      if Font /= null and then Ch in Font.CharWidths'Range then
+         return Font.CharWidths (Ch);
+      else
+         return 0;
+      end if;
+   end CharWidth;
+
+   function CharHeight return Word is
+      Font : constant FontCHR.DescFont := FontCHR.GetFont (IntTextInfo.Font);
+      use type FontCHR.DescFont;
+   begin
+      if Font /= null then
+         return Font.AscenderLine - Font.DescenderLine;
+      else
+         return 0;
+      end if;
+   end CharHeight;
+
+   function CharAscend return Shortint is
+      Font : constant FontCHR.DescFont := FontCHR.GetFont (IntTextInfo.Font);
+      use type FontCHR.DescFont;
+   begin
+      if Font /= null then
+         return Font.AscenderLine;
+      else
+         return 0;
+      end if;
+   end CharAscend;
+
+   function CharDescend return Shortint is
+      Font : constant FontCHR.DescFont := FontCHR.GetFont (IntTextInfo.Font);
+      use type FontCHR.DescFont;
+   begin
+      if Font /= null then
+         return Font.DescenderLine;
+      else
+         return 0;
+      end if;
+   end CharDescend;
+
+   procedure DrawHText (X, Y : GDouble; TextString : String) is
+      X1 : GDouble := X;
+      Y1 : GDouble := Y;
    begin
       case IntTextInfo.Horiz is
          when LeftText =>
             null;
          when CenterText =>
-            X1 := X1 - TextWidth (TextString) / 2;
+            X1 := X1 - GDouble (TextWidth (TextString)) / 2.0;
          when RightText =>
-            X1 := X1 - TextWidth (TextString);
+            X1 := X1 - GDouble (TextWidth (TextString));
          when others =>
             null;
       end case;
       case IntTextInfo.Vert is
          when BottomText =>
-            Y1 := Y1 - TextHeight (TextString);
+            Y1 := Y1 + GDouble (CharDescend) * CoeffY;
          when CenterText =>
-            Y1 := Y1 - TextHeight (TextString) / 2;
+            Y1 := Y1 + GDouble (CharHeight / 2 + CharDescend) * CoeffY;
          when TopText =>
-            null;
+            Y1 := Y1 + GDouble (CharAscend) * CoeffY;
          when others =>
             null;
       end case;
       Gdk.Threads.Enter;
-      Pango.Layout.Set_Text
-        (IntPangoLayout,
-         Glib.Convert.Locale_To_UTF8 (To_String (TextString)));
-      Cairo.Move_To (Cr, Glib.Gdouble (X1), Glib.Gdouble (Y1));
-      Pango.Cairo.Show_Layout (Cr, IntPangoLayout);
+      Cairo.Save (Cr);
+      -- Set standard line setting for character drawing
+      Cairo.Set_Dash (Cr, Cairo.No_Dashes, 0.0);
+      Cairo.Set_Line_Width (Cr, 1.0);
+      for ch in 1 .. TP7.System.Length (TextString) loop
+         DrawHChar (X1, Y1, FontCHR.To_CodePage437 (TP7.System.Ord (TextString (ch))));
+         X1 := X1 +
+               GDouble (CharWidth (FontCHR.To_CodePage437 (TP7.System.Ord (TextString (ch))))) *
+               CoeffX;
+      end loop;
       Cairo.Stroke (Cr);
+      Cairo.Restore (Cr);
       Win_Draw.Queue_Draw;
       Gdk.Threads.Leave;
    end DrawHText;
 
-   procedure DrawVText (X, Y : Integer; TextString : String) is
-      X1 : Integer          := X;
-      Y1 : Integer          := Y;
-      TH : constant Integer := TextHeight (+'M');
+   procedure DrawVText (X, Y : GDouble; TextString : String) is
+      X1 : GDouble := X;
+      Y1 : GDouble := Y;
    begin
       case IntTextInfo.Horiz is
          when LeftText =>
-            null;
+            X1 := X1 - GDouble (CharDescend) * CoeffX;
          when CenterText =>
-            X1 := X1 - TextWidth (+'M') / 2;
+            X1 := X1 + GDouble (CharHeight / 2 + CharDescend) * CoeffX;
          when RightText =>
-            X1 := X1 - TextWidth (+'M');
+            X1 := X1 + GDouble (CharAscend) * CoeffX;
          when others =>
             null;
       end case;
       case IntTextInfo.Vert is
          when BottomText =>
-            Y1 := Y1 - TextHeight (+'M') * TP7.System.Length (TextString);
-         when CenterText =>
-            Y1 := Y1 - (TextHeight (+'M') * TP7.System.Length (TextString)) / 2;
-         when TopText =>
             null;
+         when CenterText =>
+            Y1 := Y1 + GDouble (TextWidth (TextString)) / 2.0;
+         when TopText =>
+            Y1 := Y1 + GDouble (TextWidth (TextString));
          when others =>
             null;
       end case;
       Gdk.Threads.Enter;
-      for Ind in 1 .. TP7.System.Length (TextString) loop
-         Pango.Layout.Set_Text
-           (IntPangoLayout,
-            Glib.Convert.Locale_To_UTF8 (+TextString (Ind)));
-         Cairo.Move_To (Cr, Glib.Gdouble (X1), Glib.Gdouble (Y1));
-         Pango.Cairo.Show_Layout (Cr, IntPangoLayout);
-         Y1 := Y1 + TH;
+      Cairo.Save (Cr);
+      -- Set standard line setting for character drawing
+      Cairo.Set_Dash (Cr, Cairo.No_Dashes, 0.0);
+      Cairo.Set_Line_Width (Cr, 1.0);
+      for ch in 1 .. TP7.System.Length (TextString) loop
+         DrawVChar (X1, Y1, FontCHR.To_CodePage437 (TP7.System.Ord (TextString (ch))));
+         Y1 := Y1 -
+               GDouble (CharWidth (FontCHR.To_CodePage437 (TP7.System.Ord (TextString (ch))))) *
+               CoeffX;
       end loop;
       Cairo.Stroke (Cr);
+      Cairo.Restore (Cr);
       Win_Draw.Queue_Draw;
       Gdk.Threads.Leave;
    end DrawVText;
@@ -1568,9 +1743,9 @@ package body TP7.Graph is
    begin
       case IntTextInfo.Direction is
          when HorizDir =>
-            DrawHText (Integer (IntX), Integer (IntY), TextString);
+            DrawHText (IntX, IntY, TextString);
          when VertDir =>
-            DrawVText (Integer (IntX), Integer (IntY), TextString);
+            DrawVText (IntX, IntY, TextString);
          when others =>
             null;
       end case;
@@ -1586,9 +1761,9 @@ package body TP7.Graph is
    begin
       case IntTextInfo.Direction is
          when HorizDir =>
-            DrawHText (X, Y, TextString);
+            DrawHText (GDouble (X), GDouble (Y), TextString);
          when VertDir =>
-            DrawVText (X, Y, TextString);
+            DrawVText (GDouble (X), GDouble (Y), TextString);
          when others =>
             null;
       end case;
@@ -1617,73 +1792,36 @@ package body TP7.Graph is
       IntTextInfo.Font      := Font;
       IntTextInfo.Direction := Direction;
       IntTextInfo.CharSize  := CharSize;
-      Gdk.Threads.Enter;
-      Pango.Font.Free (IntFontDesc);
-      if CharSize = UserCharSize then
-         IntTextsize := CCharSize;
+      if CharSize >= 1 and then CharSize <= 10 then
+         CoeffX         := GDouble (CharSize) * CCharSize / GDouble (CharHeight);
+         CoeffY         := GDouble (CharSize) * CCharSize / GDouble (CharHeight);
+         IntGraphResult := grOk;
       else
-         IntTextsize := CharSize * CCharSize;
+         IntGraphResult := grError;
       end if;
-      IntGraphResult := grOk;
-      case Font is
-         when DefaultFont =>
-            IntFontDesc := Pango.Font.From_String ("Courier" & IntTextsize'Img);
-         when TriplexFont =>
-            IntFontDesc := Pango.Font.From_String ("Verdana" & IntTextsize'Img);
-         when SmallFont =>
-            IntFontDesc := Pango.Font.From_String ("Monaco" & IntTextsize'Img);
-         when SansSerifFont =>
-            IntFontDesc := Pango.Font.From_String ("Helvetica" & IntTextsize'Img);
-         when GothicFont =>
-            IntFontDesc := Pango.Font.From_String ("Zapfino" & IntTextsize'Img);
-         when others =>
-            IntGraphResult := grError;
-      end case;
-      Pango.Layout.Set_Font_Description (IntPangoLayout, IntFontDesc);
-      Gdk.Threads.Leave;
    end SetTextStyle;
 
    procedure SetUserCharSize (MultX, DivX, MultY, DivY : Word) is
-      pragma Unreferenced (DivY, MultY, DivX, MultX);
-   --        aMatrix : aliased Cairo_Matrix :=
-   --          (Gdouble (MultX) / Gdouble (DivX),
-   --           0.0,
-   --           0.0,
-   --           Gdouble (MultY) / Gdouble (DivY),
-   --           0.0,
-   --           0.0);
    begin
-      --        IntTextsize          := (Integer (MultY) * IntTextsize) / Integer (DivY);
       IntTextInfo.CharSize := UserCharSize;
-      --      TextSize(IntTextSize);
-      --        Set_Font_Matrix (Cr, aMatrix'Access);
-      if Debug then
-         TP7.System.Writeln ("La fonction SetUserCharSize n'est encore pas définie !");
-      end if;
+      CoeffX               := GDouble (MultX) / GDouble (DivX);
+      CoeffY               := GDouble (MultY) / GDouble (DivY);
    end SetUserCharSize;
 
    function TextHeight (TextString : String) return Word is
-      Width, Height : Glib.Gint;
+      pragma Unreferenced (TextString);
    begin
-      Gdk.Threads.Enter;
-      Pango.Layout.Set_Text
-        (IntPangoLayout,
-         Glib.Convert.Locale_To_UTF8 (To_String (TextString)));
-      Pango.Layout.Get_Pixel_Size (IntPangoLayout, Width, Height);
-      Gdk.Threads.Leave;
-      return Word (Height);
+      return Word (GDouble (CharHeight) * CoeffY);
    end TextHeight;
 
    function TextWidth (TextString : String) return Word is
-      Width, Height : Glib.Gint;
+      Width : Word := 0;
    begin
-      Gdk.Threads.Enter;
-      Pango.Layout.Set_Text
-        (IntPangoLayout,
-         Glib.Convert.Locale_To_UTF8 (To_String (TextString)));
-      Pango.Layout.Get_Pixel_Size (IntPangoLayout, Width, Height);
-      Gdk.Threads.Leave;
-      return Word (Width);
+      for Ind in 1 .. TP7.System.Length (TextString) loop
+         Width := Width +
+                  CharWidth (FontCHR.To_CodePage437 (TP7.System.Ord (TextString (Ind))));
+      end loop;
+      return Word (GDouble (Width) * CoeffX);
    end TextWidth;
 
 end TP7.Graph;

@@ -10,6 +10,7 @@ with Hello_GTKAda;
 with Courbes;
 with Sudoku;
 with Surfaces;
+with EditFont;
 
 procedure main is
 
@@ -25,6 +26,7 @@ begin
    TP7.Test.Add (Courbes'Access, "Curves Plotting Demo");
    TP7.Test.Add (Sudoku'Access, "Sudoku");
    TP7.Test.Add (Surfaces'Access, "Surfaces Plotting Demo");
+   TP7.Test.Add (EditFont'Access, "CHR font editing");
    --     TP7.Test.SelectAll;
    Gdk.Threads.Enter;
    Gtk.Main.Main;

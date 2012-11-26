@@ -3,6 +3,7 @@ use  TP7, TP7.System, TP7.Crt, TP7.Dos, TP7.Printer, TP7.Graph;
 with Ada.Unchecked_Deallocation;
 
 procedure Exemples_TP7 is
+   -- Based on Turbo Pascal examples from online help
    -- Usage with args : lisez-moi.txt test.txt 1256 src test
 
    subtype Integer is TPInteger;
@@ -137,15 +138,15 @@ procedure Exemples_TP7 is
       y0 := 10;
       y1 := 60;
       y2 := 110;
-      x1 := 200;
-      x2 := 250;
+      x1 := 10;
+      x2 := 50;
       Bar3D (x1, y0, x2, y1, 10, TopOn);
       Bar3D (x1, y1, x2, y2, 10, TopOff);
       Write ("Frappez <Entrée> pour continuer");
       Readln;
       CloseGraph;
    end ExBar3D; -- block
-   procedure ExAssignBlockReadWriteClose is
+   procedure ExAssignBlockReadWrite is
       DepuisF, DansF    : File;
       NumLus, NumEcrits : Word;
       type P2Ada_Anonym_1 is array (1 .. 2048) of Char;
@@ -164,7 +165,7 @@ procedure Exemples_TP7 is
       Writeln (Boolean'Image (Eof (DepuisF)));
       Close (DepuisF);
       Close (DansF);
-   end ExAssignBlockReadWriteClose; -- block
+   end ExAssignBlockReadWrite; -- block
    procedure ExChdir is
    begin
       ChDir (ParamStr (4));
@@ -187,7 +188,7 @@ procedure Exemples_TP7 is
          Halt (1);
       end if;
       for Rayon in 1 .. 5 loop
-         Circle (300, 300, Rayon * 10);
+         Circle (100, 100, Rayon * 10);
       end loop;
       Write ("Frappez <Entrée> pour continuer");
       Readln;
@@ -563,7 +564,7 @@ procedure Exemples_TP7 is
    end ExFillChar; -- block
    procedure ExFillEllipse is
       R                      : constant := 30;
-      GraphPilote, GraphMode : Integer   := 0;
+      GraphPilote, GraphMode : Integer := 0;
       Xasp, Yasp             : Word;
    begin
       GraphPilote := Detect;
@@ -612,7 +613,7 @@ procedure Exemples_TP7 is
       r                      : constant := 20;
       StartX                 : constant := 100;
       StartY                 : constant := 50;
-      GraphPilote, GraphMode : Integer   := 0;
+      GraphPilote, GraphMode : Integer := 0;
    begin
       GraphPilote := Detect;
       InitGraph (GraphPilote, GraphMode, "");
@@ -704,7 +705,7 @@ procedure Exemples_TP7 is
                                                          --'P2Ada_Var_1.' to
                                                          --fields of ArcCoords;
       begin
-         Line (P2Ada_Var_1.Xstart, P2Ada_Var_1.Ystart, P2Ada_Var_1.Xend, P2Ada_Var_1.Yend);
+         Line (P2Ada_Var_1.XStart, P2Ada_Var_1.YStart, P2Ada_Var_1.XEnd, P2Ada_Var_1.YEnd);
       end; -- declare
       Write ("Frappez <Entrée> pour continuer");
       Readln;
@@ -1303,7 +1304,7 @@ procedure Exemples_TP7 is
          LeadingZero (hund) +
          " et tout va bien.");
    end ExGetTime; -- block
-   procedure ExGetverifySetverify is
+   procedure ExGetVerifySetverify is
       type P2Ada_Anonym_6 is array (Boolean) of P2Ada_String (1 .. 8);
       OffOn : P2Ada_Anonym_6;
       v     : Boolean;
@@ -1315,7 +1316,7 @@ procedure Exemples_TP7 is
       v := not (v);
       Writeln ("Vérification d'écriture maintenant " + OffOn (v));
       SetVerify (v);
-   end ExGetverifySetverify; -- block
+   end ExGetVerifySetverify; -- block
    procedure ExGetViewSettings is
       GraphPilote, GraphMode : Integer := 0;
       Fenetre                : ViewPortType;
@@ -1331,7 +1332,7 @@ procedure Exemples_TP7 is
                                                       ---> add 'P2Ada_Var_7.'
                                                       --to fields of Fenetre;
       begin
-         Rectangle (0, 0, P2Ada_Var_7.x2 - P2Ada_Var_7.x1, P2Ada_Var_7.y2 - P2Ada_Var_7.y1);
+         Rectangle (0, 0, P2Ada_Var_7.X2 - P2Ada_Var_7.X1, P2Ada_Var_7.Y2 - P2Ada_Var_7.Y1);
          if P2Ada_Var_7.Clip then
             OutText ("Limitation d'affichage active.");
          else
@@ -1860,7 +1861,7 @@ procedure Exemples_TP7 is
    end ExPi; -- block
    procedure ExPieSlice is
       Rayon                  : constant := 30;
-      GraphPilote, GraphMode : Integer   := 0;
+      GraphPilote, GraphMode : Integer := 0;
    begin
       GraphPilote := Detect;
       InitGraph (GraphPilote, GraphMode, "");
@@ -2127,7 +2128,7 @@ procedure Exemples_TP7 is
    end ExRunError; -- block
    procedure ExSector is
       R                      : constant := 50;
-      GraphPilote, GraphMode : Integer   := 0;
+      GraphPilote, GraphMode : Integer := 0;
       Xasp, Yasp             : Word;
    begin
       GraphPilote := Detect;
@@ -2212,7 +2213,7 @@ procedure Exemples_TP7 is
    end ExSetAllPalette; -- block
    procedure ExSetAspectRatio is
       R                      : constant := 50;
-      GraphPilote, GraphMode : Integer   := 0;
+      GraphPilote, GraphMode : Integer := 0;
       Xasp, Yasp             : Word;
       Ch                     : Char;
       pragma Unreferenced (Ch);
@@ -2543,15 +2544,15 @@ procedure Exemples_TP7 is
       vp2                    : ViewPortType;
       GraphPilote, GraphMode : Integer := 0;
    begin
-      vp1.x1      := 10;
-      vp1.y1      := 80;
-      vp1.x2      := 100;
-      vp1.y2      := 150;
+      vp1.X1      := 10;
+      vp1.Y1      := 80;
+      vp1.X2      := 100;
+      vp1.Y2      := 150;
       vp1.Clip    := ClipOn;
-      vp2.x1      := 110;
-      vp2.y1      := 0;
-      vp2.x2      := 200;
-      vp2.y2      := 70;
+      vp2.X1      := 110;
+      vp2.Y1      := 0;
+      vp2.X2      := 200;
+      vp2.Y2      := 70;
       vp2.Clip    := ClipOn;
       GraphPilote := Detect;
       InitGraph (GraphPilote, GraphMode, "");
@@ -2564,11 +2565,11 @@ procedure Exemples_TP7 is
                                                    --fields of vp1;
       begin
          Rectangle
-           (Succ (P2Ada_Var_11.x1),
-            Succ (P2Ada_Var_11.y1),
-            Pred (P2Ada_Var_11.x2),
-            Pred (P2Ada_Var_11.y2));
-         SetViewPort (P2Ada_Var_11.x1, P2Ada_Var_11.y1, P2Ada_Var_11.x2, P2Ada_Var_11.y2, ClipOn);
+           (Succ (P2Ada_Var_11.X1),
+            Succ (P2Ada_Var_11.Y1),
+            Pred (P2Ada_Var_11.X2),
+            Pred (P2Ada_Var_11.Y2));
+         SetViewPort (P2Ada_Var_11.X1, P2Ada_Var_11.Y1, P2Ada_Var_11.X2, P2Ada_Var_11.Y2, ClipOn);
          OutText ("Fenêtre 1");
       end; -- declare
       SetViewPort (0, 0, GetMaxX, GetMaxY, ClipOn);
@@ -2578,11 +2579,11 @@ procedure Exemples_TP7 is
                                                    --fields of vp2;
       begin
          Rectangle
-           (Succ (P2Ada_Var_12.x1),
-            Succ (P2Ada_Var_12.y1),
-            Pred (P2Ada_Var_12.x2),
-            Pred (P2Ada_Var_12.y2));
-         SetViewPort (P2Ada_Var_12.x1, P2Ada_Var_12.y1, P2Ada_Var_12.x2, P2Ada_Var_12.y2, ClipOn);
+           (Succ (P2Ada_Var_12.X1),
+            Succ (P2Ada_Var_12.Y1),
+            Pred (P2Ada_Var_12.X2),
+            Pred (P2Ada_Var_12.Y2));
+         SetViewPort (P2Ada_Var_12.X1, P2Ada_Var_12.Y1, P2Ada_Var_12.X2, P2Ada_Var_12.Y2, ClipOn);
          OutText ("Fenêtre 2");
       end; -- declare
       Write ("Frappez <Entrée> pour continuer");
@@ -2603,13 +2604,13 @@ procedure Exemples_TP7 is
       if GraphResult < 0 then
          Halt (1);
       end if;
-      --        GetFillSettings (Remplissage);
-      --        SetFillStyle (WideDotFill, Remplissage.Color);
-      --        Bar (0, 0, GetMaxX, GetMaxY);
+      GetFillSettings (Remplissage);
+      SetFillStyle (WideDotFill, Remplissage.Color);
+      Bar (0, 0, GetMaxX, GetMaxY);
       dx := GetMaxX / 4;
       dy := GetMaxY / 4;
-      --        SetLineStyle (SolidLn, 0, ThickWidth);
-      --        SetWriteMode (XORPut);
+      SetLineStyle (SolidLn, 0, ThickWidth);
+      SetWriteMode (XORPut);
       loop
          x1 := Random (GetMaxX - dx);
          y1 := Random (GetMaxY - dy);
@@ -2816,16 +2817,16 @@ begin
    --     ExAssign;
    --     Writeln ("Test ExAssigned");
    --     ExAssigned;
-   Writeln ("Test ExAssignCrt");
-   ExAssignCrt;
+   --     Writeln ("Test ExAssignCrt");
+   --     ExAssignCrt;
    --     Writeln ("Test ExAssign_String");
    --     ExAssign_String;
    --     Writeln ("Test ExBar");
    --     ExBar;
    --     Writeln ("Test ExBar3D");
    --     ExBar3D;
-   --     Writeln ("Test ExAssignBlockReadWriteClose");
-   --     ExAssignBlockReadWriteClose;
+   --     Writeln ("Test ExAssignBlockReadWrite");
+   --     ExAssignBlockReadWrite;
    --     Writeln ("Test ExChdir");
    --     ExChdir;
    --     Writeln ("Test ExChr");
@@ -2838,12 +2839,12 @@ begin
    --     ExClearViewport;
    --     Writeln ("Test ExClose");
    --     ExClose;
-   Writeln ("Test ExCloseGraph");
+   --     Writeln ("Test ExCloseGraph");
    --     ExCloseGraph;
-   Writeln ("Test ExClrEol");
-   ExClrEol;
+   --     Writeln ("Test ExClrEol");
+   --     ExClrEol;
    Writeln ("Test ExClrscr");
-   ExClrscr;
+   --     ExClrscr;
    --     Writeln ("Test ExConcat");
    --     ExConcat;
    --     Writeln ("Test ExCopy");
@@ -2854,12 +2855,12 @@ begin
    --     ExCsegDsegSsegSptrOfsSeg;
    --     Writeln ("Test ExDec");
    --     ExDec;
-   Writeln ("Test ExDelayNoSoundSound");
-   ExDelayNoSoundSound;
+   --     Writeln ("Test ExDelayNoSoundSound");
+   --     ExDelayNoSoundSound;
    --     Writeln ("Test ExDelete");
    --     ExDelete;
-   Writeln ("Test ExDelLine");
-   ExDelLine;
+   --     Writeln ("Test ExDelLine");
+   --     ExDelLine;
    --     Writeln ("Test ExDetectGraph");
    --     ExDetectGraph;
    --     Writeln ("Test ExDiskFree");
@@ -2913,7 +2914,7 @@ begin
    --     ExGetArcCoords;
    --     Writeln ("Test ExGetAspectRatio");
    --     ExGetAspectRatio;
-   Writeln ("Test ExGetBkColor");
+   --     Writeln ("Test ExGetBkColor");
    --     ExGetBkColor;
    --     Writeln ("Test ExGetcbreakSetcbreak");
    --     ExGetcbreakSetcbreak;
@@ -2959,7 +2960,7 @@ begin
    --     ExGetPaletteSize;
    Writeln ("Test ExGetPixel");
    --     ExGetPixel;
-   Writeln ("Test ExGetTextSettings");
+   --     Writeln ("Test ExGetTextSettings");
    --     ExGetTextSettings;
    --     Writeln ("Test ExGetTime");
    --     ExGetTime;
@@ -2969,8 +2970,8 @@ begin
    --     ExGetViewSettings;
    --     Writeln ("Test ExGetxGety");
    --     ExGetxGety;
-   Writeln ("Test ExGotoXY");
-   ExGotoXY;
+   --     Writeln ("Test ExGotoXY");
+   --     ExGotoXY;
    --     Writeln ("Test ExGraphDefaults");
    --     ExGraphDefaults;
    --     Writeln ("Test ExGraphErrorMsg");
@@ -2981,16 +2982,16 @@ begin
    --     ExHalt;
    --     Writeln ("Test ExHi");
    --     ExHi;
-   Writeln ("Test ExHighVideo");
-   ExHighVideo;
+   --     Writeln ("Test ExHighVideo");
+   --     ExHighVideo;
    --     Writeln ("Test ExInc");
    --     ExInc;
    --     Writeln ("Test ExInitGraph");
    --     ExInitGraph;
    --     Writeln ("Test ExInsert");
    --     ExInsert;
-   Writeln ("Test ExInsLine");
-   ExInsLine;
+   --     Writeln ("Test ExInsLine");
+   --     ExInsLine;
    --     Writeln ("Test ExInstallUserDriver");
    --     ExInstallUserDriver;
    --     Writeln ("Test ExInstallUserFont");
@@ -3003,8 +3004,8 @@ begin
    --     ExIOResult;
    --     Writeln ("Test ExKeep");
    --     ExKeep;
-   Writeln ("Test ExKeyPressed");
-   ExKeyPressed;
+   --     Writeln ("Test ExKeyPressed");
+   --     ExKeyPressed;
    --     Writeln ("Test ExLenght");
    --     ExLenght;
    --     Writeln ("Test ExLine");
@@ -3017,8 +3018,8 @@ begin
    --     ExLn;
    --     Writeln ("Test ExLo");
    --     ExLo;
-   Writeln ("Test ExLowVideo");
-   ExLowVideo;
+   --     Writeln ("Test ExLowVideo");
+   --     ExLowVideo;
    --     Writeln ("Test ExMarkRelease");
    --     ExMarkRelease;
    --     Writeln ("Test ExMemavailMaxavail");
@@ -3027,21 +3028,22 @@ begin
    --     ExMkdir;
    --     Writeln ("Test ExMove");
    --     ExMove;
-   Writeln ("Test ExMoveRel");
+   --     Writeln ("Test ExMoveRel");
    --     ExMoveRel;
    --     Writeln ("Test ExMoveTo");
    --     ExMoveTo;
-   --     --     Writeln ("Test ExMsdos"); ExMsdos;
-   Writeln ("Test ExNormvideoTextbackgroundTextcolor");
-   ExNormvideoTextbackgroundTextcolor;
+   --     Writeln ("Test ExMsdos");
+   --     ExMsdos;
+   --     Writeln ("Test ExNormvideoTextbackgroundTextcolor");
+   --     ExNormvideoTextbackgroundTextcolor;
    --     Writeln ("Test ExOdd");
    --     ExOdd;
    --     Writeln ("Test ExOrd");
    --     ExOrd;
    Writeln ("Test ExOutText");
-   --     ExOutText;
+   ExOutText;
    Writeln ("Test ExOutTextXY");
-   --     ExOutTextXY;
+   ExOutTextXY;
    --     Writeln ("Test ExParamCount");
    --     ExParamCount;
    --     Writeln ("Test ExParamStr");
@@ -3056,12 +3058,12 @@ begin
    --     ExPredSucc;
    --     Writeln ("Test ExPtr");
    --     ExPtr;
-   Writeln ("Test ExPutPixel");
+   --     Writeln ("Test ExPutPixel");
    --     ExPutPixel;
-   Writeln ("Test ExRandomRandomize");
-   ExRandomRandomize;
-   Writeln ("Test ExReadKey");
-   ExReadKey;
+   --     Writeln ("Test ExRandomRandomize");
+   --     ExRandomRandomize;
+   --     Writeln ("Test ExReadKey");
+   --     ExReadKey;
    --     Writeln ("Test ExReadlnWriteln");
    --     ExReadlnWriteln;
    --     Writeln ("Test ExRectangle");
@@ -3094,7 +3096,7 @@ begin
    --     ExSetAllPalette;
    Writeln ("Test ExSetAspectRatio");
    --     ExSetAspectRatio;
-   Writeln ("Test ExSetBkColor");
+   --     Writeln ("Test ExSetBkColor");
    --     ExSetBkColor;
    --     Writeln ("Test ExSetDate"); ExSetDate;
    --     Writeln ("Test ExSetFAttr"); ExSetFAttr;
@@ -3111,15 +3113,15 @@ begin
    --     Writeln ("Test ExSetTextJustify");
    --     ExSetTextJustify;
    Writeln ("Test ExSetTextStyle");
-   --     ExSetTextStyle;
+   ExSetTextStyle;
    --     Writeln ("Test ExSetTime");
    --     ExSetTime;
    Writeln ("Test ExSetUserCharSize");
-   --     ExSetUserCharSize;
+   ExSetUserCharSize;
    --     Writeln ("Test ExSetViewport");
    --     ExSetViewport;
    Writeln ("Test ExSetWriteMode");
-   --     ExSetWriteMode;
+   ExSetWriteMode;
    --     Writeln ("Test ExSin");
    --     ExSin;
    --     Writeln ("Test ExSizeof"); ExSizeof;
@@ -3128,12 +3130,12 @@ begin
    --     Writeln ("Test ExStr"); ExStr;
    --     Writeln ("Test ExSwap");
    --     ExSwap;
-   --     Writeln ("Test ExTextHeight");
-   --     ExTextHeight;
-   Writeln ("Test ExTextMode");
-   ExTextMode;
-   --     Writeln ("Test ExTextWidth");
-   --     ExTextWidth;
+   Writeln ("Test ExTextHeight");
+   ExTextHeight;
+   --     Writeln ("Test ExTextMode");
+   --     ExTextMode;
+   Writeln ("Test ExTextWidth");
+   ExTextWidth;
    --     Writeln ("Test ExTrunc");
    --     ExTrunc;
    --     Writeln ("Test ExTruncate");
@@ -3142,10 +3144,10 @@ begin
    --     ExUpCase;
    --     Writeln ("Test ExVal");
    --     ExVal;
-   Writeln ("Test ExWherexWherey");
-   ExWherexWherey;
+   --     Writeln ("Test ExWherexWherey");
+   --     ExWherexWherey;
    Writeln ("Test ExWindow");
-   ExWindow;
+   --     ExWindow;
    Write ("Fin des exemples TP7, frappez entrée pour quitter.");
    Readln;
 end Exemples_TP7; -- block

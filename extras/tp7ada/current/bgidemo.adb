@@ -290,7 +290,7 @@ procedure BGIDemo is
       DefaultColors;
       SetLineStyle (SolidLn, 0, NormWidth);
       GetViewSettings (ViewPort);
-      Rectangle (0, 0, ViewPort.x2 - ViewPort.x1, ViewPort.y2 - ViewPort.y1);
+      Rectangle (0, 0, ViewPort.X2 - ViewPort.X1, ViewPort.Y2 - ViewPort.Y1);
    end DrawBorder; -- DrawBorder
 
    procedure FullPort
@@ -448,13 +448,13 @@ procedure BGIDemo is
          ')');
       WriteOut
         (To_TPString ("Current view port  : (") +
-         Int2Str (ViewInfo.x1) +
+         Int2Str (ViewInfo.X1) +
          To_TPString (", ") +
-         Int2Str (ViewInfo.y1) +
+         Int2Str (ViewInfo.Y1) +
          To_TPString (", ") +
-         Int2Str (ViewInfo.x2) +
+         Int2Str (ViewInfo.X2) +
          To_TPString (", ") +
-         Int2Str (ViewInfo.y2) +
+         Int2Str (ViewInfo.Y2) +
          ')');
       if ViewInfo.Clip = ClipOn then
          WriteOut (To_TPString ("Clipping           : ON"));
@@ -568,8 +568,8 @@ procedure BGIDemo is
       GetViewSettings (ViewInfo);
       Left   := 0;
       Top    := 0;
-      Right  := ViewInfo.x2 - ViewInfo.x1;
-      Bottom := ViewInfo.y2 - ViewInfo.y1;
+      Right  := ViewInfo.X2 - ViewInfo.X1;
+      Bottom := ViewInfo.Y2 - ViewInfo.Y1;
       Step   := Longint (Bottom) / 50;
       SetColor (GetMaxColor);
       Line (Left, Top, Right, Bottom);
@@ -596,8 +596,8 @@ procedure BGIDemo is
             SetColor (Color);
             Left   := 0;                         -- Original large rectangle
             Top    := 0;
-            Right  := ViewInfo.x2 - ViewInfo.x1;
-            Bottom := ViewInfo.y2 - ViewInfo.y1;
+            Right  := ViewInfo.X2 - ViewInfo.X1;
+            Bottom := ViewInfo.Y2 - ViewInfo.Y1;
             null;
          end if;
          null;
@@ -623,9 +623,9 @@ procedure BGIDemo is
    begin
       MainWindow (To_TPString ("SetAspectRatio demonstration"));
       GetViewSettings (ViewInfo);
-      CenterX    := (ViewInfo.x2 - ViewInfo.x1) / 2;
-      CenterY    := (ViewInfo.y2 - ViewInfo.y1) / 2;
-      Radius     := 3 * (Word (ViewInfo.y2 - ViewInfo.y1) / 5);
+      CenterX    := (ViewInfo.X2 - ViewInfo.X1) / 2;
+      CenterY    := (ViewInfo.Y2 - ViewInfo.Y1) / 2;
+      Radius     := 3 * (Word (ViewInfo.Y2 - ViewInfo.Y1) / 5);
       RadiusStep := (Longint (Radius) / 30);
       Circle (CenterX, CenterY, Radius);
       GetAspectRatio (Xasp, Yasp);
@@ -668,7 +668,7 @@ procedure BGIDemo is
       MainWindow (To_TPString ("SetTextJustify / SetUserCharSize demo"));
       GetViewSettings (ViewInfo);
       SetTextStyle (TriplexFont, VertDir, 4);
-      Y := (ViewInfo.y2 - ViewInfo.y1) - 2;
+      Y := (ViewInfo.Y2 - ViewInfo.Y1) - 2;
       SetTextJustify (CenterText, BottomText);
       OutTextXY (2 * Integer (TextWidth (To_TPString (+'M'))), Y, To_TPString ("Vertical"));
       SetTextStyle (TriplexFont, HorizDir, 4);
@@ -681,7 +681,7 @@ procedure BGIDemo is
          TextWidth (To_TPString ("Horizontal")),
          2 + TextHeight (To_TPString ("Horizontal")));
       SetTextJustify (CenterText, CenterText);
-      X := (ViewInfo.x2 - ViewInfo.x1) / 2;
+      X := (ViewInfo.X2 - ViewInfo.X1) / 2;
       Y := Integer (TextHeight (To_TPString (+'H')));
       for Size in 1 .. Word (4) loop
 
@@ -697,7 +697,7 @@ procedure BGIDemo is
       SetTextJustify (CenterText, TopText);
       SetUserCharSize (5, 6, 3, 2);
       SetTextStyle (TriplexFont, HorizDir, UserCharSize);
-      OutTextXY ((ViewInfo.x2 - ViewInfo.x1) / 2, Y, To_TPString ("User defined size!"));
+      OutTextXY ((ViewInfo.X2 - ViewInfo.X1) / 2, Y, To_TPString ("User defined size!"));
       WaitToGo;
       null;
    end TextPlay; -- TextPlay
@@ -727,7 +727,7 @@ procedure BGIDemo is
 
                OutText (To_TPString (+Ch));
                if (GetX + Integer (TextWidth (To_TPString (+'M')))) >
-                  (ViewInfo.x2 - ViewInfo.x1)
+                  (ViewInfo.X2 - ViewInfo.X1)
                then
                   MoveTo (2, GetY + Integer (TextHeight (To_TPString (+'M'))) + 3);
                end if;
@@ -748,7 +748,7 @@ procedure BGIDemo is
 
                OutText (To_TPString (+Ch));
                if (GetX + Integer (TextWidth (To_TPString (+'M')))) >
-                  (ViewInfo.x2 - ViewInfo.x1)
+                  (ViewInfo.X2 - ViewInfo.X1)
                then
                   MoveTo (2, GetY + Integer (TextHeight (To_TPString (+'M'))) + 3);
                end if;
@@ -799,10 +799,10 @@ procedure BGIDemo is
       MainWindow (To_TPString ("MoveTo, LineTo demonstration"));
       GetAspectRatio (Xasp, Yasp);
       GetViewSettings (ViewInfo);
-      CenterX := (ViewInfo.x2 - ViewInfo.x1) / 2;
-      CenterY := (ViewInfo.y2 - ViewInfo.y1) / 2;
+      CenterX := (ViewInfo.X2 - ViewInfo.X1) / 2;
+      CenterY := (ViewInfo.Y2 - ViewInfo.Y1) / 2;
       Radius  := Word (CenterY);
-      while (CenterY + AdjAsp (Integer (Radius))) < (ViewInfo.y2 - ViewInfo.y1) - 20 loop
+      while (CenterY + AdjAsp (Integer (Radius))) < (ViewInfo.Y2 - ViewInfo.Y1) - 20 loop
 
          Inc (Radius);
       end loop;
@@ -861,20 +861,20 @@ procedure BGIDemo is
 
       begin
          GetViewSettings (CurrPort);
-         W := (CurrPort.x2 - CurrPort.x1) / 9;
-         H := (CurrPort.y2 - CurrPort.y1) / 8;
-         X := ((CurrPort.x2 - CurrPort.x1) / 2) - Integer (Round (2.5 * Real (W)));
-         Y := ((CurrPort.y2 - CurrPort.y1) / 2) - (3 * H);
+         W := (CurrPort.X2 - CurrPort.X1) / 9;
+         H := (CurrPort.Y2 - CurrPort.Y1) / 8;
+         X := ((CurrPort.X2 - CurrPort.X1) / 2) - Integer (Round (2.5 * Real (W)));
+         Y := ((CurrPort.Y2 - CurrPort.Y1) / 2) - (3 * H);
 
          -- Border around viewport is outer part of polygon
          Poly (1).X := 0;
          Poly (1).Y := 0;
-         Poly (2).X := CurrPort.x2 - CurrPort.x1;
+         Poly (2).X := CurrPort.X2 - CurrPort.X1;
          Poly (2).Y := 0;
-         Poly (3).X := CurrPort.x2 - CurrPort.x1;
-         Poly (3).Y := CurrPort.y2 - CurrPort.y1;
+         Poly (3).X := CurrPort.X2 - CurrPort.X1;
+         Poly (3).Y := CurrPort.Y2 - CurrPort.Y1;
          Poly (4).X := 0;
-         Poly (4).Y := CurrPort.y2 - CurrPort.y1;
+         Poly (4).Y := CurrPort.Y2 - CurrPort.Y1;
          Poly (5).X := 0;
          Poly (5).Y := 0;
          MoveTo (X, Y);
@@ -923,7 +923,7 @@ procedure BGIDemo is
          LineRel (-W, 0);
 
          -- Flood fill the center
-         FloodFill ((CurrPort.x2 - CurrPort.x1) / 2, (CurrPort.y2 - CurrPort.y1) / 2, MaxColor);
+         FloodFill ((CurrPort.X2 - CurrPort.X1) / 2, (CurrPort.Y2 - CurrPort.Y1) / 2, MaxColor);
          null;
       end DrawTesseract; -- DrawTesseract
 
@@ -931,7 +931,7 @@ procedure BGIDemo is
       MainWindow (To_TPString ("LineRel / MoveRel demonstration"));
       GetViewSettings (CurrPort);
       -- Move the viewport out 1 pixel from each end
-      SetViewPort (CurrPort.x1 - 1, CurrPort.y1 - 1, CurrPort.x2 + 1, CurrPort.y2 + 1, ClipOn);
+      SetViewPort (CurrPort.X1 - 1, CurrPort.Y1 - 1, CurrPort.X2 + 1, CurrPort.Y2 + 1, ClipOn);
       DrawTesseract;
       WaitToGo;
       null;
@@ -977,11 +977,11 @@ procedure BGIDemo is
       MainWindow (To_TPString ("PieSlice / GetAspectRatio demonstration"));
       GetAspectRatio (Xasp, Yasp);
       GetViewSettings (ViewInfo);
-      CenterX := (ViewInfo.x2 - ViewInfo.x1) / 2;
-      CenterY := ((ViewInfo.y2 - ViewInfo.y1) / 2) + 20;
-      Radius  := Word (ViewInfo.y2 - ViewInfo.y1) / 3;
+      CenterX := (ViewInfo.X2 - ViewInfo.X1) / 2;
+      CenterY := ((ViewInfo.Y2 - ViewInfo.Y1) / 2) + 20;
+      Radius  := Word (ViewInfo.Y2 - ViewInfo.Y1) / 3;
       while AdjAsp (Integer (Radius)) <
-            Integer (Round (Real (ViewInfo.y2 - ViewInfo.y1) / 3.6))
+            Integer (Round (Real (ViewInfo.Y2 - ViewInfo.Y1) / 3.6))
       loop
 
          Inc (Radius);
@@ -1059,21 +1059,21 @@ procedure BGIDemo is
       OutTextXY (MaxX / 2, 6, To_TPString ("These are 3D bars !"));
       SetTextStyle (DefaultFont, HorizDir, 1);
       SetViewPort
-        (ViewInfo.x1 + 50,
-         ViewInfo.y1 + 40,
-         ViewInfo.x2 - 50,
-         ViewInfo.y2 - 10,
+        (ViewInfo.X1 + 50,
+         ViewInfo.Y1 + 40,
+         ViewInfo.X2 - 50,
+         ViewInfo.Y2 - 10,
          ClipOn);
       GetViewSettings (ViewInfo);
-      Line (H, H, H, (ViewInfo.y2 - ViewInfo.y1) - H);
+      Line (H, H, H, (ViewInfo.Y2 - ViewInfo.Y1) - H);
       Line
         (H,
-         (ViewInfo.y2 - ViewInfo.y1) - H,
-         (ViewInfo.x2 - ViewInfo.x1) - H,
-         (ViewInfo.y2 - ViewInfo.y1) - H);
-      YStep := Real ((ViewInfo.y2 - ViewInfo.y1) - (2 * H)) / Real (YTicks);
-      XStep := Real ((ViewInfo.x2 - ViewInfo.x1) - (2 * H)) / Real (NumBars);
-      J := (ViewInfo.y2 - ViewInfo.y1) - H;
+         (ViewInfo.Y2 - ViewInfo.Y1) - H,
+         (ViewInfo.X2 - ViewInfo.X1) - H,
+         (ViewInfo.Y2 - ViewInfo.Y1) - H);
+      YStep := Real ((ViewInfo.Y2 - ViewInfo.Y1) - (2 * H)) / Real (YTicks);
+      XStep := Real ((ViewInfo.X2 - ViewInfo.X1) - (2 * H)) / Real (NumBars);
+      J := (ViewInfo.Y2 - ViewInfo.Y1) - H;
       SetTextJustify (CenterText, CenterText);
 
       -- Draw the Y axis and ticks marks
@@ -1095,10 +1095,10 @@ procedure BGIDemo is
          SetColor (MaxColor);
          Line
            (J,
-            (ViewInfo.y2 - ViewInfo.y1) - H,
+            (ViewInfo.Y2 - ViewInfo.Y1) - H,
             J,
-            (ViewInfo.y2 - ViewInfo.y1 - 3) - (H / 2));
-         OutTextXY (J, (ViewInfo.y2 - ViewInfo.y1) - (H / 2), Int2Str (I - 1));
+            (ViewInfo.Y2 - ViewInfo.Y1 - 3) - (H / 2));
+         OutTextXY (J, (ViewInfo.Y2 - ViewInfo.Y1) - (H / 2), Int2Str (I - 1));
          if I /= Succ (NumBars) then
 
             Color := RandColor;
@@ -1107,10 +1107,10 @@ procedure BGIDemo is
             Bar3D
               (J,
                Integer (Round
-                           (Real (ViewInfo.y2 - ViewInfo.y1 - H) -
+                           (Real (ViewInfo.Y2 - ViewInfo.Y1 - H) -
                             Real (BarHeight (I)) * YStep)),
                Integer (Round (Real (J) + XStep - Real (Depth))),
-               Integer (Round (Real (ViewInfo.y2 - ViewInfo.y1))) - H - 1,
+               Integer (Round (Real (ViewInfo.Y2 - ViewInfo.Y1))) - H - 1,
                Depth,
                TopOn);
             J := Integer (Round (Real (J) + XStep));
@@ -1146,21 +1146,21 @@ procedure BGIDemo is
       OutTextXY (MaxX / 2, 6, To_TPString ("These are 2D bars !"));
       SetTextStyle (DefaultFont, HorizDir, 1);
       SetViewPort
-        (ViewInfo.x1 + 50,
-         ViewInfo.y1 + 30,
-         ViewInfo.x2 - 50,
-         ViewInfo.y2 - 10,
+        (ViewInfo.X1 + 50,
+         ViewInfo.Y1 + 30,
+         ViewInfo.X2 - 50,
+         ViewInfo.Y2 - 10,
          ClipOn);
       GetViewSettings (ViewInfo);
-      Line (H, H, H, (ViewInfo.y2 - ViewInfo.y1) - H);
+      Line (H, H, H, (ViewInfo.Y2 - ViewInfo.Y1) - H);
       Line
         (H,
-         (ViewInfo.y2 - ViewInfo.y1) - H,
-         (ViewInfo.x2 - ViewInfo.x1) - H,
-         (ViewInfo.y2 - ViewInfo.y1) - H);
-      YStep := Real ((ViewInfo.y2 - ViewInfo.y1) - (2 * H)) / Real (NumBars);
-      XStep := Real ((ViewInfo.x2 - ViewInfo.x1) - (2 * H)) / Real (NumBars);
-      J     := (ViewInfo.y2 - ViewInfo.y1) - H;
+         (ViewInfo.Y2 - ViewInfo.Y1) - H,
+         (ViewInfo.X2 - ViewInfo.X1) - H,
+         (ViewInfo.Y2 - ViewInfo.Y1) - H);
+      YStep := Real ((ViewInfo.Y2 - ViewInfo.Y1) - (2 * H)) / Real (NumBars);
+      XStep := Real ((ViewInfo.X2 - ViewInfo.X1) - (2 * H)) / Real (NumBars);
+      J     := (ViewInfo.Y2 - ViewInfo.Y1) - H;
       SetTextJustify (CenterText, CenterText);
 
       -- Draw Y axis with tick marks
@@ -1180,10 +1180,10 @@ procedure BGIDemo is
          SetColor (MaxColor);
          Line
            (J,
-            (ViewInfo.y2 - ViewInfo.y1) - H,
+            (ViewInfo.Y2 - ViewInfo.Y1) - H,
             J,
-            (ViewInfo.y2 - ViewInfo.y1 - 3) - (H / 2));
-         OutTextXY (J, (ViewInfo.y2 - ViewInfo.y1) - (H / 2), Int2Str (I));
+            (ViewInfo.Y2 - ViewInfo.Y1 - 3) - (H / 2));
+         OutTextXY (J, (ViewInfo.Y2 - ViewInfo.Y1) - (H / 2), Int2Str (I));
          if I /= Succ (NumBars) then
 
             Color := RandColor;
@@ -1192,17 +1192,17 @@ procedure BGIDemo is
             Bar
               (J,
                Integer (Round
-                           (Real (ViewInfo.y2 - ViewInfo.y1 - H) -
+                           (Real (ViewInfo.Y2 - ViewInfo.Y1 - H) -
                             Real (BarHeight (I)) * YStep)),
                Integer (Round (Real (J) + XStep)),
-               (ViewInfo.y2 - ViewInfo.y1) - H - 1);
+               (ViewInfo.Y2 - ViewInfo.Y1) - H - 1);
             Rectangle
               (J,
                Integer (Round
-                           (Real (ViewInfo.y2 - ViewInfo.y1 - H) -
+                           (Real (ViewInfo.Y2 - ViewInfo.Y1 - H) -
                             Real (BarHeight (I)) * YStep)),
                Integer (Round (Real (J) + XStep)),
-               (ViewInfo.y2 - ViewInfo.y1) - H - 1);
+               (ViewInfo.Y2 - ViewInfo.Y1) - H - 1);
             null;
          end if;
          J := Integer (Round (Real (J) + XStep));
@@ -1251,8 +1251,8 @@ procedure BGIDemo is
       MainWindow (To_TPString ("Random Bars"));
       StatusLine (To_TPString ("Esc aborts or press a key"));
       GetViewSettings (ViewInfo);
-      MaxWidth  := ViewInfo.x2 - ViewInfo.x1;
-      MaxHeight := ViewInfo.y2 - ViewInfo.y1;
+      MaxWidth  := ViewInfo.X2 - ViewInfo.X1;
+      MaxHeight := ViewInfo.Y2 - ViewInfo.Y1;
       loop
 
          Color := RandColor;
@@ -1297,8 +1297,8 @@ procedure BGIDemo is
             EndAngle,
             Random (MaxRadius));
          GetArcCoords (ArcInfo);
-         Line (ArcInfo.X, ArcInfo.Y, ArcInfo.Xstart, ArcInfo.Ystart);
-         Line (ArcInfo.X, ArcInfo.Y, ArcInfo.Xend, ArcInfo.Yend);
+         Line (ArcInfo.X, ArcInfo.Y, ArcInfo.XStart, ArcInfo.YStart);
+         Line (ArcInfo.X, ArcInfo.Y, ArcInfo.XEnd, ArcInfo.YEnd);
          null;
          Delay1 (500);
          exit when KeyPressed;
@@ -1326,8 +1326,8 @@ procedure BGIDemo is
       StatusLine (To_TPString ("Esc aborts or press a key..."));
 
       GetViewSettings (ViewInfo);
-      XMax := (ViewInfo.x2 - ViewInfo.x1 - 1);
-      YMax := (ViewInfo.y2 - ViewInfo.y1 - 1);
+      XMax := (ViewInfo.X2 - ViewInfo.X1 - 1);
+      YMax := (ViewInfo.Y2 - ViewInfo.Y1 - 1);
       while not KeyPressed loop
 
          -- Plot random pixels
@@ -1392,15 +1392,15 @@ procedure BGIDemo is
          Y := Y + Step;
 
          -- Make saucer bounce off viewport walls
-         if (CurPort.x1 + X + Width - 1 > CurPort.x2) then
-            X := CurPort.x1 - Width + 1;
+         if (CurPort.X1 + X + Width - 1 > CurPort.X2) then
+            X := CurPort.X1 - Width + 1;
          else
             if (X < 0) then
                X := 0;
             end if;
          end if;
-         if (CurPort.y1 + Y + Height - 1 > CurPort.y2) then
-            Y := CurPort.y2 - CurPort.y1 - Height + 1;
+         if (CurPort.Y1 + Y + Height - 1 > CurPort.Y2) then
+            Y := CurPort.Y2 - CurPort.Y1 - Height + 1;
          else
             if (Y < 0) then
                Y := 0;
@@ -1528,8 +1528,8 @@ procedure BGIDemo is
    begin
       MainWindow (To_TPString ("Pre-defined fill styles"));
       GetViewSettings (ViewInfo);
-      Width  := 2 * ((ViewInfo.x2 + 1) / 13);
-      Height := 2 * ((ViewInfo.y2 - 10) / 10);
+      Width  := 2 * ((ViewInfo.X2 + 1) / 13);
+      Height := 2 * ((ViewInfo.Y2 - 10) / 10);
       X      := Width / 2;
       Y      := Height / 2;
       Style  := 0;
@@ -1588,8 +1588,8 @@ procedure BGIDemo is
    begin
       MainWindow (To_TPString ("User defined fill styles"));
       GetViewSettings (ViewInfo);
-      Width  := 2 * ((ViewInfo.x2 + 1) / 13);
-      Height := 2 * ((ViewInfo.y2 - 10) / 10);
+      Width  := 2 * ((ViewInfo.X2 + 1) / 13);
+      Height := 2 * ((ViewInfo.Y2 - 10) / 10);
       X      := Width / 2;
       Y      := Height / 2;
       Style  := 0;
@@ -1644,8 +1644,8 @@ procedure BGIDemo is
       MainWindow (To_TPString ("Color demonstration"));
       Color := 1;
       GetViewSettings (ViewInfo);
-      Width  := 2 * ((ViewInfo.x2 + 1) / 16);
-      Height := 2 * ((ViewInfo.y2 - 10) / 10);
+      Width  := 2 * ((ViewInfo.X2 + 1) / 16);
+      Height := 2 * ((ViewInfo.Y2 - 10) / 10);
       X      := Width / 2;
       Y      := Height / 2;
       for J in 1 .. 3 loop
@@ -1684,8 +1684,8 @@ procedure BGIDemo is
       MainWindow (To_TPString ("Palette demonstration"));
       StatusLine (To_TPString ("Press any key..."));
       GetViewSettings (ViewInfo);
-      Width  := (ViewInfo.x2 - ViewInfo.x1) / XBars;
-      Height := (ViewInfo.y2 - ViewInfo.y1) / YBars;
+      Width  := (ViewInfo.X2 - ViewInfo.X1) / XBars;
+      Height := (ViewInfo.Y2 - ViewInfo.Y1) / YBars;
       X      := 0;
       Y      := 0;
       Color  := 0;
@@ -1730,8 +1730,8 @@ procedure BGIDemo is
       GetViewSettings (ViewInfo);
       SetTextJustify (CenterText, CenterText);
       OutTextXY
-        ((ViewInfo.x2 - ViewInfo.x1) / 2,
-         (ViewInfo.y2 - ViewInfo.y1) / 2,
+        ((ViewInfo.X2 - ViewInfo.X1) / 2,
+         (ViewInfo.Y2 - ViewInfo.Y1) / 2,
          To_TPString ("Now you are in graphics mode"));
       StatusLine (To_TPString ("Press any key for text mode..."));
       loop
@@ -1761,8 +1761,8 @@ procedure BGIDemo is
       MainWindow (To_TPString ("SetGraphMode / RestoreCrtMode demo"));
       SetTextJustify (CenterText, CenterText);
       OutTextXY
-        ((ViewInfo.x2 - ViewInfo.x1) / 2,
-         (ViewInfo.y2 - ViewInfo.y1) / 2,
+        ((ViewInfo.X2 - ViewInfo.X1) / 2,
+         (ViewInfo.Y2 - ViewInfo.Y1) / 2,
          To_TPString ("Back in graphics mode..."));
       WaitToGo;
       null;
@@ -1784,15 +1784,15 @@ procedure BGIDemo is
       GetViewSettings (ViewInfo);
       X    := 35;
       Y    := 10;
-      Step := Longint (ViewInfo.x2 - ViewInfo.x1) / 11;
+      Step := Longint (ViewInfo.X2 - ViewInfo.X1) / 11;
       SetTextJustify (LeftText, TopText);
       OutTextXY (X, Y, To_TPString ("NormWidth"));
       SetTextJustify (CenterText, TopText);
       for Style in 0 .. Word (3) loop
 
          SetLineStyle (Style, 0, NormWidth);
-         Line (X, Y + 20, X, ViewInfo.y2 - 40);
-         OutTextXY (X, ViewInfo.y2 - 30, Int2Str (Style));
+         Line (X, Y + 20, X, ViewInfo.Y2 - 40);
+         OutTextXY (X, ViewInfo.Y2 - 30, Int2Str (Style));
          Inc (X, Step);
          null;
       end loop;
@@ -1804,8 +1804,8 @@ procedure BGIDemo is
       for Style in 0 .. Word (3) loop
 
          SetLineStyle (Style, 0, ThickWidth);
-         Line (X, Y + 20, X, ViewInfo.y2 - 40);
-         OutTextXY (X, ViewInfo.y2 - 30, To_TPString (Word'Image (Style)));
+         Line (X, Y + 20, X, ViewInfo.Y2 - 40);
+         OutTextXY (X, ViewInfo.Y2 - 30, To_TPString (Word'Image (Style)));
          Inc (X, Step);
          null;
       end loop;
@@ -1829,13 +1829,13 @@ procedure BGIDemo is
       Y     := 10;
       Style := 0;
       I     := 0;
-      while X < ViewInfo.x2 - 4 loop
+      while X < ViewInfo.X2 - 4 loop
 
          --$B+
          Style := Word (Word1 (Style) or Word1 (2 ** Natural (I mod 16)));
          --$B-
          SetLineStyle (UserBitLn, Style, NormWidth);
-         Line (X, Y, X, (ViewInfo.y2 - ViewInfo.y1) - Y);
+         Line (X, Y, X, (ViewInfo.Y2 - ViewInfo.Y1) - Y);
          Inc (X, 5);
          Inc (I);
          if Style = 65535 then
@@ -1862,8 +1862,8 @@ procedure BGIDemo is
       SetTextStyle (TriplexFont, HorizDir, 4);
       SetTextJustify (CenterText, CenterText);
       OutTextXY
-        ((ViewInfo.x2 - ViewInfo.x1) / 2,
-         (ViewInfo.y2 - ViewInfo.y1) / 2,
+        ((ViewInfo.X2 - ViewInfo.X1) / 2,
+         (ViewInfo.Y2 - ViewInfo.Y1) / 2,
          To_TPString ("That's all folks!"));
       StatusLine (To_TPString ("Press any key to quit..."));
       loop

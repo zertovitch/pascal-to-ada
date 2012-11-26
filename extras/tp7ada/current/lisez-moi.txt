@@ -62,7 +62,7 @@ avec les quelques modifications suivantes :
 
      * Le Gestionnaire d'erreur :
      L'option prise ici est de ne pas faire de contrôle dans un
-premier temps. On retourne toujours "grOk".
+premier temps. On retourne presque toujours "grOk".
 
      * L'initialisation :
      Les options choisies sont l'émulation de la carte VGA, en
@@ -70,11 +70,10 @@ mode VGAhi, avec les polices et les motifs GTKAda qui cadre
 le mieux avec ceux du PC.
      Les procédures permettant d'installer des polices ou des
 gestionnaires d'écrans sont vides et ne font donc rien. (voir le
-texte de l'unité)
+code de l'unité)
 
      * Le gestionnaire de l'écran :
-     L'option choisie est de ne gérer qu'une seule page
-graphique.
+     L'option choisie est de ne gérer qu'une seule page graphique.
 
      * Procédures d'affichage point et ligne :
      La bibliothèque Cairo de dessin 2D a été utilisée.
@@ -94,13 +93,8 @@ points.
      Les procédures ne sont pas fonctionnelles.
 
      * Gestionnaire de texte :
-     L'option choisie est d'utiliser les polices les plus proches
-existantes sur GTK.
-     Le mode d'affichage vertical ne produit pas tout à fait
-celui de Turbo Pascal puisque il affiche des caractères
-horizontaux l'un au-dessous de l'autre.
-     On ne peux pas agir sur la taille en X indépendamment de la
-taille en Y.
+     Utilisation des polices de caractères vectorielles CHR traduites en structures Ada.
+     La transposition des caractères DOS Code Page 437 est réalisé partiellement.
 
 	5) Description de l'unité DOS :
 
@@ -131,37 +125,39 @@ renvoient un message d'avertissement si Debug est activé.
 
      III Mise en oeuvre des unités TP7Ada :
 
-     Au préalable, le compilateur GNAT et la bibliothèque GTKAda
+     Au préalable, le compilateur GNAT (avec Ada 2005) et la bibliothèque GTKAda
 doivent être installés, voir par ailleurs sur Blady.
 
-	Les sources de la bibliothèque version 2.6a sont :
+	Les sources (UTF-8) de la bibliothèque version 2.7a sont :
 arty.adb
 bgidemo.adb
 courbes.adb
+editfont.adb
 exemples_tp7.adb
 hello_gtkada.adb
 lisez-moi.txt
-main.adb
 main_mini.adb
+main.adb
 read-me.txt
 sudoku.adb
 surfaces.adb
-tp7-crt.adb	 2.4a
-tp7-crt.ads	 2.4a
-tp7-dos.adb	 2.2a
-tp7-dos.ads	 2.2a
-tp7-graph.adb	 2.3a
-tp7-graph.ads	 2.0c
-tp7-mouse.adb    1.0a
-tp7-mouse.ads    1.0a
-tp7-printer.adb	 2.1a
-tp7-printer.ads	 2.1a
-tp7-system.adb	 2.3b
-tp7-system.ads	 2.3a
-tp7-test.adb	 1.1a
-tp7-test.ads	 1.0a
-tp7.adb		 2.6a
-tp7.ads		 2.6a
+tp7-crt.adb		2.4a
+tp7-crt.ads		2.4a
+tp7-dos.adb		2.2a
+tp7-dos.ads		2.2a
+tp7-graph-fontchr.adb	1.0a
+tp7-graph.adb		2.4a
+tp7-graph.ads		2.1a
+tp7-mouse.adb		1.1a
+tp7-mouse.ads		1.0a
+tp7-printer.adb		2.1a
+tp7-printer.ads		2.1a
+tp7-system.adb		2.3c
+tp7-system.ads		2.3a
+tp7-test.adb		1.2a
+tp7-test.ads		1.0a
+tp7.adb			2.7a
+tp7.ads			2.6a
 
      Tout d'abord votre programme principal Ada issu de Turbo Pascal (avec
 l'utilitaire P2Ada par exemple) doit être référencé dans le programme main.adb
@@ -169,7 +165,7 @@ avec la procédure TP7.Init.
      La création et le lancement de l'exécutable est fait par exemple avec
 les commandes :
 
-$ gnatmake main `gtkada-config`
+$ gnatmake -gnatW8 main `gtkada-config`
 $ ./main
 
      La bibliothèque contient un programme principal par défaut
@@ -197,18 +193,23 @@ voir Licence_CeCILL_V2-fr.txt.
      L'unité TP7.Graph peut être améliorée :
      . en gérant les erreurs graphiques
      . en gérant plus d'une page graphique
-     . en incluant un gestionnaire de polices vectorielles.
-(Polices contenues dans les fichiers .chr de Borland par exemple)
-
+     . en gérant l'affichage bitmap
+ 
 
      VI Conclusion :
 
-     J'espère que cette unité permettra de tester nombre de
+     J'espère que cette unité vous permettra de tester nombre de
 programmes graphiques sur Macintosh, Unix ou Windows.
 
 
      VII Historique :
 
+- 2.7a : ajout d'un dialogue associé aux boutons de fermetures des fenêtres, ajout de
+		l'utilisation des flèches (gauche, droite, début, fin) et ESC dans la
+		saisie de texte, ajout d'une ligne séparatrice dans la fenêtre de contrôle,
+		la procédure MouseNewPosition est fonctionnelle, correction des procédures
+		Write avec des chaines de caractères à terminaison zéro, ajout de la gestion
+		des polices de caractères vectorielles CHR.
 - 2.6a : ajout de copier (ctrl-c) et coller (ctrl-v) pour le presse-papier GTK avec TP7.CRT,
 		la gestion des touches fléchées et de fonctions F1..F10 avec <shift>, <ctrl> et <alt>,
 		d'un bouton Stop pour arrêter le programme en cours dans TP7,
@@ -240,6 +241,6 @@ programmes graphiques sur Macintosh, Unix ou Windows.
 - 1.0a : première version basée sur CarbonAda.
 
 Pascal Pignard,
-décembre 1988, juin 1994, octobre 2002, septembre-décembre 2011, janvier-mai 2012.
+décembre 1988, juin 1994, octobre 2002, septembre-décembre 2011, janvier-novembre 2012.
 http://blady.pagesperso-orange.fr
 

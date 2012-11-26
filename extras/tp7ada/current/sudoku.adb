@@ -59,7 +59,7 @@ procedure Sudoku is
       ClearViewPort;
       SetColor (TColor);
       OutTextXY (GetMaxX / 2, 0, Texte);
-      SetViewPort (ViewPort.x1, ViewPort.y1, ViewPort.x2, ViewPort.y2, ClipOn);
+      SetViewPort (ViewPort.X1, ViewPort.Y1, ViewPort.X2, ViewPort.Y2, ClipOn);
       SetTextJustify (LeftText, TopText);
    end AffText;
 
@@ -419,7 +419,7 @@ procedure Sudoku is
                if Grille.Sudoku.RetourneValeur (Ligne, Colonne) /= 0 then
                   for Ligne2 in ((Carré - 1) / 3) * 3 + 1 .. ((Carré - 1) / 3) * 3 + 3 loop
                      for Colonne2 in
-                           ((Carré - 1) rem 3) * 3 + 1 .. ((Carré - 1) rem 3) * 3 + 3
+                          ((Carré - 1) rem 3) * 3 + 1 .. ((Carré - 1) rem 3) * 3 + 3
                      loop
                         Grille.Sudoku.SupprimeValeur
                           (Ligne2,
@@ -436,7 +436,7 @@ procedure Sudoku is
          for Valeur in Grille.ChiffresPossibles'Range loop
             Vide := True;
             Double_Boucle : for Ligne in
-                  ((Carré - 1) / 3) * 3 + 1 .. ((Carré - 1) / 3) * 3 + 3
+                 ((Carré - 1) / 3) * 3 + 1 .. ((Carré - 1) / 3) * 3 + 3
             loop
                for Colonne in ((Carré - 1) rem 3) * 3 + 1 .. ((Carré - 1) rem 3) * 3 + 3 loop
                   if Grille.Sudoku.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then

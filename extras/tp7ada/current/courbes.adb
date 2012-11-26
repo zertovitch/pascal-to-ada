@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (principal)           : courbes.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 1.0a
--- DATE DE LA DERNIERE MISE A JOUR  : 5 mai 2012
+-- VERSION DU CSU                   : 1.1a
+-- DATE DE LA DERNIERE MISE A JOUR  : 24 octobre 2012
 -- ROLE DU CSU                      : Représentation graphique d'équations
 --
 --
@@ -37,7 +37,15 @@ procedure Courbes is
 
    XMin, XMax, YMin, YMax, TMin, TMax, TPas, AX, BX, AY, BY : Real;
 
-   FuncPtr            : access procedure (A, B : in out Real; C : Real);
+   type TFonction is access procedure (A, B : in out Real; C : Real);
+   type TNature is (XY, Param, Polaire);
+   type TCourbe is record
+      Nature      : TNature;
+      Fonction    : TFonction;
+      Description : String (1 .. 40);
+   end record;
+
+   FuncPtr            : TFonction;
    WindPtr1, WindPtr2 : Pointer;
    Ouvert             : Boolean;
 
@@ -56,6 +64,24 @@ procedure Courbes is
       Y := Sin (5.0 * T);
    end Cart;
 
+   procedure Cart2 (X, Y : in out Real; T : Real) is
+   begin
+      X := T * Ln (T);
+      Y := Ln (T) / T;
+   end Cart2;
+
+   procedure Cart3 (X, Y : in out Real; T : Real) is
+   begin
+      X := 3.0 * T - T ** 3;
+      Y := 2.0 * T ** 2 - T ** 4;
+   end Cart3;
+
+   procedure Cart4 (X, Y : in out Real; T : Real) is
+   begin
+      X := 5.0 * Cos (T) ** 3;
+      Y := 5.0 * Sin (T) ** 3;
+   end Cart4;
+
    procedure Pol (X, Y : in out Real; Theta : Real) is
       Rho : Real;
    begin
@@ -65,12 +91,49 @@ procedure Courbes is
       Y   := Rho * Sin (Theta);
    end Pol;
 
-   procedure MyFunc (A, B : in out Real; C : Real) is
+   procedure Pol2 (X, Y : in out Real; Theta : Real) is
+      Rho : Real;
    begin
-      --  modif->
-      A := Sin (C);
-      B := C;
-   end MyFunc;
+      Rho := Exp (Theta);
+      X   := Rho * Cos (Theta);
+      Y   := Rho * Sin (Theta);
+   end Pol2;
+
+   procedure Pol3 (X, Y : in out Real; Theta : Real) is
+      Rho : Real;
+   begin
+      Rho := Cos (Theta / 2.0);
+      X   := Rho * Cos (Theta);
+      Y   := Rho * Sin (Theta);
+   end Pol3;
+
+   procedure Pol4 (X, Y : in out Real; Theta : Real) is
+      Rho : Real;
+   begin
+      Rho := Cos (3.0 * Theta);
+      X   := Rho * Cos (Theta);
+      Y   := Rho * Sin (Theta);
+   end Pol4;
+
+   procedure Pol5 (X, Y : in out Real; Theta : Real) is
+      Rho : Real;
+   begin
+      Rho := 1.0 + Cos (Theta);
+      X   := Rho * Cos (Theta);
+      Y   := Rho * Sin (Theta);
+   end Pol5;
+
+   Fonctions : constant array (Positive range <>) of TCourbe :=
+     ((XY, YFX'Access, To_TPString (39, "y = sin(x)")),
+      (Param, Cart'Access, To_TPString (39, "x = cos (3t); y = sin(5t)")),
+      (Param, Cart2'Access, To_TPString (39, "x = t ln (t); y = ln (t) / t")),
+      (Param, Cart3'Access, To_TPString (39, "x = 3t-t^3; y = 2t^2-t^4")),
+      (Param, Cart4'Access, To_TPString (39, "x = 5*cos (t)^3; y = 5*sin (t)^3")),
+      (Polaire, Pol'Access, To_TPString (39, "r = cos (2t) / (1+2*sin (t))")),
+      (Polaire, Pol2'Access, To_TPString (39, "r = exp (t)")),
+      (Polaire, Pol3'Access, To_TPString (39, "r = cos (t/2)")),
+      (Polaire, Pol4'Access, To_TPString (39, "r = cos (3t)")),
+      (Polaire, Pol5'Access, To_TPString (39, "r = 1+cos (2t)")));
 
    type TMenu is array (Natural range <>) of String (1 .. 6);
 
@@ -95,7 +158,7 @@ procedure Courbes is
       ClearViewPort;
       SetColor (TColor);
       OutTextXY (GetMaxX / 2, 5, Texte);
-      SetViewPort (ViewPort.x1, ViewPort.y1, ViewPort.x2, ViewPort.y2, ClipOn);
+      SetViewPort (ViewPort.X1, ViewPort.Y1, ViewPort.X2, ViewPort.Y2, ClipOn);
    end AffText;
 
    procedure GetText (Comment : String; Texte : out String) is
@@ -376,6 +439,7 @@ procedure Courbes is
 
    procedure Ouvrir is
       Ch               : Char;
+      Choix            : Integer;
       TStr             : String (1 .. 256);
       Axes             : Boolean;
       EchX, EchY, X, Y : Real;
@@ -415,6 +479,15 @@ procedure Courbes is
       RestoreCrtMode;
       loop
          loop
+            Writeln ("Courbes disponibles :");
+            for ind in Fonctions'Range loop
+               Writeln (ind'Img + " : " + Fonctions (ind).Description);
+            end loop;
+            Write ("Choix : ");
+            Readln (Choix);
+            exit when (Choix >= 1) and (Choix <= Fonctions'Last);
+         end loop;
+         loop
             Write ("X minimum: ");
             Readln (XMin);
             Write ("X maximum: ");
@@ -451,33 +524,18 @@ procedure Courbes is
                exit when -AY * EchY > 2.0;
             end loop;
          end if;
-         loop
-            Writeln ("Courbes :");
-            Writeln ("        (Y)=f(x)");
-            Writeln ("        (C)artésienne");
-            Write ("        (P)olaire     : ");
-            Readln (Ch);
-            Ch := UpCase (Ch);
-            exit when (Ch = 'Y') or (Ch = 'C') or (Ch = 'P') or (Ch = 'M');
-         end loop;
-         if Ch = 'Y' then
-            TMin    := XMin;
-            TMax    := XMax;
-            TPas    := 1.0 / AX;
-            FuncPtr := YFX'Access;
-         elsif Ch = 'M' then
-            TMin    := XMin;
-            TMax    := XMax;
-            TPas    := 1.0 / AX;
-            FuncPtr := MyFunc'Access;
-         else
-            if Ch = 'C' then
+         case Fonctions (Choix).Nature is
+            when XY =>
+               TMin := XMin;
+               TMax := XMax;
+               TPas := 1.0 / AX;
+            when Param =>
                Assign_String (TStr, "T ");
-               FuncPtr := Cart'Access;
-            else
+            when Polaire =>
                Assign_String (TStr, "Théta ");
-               FuncPtr := Pol'Access;
-            end if;
+         end case;
+         FuncPtr := Fonctions (Choix).Fonction;
+         if Fonctions (Choix).Nature in Param .. Polaire then
             loop
                Write (TStr);
                Write (" minimum: ");
@@ -663,6 +721,7 @@ begin
       end loop;
       ClearViewPort;
       SetViewPort (0, 0, GetMaxX, GetMaxY, ClipOn);
+      MouseNewPosition (GetMaxX / 2, GetMaxY / 2);
    end if;
    AffText ("Choisissez une option du menu!");
    Ouvert := False;
