@@ -87,7 +87,7 @@ begin
                  Error_Recovery_Flag,
 -- END OF UMASS CODES.
 		 Extension,
-         Prefix_All
+         Prefix_All -- GdM, added 20-Nov-2013
          );
 
   New_Line;
@@ -104,7 +104,11 @@ begin
   Put_Line ("         Error_Recovery => " &
                         Value (Mixed (Switch'Image(Error_Recovery_Flag))) & ",");
 -- END OF UMASS CODES.
-  Put_Line ("         Extension      => """ & Value (Extension) & """);");
+  Put_Line ("         Extension      => """ & Value (Extension) & """,");
+  
+  -- GdM, added 20-Nov-2013
+  Put_Line ("         Prefix_All     => " &
+                        Value (Mixed (Switch'Image(Prefix_All))) & ");");
   New_Line;
 
   if C_Lex_Flag = On then
@@ -128,6 +132,10 @@ begin
     Options := Options & Create ("e");
   end if;
 -- END OF UMASS CODES.
+
+  if Prefix_All = On then -- GdM, added 20-Nov-2013
+    Options := Options & Create ("x");
+  end if;
 
   Set_File_Names (Value (Input_File), Value(Extension));
   Set_Options    (Value (Options));
