@@ -34,7 +34,7 @@ package body SKELETON_MANAGER is
   function YYLex_name return String is
   begin
     if Misc_defs.Prefix_all then
-      return MISC.BASENAME_String & "_YYLex";
+      return MISC.BASENAME_String & "_Lex";
     else
       return "YYLex";
     end if;
