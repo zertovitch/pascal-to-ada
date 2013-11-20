@@ -327,7 +327,7 @@ package MISC_DEFS is
   --   listing backtracking states
   -- continued_action - true if this rule's action is to "fall through" to
   --                    the next rule's action (i.e., the '|' action)
-  -- Prefix_all - if True (-x), prefix function YYlex as well: [BASENAME]_YYLex 
+  -- Prefix_all - if True (-x), prefix function YYLex as well: [BASENAME]_YYLex 
   --            GdM, added 20-Nov-2013
 
   Prefix_all, -- GdM, added 20-Nov-2013

@@ -34,7 +34,7 @@ Use .a files in GNAT with gnatchop
   -b  generate "lex.backtrack" file listing backtracking states
   -E  indicate whether or not the aflex generated codes will be used by Ayacc extension.
       Ayacc extension has more power in error recovery.
-
+  -x  prefix all: prefix function YYLex as well: [BASENAME]_YYLex 
 
 ## DOC
 
