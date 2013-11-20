@@ -59,7 +59,8 @@ procedure Initialize is
 -- UMASS CODES :
   Error_Recovery_Flag,
 -- END OF UMASS CODES.
-  Verbose_Flag : Switch;
+  Verbose_Flag,
+  Prefix_All  : Switch;
 
   Invalid_Command_Line : exception;
 
@@ -71,7 +72,9 @@ procedure Initialize is
 -- UMASS CODES : 
 			   Error_Recovery : out Switch;
 -- END OF UMASS CODES.
-			   Extension      : out String_Type) is separate;
+			   Extension      : out String_Type;
+               Prefix_All     : out Switch
+               ) is separate;
   
 begin
 
@@ -83,7 +86,9 @@ begin
 -- UMASS CODES :
                  Error_Recovery_Flag,
 -- END OF UMASS CODES.
-		 Extension);
+		 Extension,
+         Prefix_All
+         );
 
   New_Line;
   Put_Line ("  Ayacc (File           => """ & Value (Input_File) & """,");
