@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (principal)           : sudoku.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 1.0a
--- DATE DE LA DERNIERE MISE A JOUR  : 5 mai 2012
+-- VERSION DU CSU                   : 3.0a
+-- DATE DE LA DERNIERE MISE A JOUR  : 12 janvier 2014
 -- ROLE DU CSU                      : Résolution de Sudoku
 --
 --
@@ -13,7 +13,7 @@
 --
 -- NOTES                            :
 --
--- COPYRIGHT                        : (c) Pascal Pignard 2010-2012
+-- COPYRIGHT                        : (c) Pascal Pignard 2010-2014
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
@@ -34,6 +34,7 @@ procedure Sudoku is
       "Quitte");
 
    GraphMode, GraphDriver, I, TColor, WColor, AColor : Integer;
+   Pause                                             : constant Word := 500;
 
    type TMenu is array (Natural range <>) of String (1 .. 6);
 
@@ -144,7 +145,6 @@ procedure Sudoku is
       TH : Integer;
       TW : Integer;
    begin
-      SetTextStyle (DefaultFont, HorizDir, 3);
       TH := TextHeight (+Ch);
       TW := TextWidth (+Ch);
       Bar
@@ -153,7 +153,6 @@ procedure Sudoku is
          100 + (Colonne + 1) * TW,
          100 + (Ligne + 1) * TH);
       OutTextXY (100 + Colonne * TW, 100 + Ligne * TH, +Ch);
-      SetTextStyle (DefaultFont, HorizDir, 1);
    end Affiche_Chiffre;
 
    package Grille is
@@ -161,91 +160,249 @@ procedure Sudoku is
       subtype Indice is Integer range 1 .. 9;
       type TGrille is array (Indice, Indice) of Chiffre;
       type ChiffresPossibles is array (Chiffre range 1 .. 9) of Boolean;
-      type TableauValeursPossibles is array (Indice, Indice) of ChiffresPossibles;
-      function NumCarre (Ligne, Colonne : Indice) return Indice;
+      function NumCarré (Ligne, Colonne : Indice) return Indice;
+      function EstAligné
+        (DansCarré        : Indice;
+         Valeur           : Chiffre;
+         SaufLig, SaufCol : Chiffre)
+         return             Boolean;
       procedure Imprime;
-      protected Sudoku is
-         function RetourneValeur (Ligne, Colonne : Indice) return Chiffre;
-         procedure PositionneValeur (Ligne, Colonne : Indice; Valeur : Chiffre);
-         procedure PositionneGrille (UneGrille : TGrille);
-         function RetourneValeursPossibles (Ligne, Colonne : Indice) return ChiffresPossibles;
-         procedure SupprimeValeur (Ligne, Colonne : Indice; Valeur : Chiffre);
-         procedure ConstruitValeursPossibles;
-      private
-         Sudoku           : TGrille                 := (others => (others => 0));
-         ValeursPossibles : TableauValeursPossibles :=
-           (others => (others => (others => True)));
-      end Sudoku;
+      function Résolu return Boolean;
+      procedure Prend (Ligne, Colonne : Indice);
+      procedure Libère (Ligne, Colonne : Indice);
+      function RetourneValeur (Ligne, Colonne : Indice) return Chiffre;
+      procedure PositionneValeur (Ligne, Colonne : Indice; Valeur : Chiffre);
+      procedure InitialiseGrille (UneGrille : TGrille);
+      function RetourneValeursPossibles (Ligne, Colonne : Indice) return ChiffresPossibles;
+      procedure SupprimeValeur (Ligne, Colonne : Indice; Valeur : Chiffre);
    end Grille;
 
    package body Grille is
-      function NumCarre (Ligne, Colonne : Indice) return Indice is
+      type TableauValeursPossibles is array (Indice, Indice) of ChiffresPossibles;
+      Sudoku           : TGrille                 := (others => (others => 0));
+      ValeursPossibles : TableauValeursPossibles := (others => (others => (others => True)));
+
+      protected type Cases is
+         entry Prend;
+         procedure Libère;
+      private
+         Verrouillé : Boolean := False;
+      end Cases;
+
+      protected body Cases is
+         entry Prend when not Verrouillé is
+         begin
+            Verrouillé := True;
+         end Prend;
+         procedure Libère is
+         begin
+            Verrouillé := False;
+         end Libère;
+      end Cases;
+
+      type TVerrou is array (Indice, Indice) of Cases;
+      Verrous : TVerrou;
+
+      procedure Prend (Ligne, Colonne : Indice) is
+      begin
+         Verrous (Ligne, Colonne).Prend;
+      end Prend;
+
+      procedure Libère (Ligne, Colonne : Indice) is
+      begin
+         Verrous (Ligne, Colonne).Libère;
+      end Libère;
+
+      function NumCarré (Ligne, Colonne : Indice) return Indice is
       begin
          return ((Ligne - 1) / 3) * 3 + ((Colonne - 1) / 3) + 1;
-      end NumCarre;
+      end NumCarré;
 
-      protected body Sudoku is
-         function RetourneValeur (Ligne, Colonne : Indice) return Chiffre is
-         begin
-            return Sudoku (Ligne, Colonne);
-         end RetourneValeur;
-         procedure PositionneValeur (Ligne, Colonne : Indice; Valeur : Chiffre) is
-         begin
-            Writeln ("Positionne valeur : " & Ligne'Img & ", " & Colonne'Img & ", " & Valeur'Img);
-            Affiche_Chiffre (Ligne, Colonne, Valeur);
-            Sudoku (Ligne, Colonne) := Valeur;
-            --              delay 2.0;
-         end PositionneValeur;
-         procedure PositionneGrille (UneGrille : TGrille) is
-         begin
-            Sudoku := UneGrille;
-         end PositionneGrille;
-         function RetourneValeursPossibles (Ligne, Colonne : Indice) return ChiffresPossibles is
-         begin
-            return ValeursPossibles (Ligne, Colonne);
-         end RetourneValeursPossibles;
-         procedure SupprimeValeur (Ligne, Colonne : Indice; Valeur : Chiffre) is
-            Trouvé : Chiffre := 0;
-            Unique : Boolean := True;
-         begin
-            if RetourneValeur (Ligne, Colonne) = 0 then
-               ValeursPossibles (Ligne, Colonne) (Valeur)  := False;
-               for V in ChiffresPossibles'Range loop
-                  if ValeursPossibles (Ligne, Colonne) (V) then
-                     if Trouvé = 0 then
-                        Trouvé := V;
-                     else
-                        Unique := False;
-                     end if;
-                  end if;
-               end loop;
-               if Unique and then Trouvé /= 0 then
-                  PositionneValeur (Ligne, Colonne, Trouvé);
-               end if;
-            end if;
-         end SupprimeValeur;
-         procedure ConstruitValeursPossibles is
-         begin
-            for Ligne in Indice loop
-               for Colonne in Indice loop
-                  if RetourneValeur (Ligne, Colonne) /= 0 then
-                     ValeursPossibles (Ligne, Colonne) := (others => False);
+      function EstAligné
+        (DansCarré        : Indice;
+         Valeur           : Chiffre;
+         SaufLig, SaufCol : Chiffre)
+         return             Boolean
+      is
+         NbVal, ValCar : Natural := 0;
+      begin
+         for Ligne in ((DansCarré - 1) / 3) * 3 + 1 .. ((DansCarré - 1) / 3) * 3 + 3 loop
+            for Colonne in
+                 ((DansCarré - 1) rem 3) * 3 + 1 .. ((DansCarré - 1) rem 3) * 3 + 3
+            loop
+               if Grille.RetourneValeur (Ligne, Colonne) = Valeur
+                 or else (Grille.RetourneValeur (Ligne, Colonne) = 0
+                         and then Grille.RetourneValeursPossibles (Ligne, Colonne) (Valeur))
+               then
+                  if Ligne = SaufLig or Colonne = SaufCol then
+                     NbVal := NbVal + 1;
                   else
-                     ValeursPossibles (Ligne, Colonne) := (others => True);
+                     ValCar := ValCar + 1;
                   end if;
-               end loop;
+               end if;
             end loop;
-         end ConstruitValeursPossibles;
-      end Sudoku;
+         end loop;
+         return NbVal > 1 and ValCar = 0;
+      end EstAligné;
+
+      procedure SupprimeValeurLigne (Ligne : Indice; Valeur : Chiffre) is
+      begin
+         -- Règle 1' : supprimer le chiffre des cases de la même ligne
+         for Colonne in Grille.Indice loop
+            if Grille.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
+               Writeln ("Régle 1' :" & Ligne'Img & ',' & Colonne'Img & ',' & Valeur'Img);
+               Grille.SupprimeValeur (Ligne, Colonne, Valeur);
+            end if;
+         end loop;
+      end SupprimeValeurLigne;
+
+      procedure SupprimeValeurColonne (Colonne : Indice; Valeur : Chiffre) is
+      begin
+         -- Règle 2' : supprimer le chiffre des cases de la même colonne
+         for Ligne in Grille.Indice loop
+            if Grille.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
+               Writeln ("Régle 2' :" & Ligne'Img & ',' & Colonne'Img & ',' & Valeur'Img);
+               Grille.SupprimeValeur (Ligne, Colonne, Valeur);
+            end if;
+         end loop;
+      end SupprimeValeurColonne;
+
+      procedure SupprimeValeurCarré (Ligne, Colonne : Indice; Valeur : Chiffre) is
+         Carré : constant Indice := NumCarré (Ligne, Colonne);
+      begin
+         -- Règle 3' : supprimer le chiffre des cases du même carré
+         for Ligne in ((Carré - 1) / 3) * 3 + 1 .. ((Carré - 1) / 3) * 3 + 3 loop
+            for Colonne in ((Carré - 1) rem 3) * 3 + 1 .. ((Carré - 1) rem 3) * 3 + 3 loop
+               if Grille.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
+                  Writeln ("Régle 3' : " & Ligne'Img & ',' & Colonne'Img & ',' & Valeur'Img);
+                  Grille.SupprimeValeur (Ligne, Colonne, Valeur);
+               end if;
+            end loop;
+         end loop;
+      end SupprimeValeurCarré;
+
+      function RetourneValeur (Ligne, Colonne : Indice) return Chiffre is
+      begin
+         return Sudoku (Ligne, Colonne);
+      end RetourneValeur;
+
+      procedure PositionneValeur (Ligne, Colonne : Indice; Valeur : Chiffre) is
+      begin
+         Writeln ("Positionne valeur : " & Ligne'Img & ',' & Colonne'Img & ',' & Valeur'Img);
+         Sudoku (Ligne, Colonne)           := Valeur;
+         ValeursPossibles (Ligne, Colonne) := (others => False);
+         SupprimeValeurLigne (Ligne, Valeur);
+         SupprimeValeurColonne (Colonne, Valeur);
+         SupprimeValeurCarré (Ligne, Colonne, Valeur);
+         Affiche_Chiffre (Ligne, Colonne, Valeur);
+         --           Delay1 (Pause);
+      end PositionneValeur;
+
+      procedure InitialiseGrille (UneGrille : TGrille) is
+      begin
+         Sudoku := UneGrille;
+         for Ligne in Indice loop
+            for Colonne in Indice loop
+               Grille.Libère (Ligne, Colonne);
+               if RetourneValeur (Ligne, Colonne) /= 0 then
+                  ValeursPossibles (Ligne, Colonne) := (others => False);
+               else
+                  ValeursPossibles (Ligne, Colonne) := (others => True);
+               end if;
+            end loop;
+         end loop;
+      end InitialiseGrille;
+
+      function RetourneValeursPossibles (Ligne, Colonne : Indice) return ChiffresPossibles is
+      begin
+         return ValeursPossibles (Ligne, Colonne);
+      end RetourneValeursPossibles;
+
+      procedure SupprimeValeur (Ligne, Colonne : Indice; Valeur : Chiffre) is
+      begin
+         ValeursPossibles (Ligne, Colonne) (Valeur)  := False;
+      end SupprimeValeur;
+
       procedure Imprime is
       begin
          for Index1 in TGrille'Range (1) loop
             for Index2 in TGrille'Range (2) loop
-               Write (Sudoku.RetourneValeur (Index1, Index2)'Img);
+               Write (RetourneValeur (Index1, Index2)'Img);
             end loop;
             Writeln;
          end loop;
       end Imprime;
+
+      function Résolu return Boolean is
+         function VérifLigne (Ligne : Indice) return Boolean is
+            Tab_Vérif : array (Indice) of Chiffre := (1, 2, 3, 4, 5, 6, 7, 8, 9);
+         begin
+            for Colonne in Indice loop
+               if Grille.RetourneValeur (Ligne, Colonne) = 0 then
+                  return False;
+               end if;
+               if Grille.RetourneValeur (Ligne, Colonne) =
+                  Tab_Vérif (Grille.RetourneValeur (Ligne, Colonne))
+               then
+                  Tab_Vérif (Grille.RetourneValeur (Ligne, Colonne))  := 0;
+               else
+                  return False;
+               end if;
+            end loop;
+            return True;
+         end VérifLigne;
+         function VérifColonne (Colonne : Indice) return Boolean is
+            Tab_Vérif : array (Indice) of Chiffre := (1, 2, 3, 4, 5, 6, 7, 8, 9);
+         begin
+            for Ligne in Indice loop
+               if Grille.RetourneValeur (Ligne, Colonne) = 0 then
+                  return False;
+               end if;
+               if Grille.RetourneValeur (Ligne, Colonne) =
+                  Tab_Vérif (Grille.RetourneValeur (Ligne, Colonne))
+               then
+                  Tab_Vérif (Grille.RetourneValeur (Ligne, Colonne))  := 0;
+               else
+                  return False;
+               end if;
+            end loop;
+            return True;
+         end VérifColonne;
+         function VérifCarré (Ligne, Colonne : Natural) return Boolean is
+            Tab_Vérif : array (Indice) of Chiffre := (1, 2, 3, 4, 5, 6, 7, 8, 9);
+         begin
+            for Ligne2 in Ligne + 1 .. Ligne + 3 loop
+               for Colonne2 in Colonne + 1 .. Colonne + 3 loop
+                  if Grille.RetourneValeur (Ligne2, Colonne2) = 0 then
+                     return False;
+                  end if;
+                  if Grille.RetourneValeur (Ligne2, Colonne2) =
+                     Tab_Vérif (Grille.RetourneValeur (Ligne2, Colonne2))
+                  then
+                     Tab_Vérif (Grille.RetourneValeur (Ligne2, Colonne2))  := 0;
+                  else
+                     return False;
+                  end if;
+               end loop;
+            end loop;
+            return True;
+         end VérifCarré;
+      begin
+         for Ind in Indice loop
+            if not VérifLigne (Ind) or not VérifColonne (Ind) then
+               return False;
+            end if;
+         end loop;
+         for Lig in 0 .. 2 loop
+            for Col in 0 .. 2 loop
+               if not VérifCarré (Lig * 3, Col * 3) then
+                  return False;
+               end if;
+            end loop;
+         end loop;
+         return True;
+      end Résolu;
+
    end Grille;
 
    task type RésoudLigne (Ligne : Grille.Indice) is
@@ -253,227 +410,327 @@ procedure Sudoku is
    end RésoudLigne;
 
    task body RésoudLigne is
-      Fini, Vide : Boolean;
-      Position   : Grille.Indice;
-      type Possibilités is (Pas_Présent, Unique, Unique_Carré, Multiple);
-      type Status is record
-         Carré    : Grille.Indice;
-         Présence : Possibilités := Pas_Présent;
-      end record;
-      Appartenance : array (Grille.ChiffresPossibles'Range) of Status;
+      Fini               : Boolean;
+      Carré              : Grille.Indice;
+      ValeurAPositionner : Grille.Chiffre;
+      Seul               : Boolean;
    begin
       loop
+
       -- Règle 1 : supprimer le chiffre des cases de la même ligne
          for Colonne in Grille.Indice loop
-            if Grille.Sudoku.RetourneValeur (Ligne, Colonne) /= 0 then
+            Grille.Prend (Ligne, Colonne);
+            if Grille.RetourneValeur (Ligne, Colonne) /= 0 then
                for Colonne2 in Grille.Indice loop
-                  Grille.Sudoku.SupprimeValeur
-                    (Ligne,
-                     Colonne2,
-                     Grille.Sudoku.RetourneValeur (Ligne, Colonne));
+                  if Grille.RetourneValeursPossibles (Ligne, Colonne2) (Grille.RetourneValeur
+                                                                           (Ligne,
+                                                                            Colonne))
+                  then
+                     Writeln
+                       ("Régle 1 :" &
+                        Ligne'Img &
+                        ',' &
+                        Colonne2'Img &
+                        ',' &
+                        Grille.RetourneValeur (Ligne, Colonne)'Img);
+                     Grille.SupprimeValeur
+                       (Ligne,
+                        Colonne2,
+                        Grille.RetourneValeur (Ligne, Colonne));
+                  end if;
                end loop;
             end if;
          end loop;
+
          -- Règle 4 : valider si le chiffre est le seul possible de la ligne
-         --         for Valeur in Grille.Chiffre loop  -- pas d'erreur -v pour la valeur 0 !!!
-         for Valeur in Grille.ChiffresPossibles'Range loop
-            Vide := True;
-            for Colonne in Grille.Indice loop
-               if Grille.Sudoku.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
-                  if Vide then
-                     Position := Colonne;
-                     Vide     := False;
-                  else
-                     Vide := True;
-                     exit;
+         for Colonne in Grille.Indice loop
+            if Grille.RetourneValeur (Ligne, Colonne) = 0 then
+               ValeurAPositionner := 0;
+               for Valeur in Grille.ChiffresPossibles'Range loop
+                  if Grille.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
+                     Seul := True;
+                     for Colonne2 in Grille.Indice loop
+                        if Colonne2 /= Colonne then
+                           if Grille.RetourneValeursPossibles (Ligne, Colonne2) (Valeur) then
+                              Seul := False;
+                              exit;
+                           end if;
+                        end if;
+                     end loop;
+                     if Seul then
+                        if ValeurAPositionner = 0 then
+                           ValeurAPositionner := Valeur;
+                        else
+                           ValeurAPositionner := 0;
+                        end if;
+                     end if;
                   end if;
+               end loop;
+               if ValeurAPositionner /= 0 then
+                  Writeln
+                    ("Régle 4 :" & Ligne'Img & ',' & Colonne'Img & ',' & ValeurAPositionner'Img);
+                  Grille.PositionneValeur (Ligne, Colonne, ValeurAPositionner);
                end if;
-            end loop;
-            if not Vide and then Grille.Sudoku.RetourneValeur (Ligne, Position) = 0 then
-               Write ("Régle 4 : ");
-               Grille.Sudoku.PositionneValeur (Ligne, Position, Valeur);
             end if;
          end loop;
-         -- Règle 7 : Dans une ligne si une valeur possible n'apparait que dans un carré
-         --           alors supprimer les valeurs du carré hors de la ligne
+
+         -- Règle 7 : Dans un carré si une valeur possible n'apparait que sur une ligne
+         --           alors supprimer les valeurs de la ligne hors du carré
          for Colonne in Grille.Indice loop
-            for Valeur in Grille.ChiffresPossibles'Range loop
-               if Grille.Sudoku.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
-                  case Appartenance (Valeur).Présence is
-                     when Pas_Présent =>
-                        Appartenance (Valeur) := (Grille.NumCarre (Ligne, Colonne), Unique_Carré);
-                     when Unique =>
-                        null;
-                     when Unique_Carré =>
-                        if Appartenance (Valeur).Carré /= Grille.NumCarre (Ligne, Colonne) then
-                           Appartenance (Valeur).Présence := Multiple;
-                        end if;
-                     when Multiple =>
-                        null;
-                  end case;
-               end if;
-               if Grille.Sudoku.RetourneValeur (Ligne, Colonne) = Valeur then
-                  Appartenance (Valeur).Présence := Multiple;
-               end if;
-            end loop;
-         end loop;
-         for Valeur in Grille.ChiffresPossibles'Range loop
-            if Appartenance (Valeur).Présence = Unique_Carré then
-               Writeln
-                 ("Régle 7 : Ligne " &
-                  Ligne'Img &
-                  " Carré " &
-                  Appartenance (Valeur).Carré'Img &
-                  ", Valeur " &
-                  Valeur'Img);
-               for Colonne in Grille.Indice loop
-                  if Grille.NumCarre (Ligne, Colonne) /= Appartenance (Valeur).Carré then
-                     Grille.Sudoku.SupprimeValeur (Ligne, Colonne, Valeur);
+            if Grille.RetourneValeur (Ligne, Colonne) = 0 then
+               for Valeur in Grille.ChiffresPossibles'Range loop
+                  if Grille.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
+                     Carré := Grille.NumCarré (Ligne, Colonne);
+                     if Grille.EstAligné (Carré, Valeur, Ligne, 0) then
+                        for Colonne in Grille.Indice loop
+                           if Grille.NumCarré (Ligne, Colonne) /= Carré then
+                              if Grille.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
+                                 Grille.SupprimeValeur (Ligne, Colonne, Valeur);
+                                 Writeln
+                                   ("Régle 7 : Ligne " &
+                                    Ligne'Img &
+                                    " Colonne " &
+                                    Colonne'Img &
+                                    " Carré " &
+                                    Carré'Img &
+                                    ", Valeur " &
+                                    Valeur'Img);
+                              end if;
+                           end if;
+                        end loop;
+                     end if;
                   end if;
                end loop;
             end if;
-            Appartenance (Valeur).Présence := Pas_Présent;
          end loop;
 
          -- Vérifie si la ligne est complète
          Fini := True;
          for Colonne in Grille.Indice loop
-            if Grille.Sudoku.RetourneValeur (Ligne, Colonne) = 0 then
+            if Grille.RetourneValeur (Ligne, Colonne) = 0 then
                Fini := False;
             end if;
+            Grille.Libère (Ligne, Colonne);
          end loop;
          exit when Fini;
+         Delay1 (Pause);
       end loop;
       Writeln ("Tâche ligne " & Ligne'Img & " est complète.");
       accept Terminé;
    end RésoudLigne;
 
    task type RésoudColonne (Colonne : Grille.Indice) is
-      entry Terminé;
    end RésoudColonne;
 
    task body RésoudColonne is
-      Fini, Vide : Boolean;
-      Position   : Grille.Indice;
+      Fini               : Boolean;
+      Carré              : Grille.Indice;
+      Seul               : Boolean;
+      ValeurAPositionner : Grille.Chiffre;
    begin
       loop
+
       -- Règle 2 : supprimer le chiffre des cases de la même colonne
          for Ligne in Grille.Indice loop
-            if Grille.Sudoku.RetourneValeur (Ligne, Colonne) /= 0 then
+            Grille.Prend (Ligne, Colonne);
+            if Grille.RetourneValeur (Ligne, Colonne) /= 0 then
                for Ligne2 in Grille.Indice loop
-                  Grille.Sudoku.SupprimeValeur
-                    (Ligne2,
-                     Colonne,
-                     Grille.Sudoku.RetourneValeur (Ligne, Colonne));
+                  if Grille.RetourneValeursPossibles (Ligne2, Colonne) (Grille.RetourneValeur
+                                                                           (Ligne,
+                                                                            Colonne))
+                  then
+                     Writeln
+                       ("Régle 2 :" &
+                        Ligne'Img &
+                        ',' &
+                        Colonne'Img &
+                        ',' &
+                        Grille.RetourneValeur (Ligne, Colonne)'Img);
+                     Grille.SupprimeValeur
+                       (Ligne2,
+                        Colonne,
+                        Grille.RetourneValeur (Ligne, Colonne));
+                  end if;
                end loop;
             end if;
          end loop;
+
          -- Règle 5 : valider si le chiffre est le seul possible de la colonne
-         --         for Valeur in Grille.Chiffre loop  -- pas d'erreur -v pour la valeur 0 !!!
-         for Valeur in Grille.ChiffresPossibles'Range loop
-            Vide := True;
-            for Ligne in Grille.Indice loop
-               if Grille.Sudoku.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
-                  if Vide then
-                     Position := Ligne;
-                     Vide     := False;
-                  else
-                     Vide := True;
-                     exit;
+         for Ligne in Grille.Indice loop
+            if Grille.RetourneValeur (Ligne, Colonne) = 0 then
+               ValeurAPositionner := 0;
+               for Valeur in Grille.ChiffresPossibles'Range loop
+                  if Grille.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
+                     Seul := True;
+                     for Ligne2 in Grille.Indice loop
+                        if Ligne2 /= Ligne then
+                           if Grille.RetourneValeursPossibles (Ligne2, Colonne) (Valeur) then
+                              Seul := False;
+                              exit;
+                           end if;
+                        end if;
+                     end loop;
+                     if Seul then
+                        if ValeurAPositionner = 0 then
+                           ValeurAPositionner := Valeur;
+                        else
+                           ValeurAPositionner := 0;
+                        end if;
+                     end if;
                   end if;
+               end loop;
+               if ValeurAPositionner /= 0 then
+                  Writeln
+                    ("Régle 5 :" & Ligne'Img & ',' & Colonne'Img & ',' & ValeurAPositionner'Img);
+                  Grille.PositionneValeur (Ligne, Colonne, ValeurAPositionner);
                end if;
-            end loop;
-            if not Vide and then Grille.Sudoku.RetourneValeur (Position, Colonne) = 0 then
-               Write ("Régle 5 : ");
-               Grille.Sudoku.PositionneValeur (Position, Colonne, Valeur);
+            end if;
+         end loop;
+
+         -- Règle 8 : Dans un carré si une valeur possible n'apparait que sur une colonne
+         --           alors supprimer les valeurs de la colonne hors du carré
+         for Ligne in Grille.Indice loop
+            if Grille.RetourneValeur (Ligne, Colonne) = 0 then
+               for Valeur in Grille.ChiffresPossibles'Range loop
+                  if Grille.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
+                     Carré := Grille.NumCarré (Ligne, Colonne);
+                     if Grille.EstAligné (Carré, Valeur, 0, Colonne) then
+                        for Ligne in Grille.Indice loop
+                           if Grille.NumCarré (Ligne, Colonne) /= Carré then
+                              if Grille.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
+                                 Grille.SupprimeValeur (Ligne, Colonne, Valeur);
+                                 Writeln
+                                   ("Régle 8 : Ligne " &
+                                    Ligne'Img &
+                                    " Colonne " &
+                                    Colonne'Img &
+                                    " Carré " &
+                                    Carré'Img &
+                                    ", Valeur " &
+                                    Valeur'Img);
+                              end if;
+                           end if;
+                        end loop;
+                     end if;
+                  end if;
+               end loop;
             end if;
          end loop;
 
          -- Vérifie si la colonne est complète
          Fini := True;
          for Ligne in Grille.Indice loop
-            if Grille.Sudoku.RetourneValeur (Ligne, Colonne) = 0 then
+            if Grille.RetourneValeur (Ligne, Colonne) = 0 then
                Fini := False;
             end if;
+            Grille.Libère (Ligne, Colonne);
          end loop;
          exit when Fini;
+         Delay1 (Pause);
       end loop;
       Writeln ("Tâche colonne " & Colonne'Img & " est complète.");
-      accept Terminé;
    end RésoudColonne;
 
    task type RésoudCarré (Carré : Grille.Indice) is
-      entry Terminé;
    end RésoudCarré;
 
    task body RésoudCarré is
-      Vide, Fini      : Boolean;
-      PositionLigne   : Grille.Indice;
-      PositionColonne : Grille.Indice;
+      Fini               : Boolean;
+      Seul               : Boolean;
+      ValeurAPositionner : Grille.Chiffre;
    begin
       loop
+
       -- Règle 3 : supprimer le chiffre des cases du même carré
-      --         for Carré in Grille.Indice loop
          for Ligne in ((Carré - 1) / 3) * 3 + 1 .. ((Carré - 1) / 3) * 3 + 3 loop
             for Colonne in ((Carré - 1) rem 3) * 3 + 1 .. ((Carré - 1) rem 3) * 3 + 3 loop
-               if Grille.Sudoku.RetourneValeur (Ligne, Colonne) /= 0 then
+               Grille.Prend (Ligne, Colonne);
+               if Grille.RetourneValeur (Ligne, Colonne) /= 0 then
                   for Ligne2 in ((Carré - 1) / 3) * 3 + 1 .. ((Carré - 1) / 3) * 3 + 3 loop
                      for Colonne2 in
                           ((Carré - 1) rem 3) * 3 + 1 .. ((Carré - 1) rem 3) * 3 + 3
                      loop
-                        Grille.Sudoku.SupprimeValeur
-                          (Ligne2,
-                           Colonne2,
-                           Grille.Sudoku.RetourneValeur (Ligne, Colonne));
+                        if Grille.RetourneValeursPossibles (Ligne2, Colonne2) (
+                             Grille.RetourneValeur (Ligne, Colonne))
+                        then
+                           Writeln
+                             ("Régle 3 : " &
+                              Ligne2'Img &
+                              ',' &
+                              Colonne2'Img &
+                              ',' &
+                              Grille.RetourneValeur (Ligne, Colonne)'Img);
+                           Grille.SupprimeValeur
+                             (Ligne2,
+                              Colonne2,
+                              Grille.RetourneValeur (Ligne, Colonne));
+                        end if;
                      end loop;
                   end loop;
                end if;
             end loop;
          end loop;
-         --         end loop;
+
          -- Règle 6 : valider si le chiffre est le seul possible du carré
-         --         for Valeur in Grille.Chiffre loop  -- pas d'erreur -v pour la valeur 0 !!!
-         for Valeur in Grille.ChiffresPossibles'Range loop
-            Vide := True;
-            Double_Boucle : for Ligne in
-                 ((Carré - 1) / 3) * 3 + 1 .. ((Carré - 1) / 3) * 3 + 3
-            loop
-               for Colonne in ((Carré - 1) rem 3) * 3 + 1 .. ((Carré - 1) rem 3) * 3 + 3 loop
-                  if Grille.Sudoku.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
-                     if Vide then
-                        PositionLigne   := Ligne;
-                        PositionColonne := Colonne;
-                        Vide            := False;
-                     else
-                        Vide := True;
-                        exit Double_Boucle;
+         for Ligne in ((Carré - 1) / 3) * 3 + 1 .. ((Carré - 1) / 3) * 3 + 3 loop
+            for Colonne in ((Carré - 1) rem 3) * 3 + 1 .. ((Carré - 1) rem 3) * 3 + 3 loop
+               if Grille.RetourneValeur (Ligne, Colonne) = 0 then
+                  ValeurAPositionner := 0;
+                  for Valeur in Grille.ChiffresPossibles'Range loop
+                     if Grille.RetourneValeursPossibles (Ligne, Colonne) (Valeur) then
+                        Seul := True;
+                        DoubleBoucle : for Ligne2 in
+                             ((Carré - 1) / 3) * 3 + 1 .. ((Carré - 1) / 3) * 3 + 3
+                        loop
+                           for Colonne2 in
+                                ((Carré - 1) rem 3) * 3 + 1 .. ((Carré - 1) rem 3) * 3 + 3
+                           loop
+                              if Ligne2 /= Ligne or Colonne2 /= Colonne then
+                                 if Grille.RetourneValeursPossibles (Ligne2, Colonne2) (Valeur)
+                                 then
+                                    Seul := False;
+                                    exit DoubleBoucle;
+                                 end if;
+                              end if;
+                           end loop;
+                        end loop DoubleBoucle;
+                        if Seul then
+                           if ValeurAPositionner = 0 then
+                              ValeurAPositionner := Valeur;
+                           else
+                              ValeurAPositionner := 0;
+                           end if;
+                        end if;
                      end if;
+                  end loop;
+                  if ValeurAPositionner /= 0 then
+                     Writeln
+                       ("Régle 6 :" &
+                        Ligne'Img &
+                        ',' &
+                        Colonne'Img &
+                        ',' &
+                        ValeurAPositionner'Img);
+                     Grille.PositionneValeur (Ligne, Colonne, ValeurAPositionner);
                   end if;
-               end loop;
-            end loop Double_Boucle;
-            if not Vide
-              and then Grille.Sudoku.RetourneValeur (PositionLigne, PositionColonne) = 0
-            then
-               Write ("Régle 6 : ");
-               Grille.Sudoku.PositionneValeur (PositionLigne, PositionColonne, Valeur);
-            end if;
+               end if;
+            end loop;
          end loop;
 
          -- Vérifie si le carré est complet
          Fini := True;
-         --         for Carré in Grille.Indice loop
          for Ligne in ((Carré - 1) / 3) * 3 + 1 .. ((Carré - 1) / 3) * 3 + 3 loop
             for Colonne in ((Carré - 1) rem 3) * 3 + 1 .. ((Carré - 1) rem 3) * 3 + 3 loop
-               if Grille.Sudoku.RetourneValeur (Ligne, Colonne) = 0 then
+               if Grille.RetourneValeur (Ligne, Colonne) = 0 then
                   Fini := False;
                end if;
+               Grille.Libère (Ligne, Colonne);
             end loop;
          end loop;
-         --         end loop;
          exit when Fini;
+         Delay1 (Pause);
       end loop;
       Writeln ("Tâche carré " & Carré'Img & " est complète.");
-      accept Terminé;
    end RésoudCarré;
 
    task Ordonanceur is
@@ -497,20 +754,9 @@ procedure Sudoku is
                select
                   TâcheLignes (Index).Terminé;
                or
-                  delay 1.0;
+                  delay 10.0 - Duration (Index);
                   Writeln ("Tâche ligne " & Index'Img & " non terminée.");
-               end select;
-               select
-                  TâcheColonnes (Index).Terminé;
-               or
-                  delay 1.0;
-                  Writeln ("Tâche colonne " & Index'Img & " non terminée.");
-               end select;
-               select
-                  TâcheCarrés (Index).Terminé;
-               or
-                  delay 1.0;
-                  Writeln ("Tâche carré " & Index'Img & " non terminée.");
+                  exit;
                end select;
             end loop;
             for Index in Grille.Indice loop
@@ -545,11 +791,13 @@ procedure Sudoku is
    procedure Affiche_Grille is
    begin
       SetColor (WColor);
+      SetTextStyle (DefaultFont, HorizDir, 3);
       for Lig in Grille.Indice loop
          for Col in Grille.Indice loop
             Affiche_Chiffre (Lig, Col, G (Lig, Col));
          end loop;
       end loop;
+      SetTextStyle (DefaultFont, HorizDir, 1);
    end Affiche_Grille;
 
    procedure Efface is
@@ -597,15 +845,22 @@ procedure Sudoku is
    procedure Démarre is
       T0 : Natural;
    begin
-      Grille.Sudoku.PositionneGrille (G);
-      Grille.Sudoku.ConstruitValeursPossibles;
+      MouseSetGraphBlock (75); -- GDK_WATCH
+      Grille.InitialiseGrille (G);
       SetColor (AColor);
       T0 := HorlogeMS;
+      SetTextStyle (DefaultFont, HorizDir, 3);
       Ordonanceur.Démarre;
       Ordonanceur.Terminé;
-      Writeln ("Sudoku completed ?!");
+      SetTextStyle (DefaultFont, HorizDir, 1);
       Grille.Imprime;
-      Writeln ("Temps d'exécution :" & Natural'Image (HorlogeMS - T0) & " millisecondes");
+      if Grille.Résolu then
+         Writeln ("Sudoku résolu.");
+      else
+         Writeln ("Sudoku non résolu.");
+      end if;
+      Writeln ("Temps d'exécution :" & Natural'Image (HorlogeMS - T0) & " millisecondes.");
+      MouseSetGraphBlock (StandardCursor);
    end Démarre;
 
 begin

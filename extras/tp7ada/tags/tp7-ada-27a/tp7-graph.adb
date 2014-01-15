@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7-graph.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 3.0a
--- DATE DE LA DERNIERE MISE A JOUR  : 28 décembre 2013
+-- VERSION DU CSU                   : 2.4a
+-- DATE DE LA DERNIERE MISE A JOUR  : 24 novembre 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -11,9 +11,9 @@
 -- FONCTIONS LOCALES DU CSU         :
 --
 --
--- NOTES                            : Ada 2005, GTKAda 3.4.2
+-- NOTES                            : Ada 2005, GTKAda 2.24.2
 --
--- COPYRIGHT                        : (c) Pascal Pignard 2002-2013
+-- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
@@ -23,8 +23,7 @@ with Ada.Numerics;
 with Ada.Unchecked_Deallocation;
 with Cairo.Image_Surface;
 with Glib;
-with Glib.Convert;
-with Gdk.RGBA;
+with Gdk.Color;
 with Gdk.Cairo;
 with Gdk.Event;
 with Gdk.Threads;
@@ -35,11 +34,13 @@ with Gtk.Widget;
 with Gtkada.Handlers;
 with Gtkada.Dialogs;
 with TP7.System;
+pragma Elaborate_All (Gdk.Color);
 
 package body TP7.Graph is
 
    subtype GDouble is Glib.Gdouble;
    use type Glib.Gdouble;
+   subtype GUInt16 is Glib.Guint16;
 
    Pi : constant := Ada.Numerics.Pi;
    function Sin (X : Float) return Float renames Ada.Numerics.Elementary_Functions.Sin;
@@ -53,43 +54,30 @@ package body TP7.Graph is
    IntX, IntY      : aliased GDouble       := 0.0;
    CoeffX, CoeffY  : GDouble               := 1.0;
 
-   type IntTabColors is array (0 .. MaxColors) of Gdk.RGBA.Gdk_RGBA;
+   type IntTabColors is array (0 .. MaxColors) of Gdk.Color.Gdk_Color;
    type IntColorPaletteType is record
       Size   : Byte;
       Colors : IntTabColors;
    end record;
 
-   -- fonction interne retournant une couleur RGBA
-   function Parse (Spec : String) return Gdk.RGBA.Gdk_RGBA is
-      Color : Gdk.RGBA.Gdk_RGBA;
-      ok    : Boolean;
-   begin
-      Gdk.RGBA.Parse (Color, Glib.Convert.Locale_To_UTF8 (Spec), ok);
-      if ok then
-         return Color;
-      else
-         return Gdk.RGBA.Null_RGBA;
-      end if;
-   end Parse;
-
    IntColorPalette : IntColorPaletteType :=
      (Size   => MaxColors + 1,
-      Colors => (Black        => Parse ("black"),
-                 Blue         => Parse ("blue"),
-                 Green        => Parse ("green"),
-                 Cyan         => Parse ("cyan"),
-                 Red          => Parse ("red"),
-                 Magenta      => Parse ("magenta"),
-                 Brown        => Parse ("brown"),
-                 LightGray    => Parse ("LightGray"),
-                 DarkGray     => Parse ("DarkGray"),
-                 LightBlue    => Parse ("LightBlue"),
-                 LightGreen   => Parse ("LightGreen"),
-                 LightCyan    => Parse ("LightCyan"),
-                 LightRed     => Parse ("LightCoral"),
-                 LightMagenta => Parse ("LightPink"),
-                 Yellow       => Parse ("yellow"),
-                 White        => Parse ("white")));
+      Colors => (Black        => Gdk.Color.Parse ("black"),
+                 Blue         => Gdk.Color.Parse ("blue"),
+                 Green        => Gdk.Color.Parse ("green"),
+                 Cyan         => Gdk.Color.Parse ("cyan"),
+                 Red          => Gdk.Color.Parse ("red"),
+                 Magenta      => Gdk.Color.Parse ("magenta"),
+                 Brown        => Gdk.Color.Parse ("brown"),
+                 LightGray    => Gdk.Color.Parse ("LightGray"),
+                 DarkGray     => Gdk.Color.Parse ("DarkGray"),
+                 LightBlue    => Gdk.Color.Parse ("LightBlue"),
+                 LightGreen   => Gdk.Color.Parse ("LightGreen"),
+                 LightCyan    => Gdk.Color.Parse ("LightCyan"),
+                 LightRed     => Gdk.Color.Parse ("LightCoral"),
+                 LightMagenta => Gdk.Color.Parse ("LightPink"),
+                 Yellow       => Gdk.Color.Parse ("yellow"),
+                 White        => Gdk.Color.Parse ("white")));
 
    type Rect is record
       Left, Right, Top, Bottom : TPInteger;
@@ -433,18 +421,21 @@ package body TP7.Graph is
 
    package body FontCHR is separate;
 
-   function On_Draw_Event
-     (Area : access Gtk.Widget.Gtk_Widget_Record'Class;
-      Cr   : Cairo.Cairo_Context)
-      return Boolean
+   function On_Expose_Event
+     (Area  : access Gtk.Widget.Gtk_Widget_Record'Class;
+      Event : Gdk.Event.Gdk_Event)
+      return  Boolean
    is
-      pragma Unreferenced (Area);
+      pragma Unreferenced (Event);
+      LCr : Cairo.Cairo_Context;
    begin
-      Cairo.Set_Source_Surface (Cr, IntCairoSurface, 0.0, 0.0);
-      Cairo.Set_Operator (Cr, Cairo.Cairo_Operator_Over);
-      Cairo.Paint (Cr);
+      LCr := Gdk.Cairo.Create (Gtk.Widget.Get_Window (Area));
+      Cairo.Set_Source_Surface (LCr, IntCairoSurface, 0.0, 0.0);
+      Cairo.Set_Operator (LCr, Cairo.Cairo_Operator_Over);
+      Cairo.Paint (LCr);
+      Cairo.Destroy (LCr);
       return False;
-   end On_Draw_Event;
+   end On_Expose_Event;
 
    function On_Win_Delete_Event
      (Object : access Gtk.Widget.Gtk_Widget_Record'Class)
@@ -553,8 +544,8 @@ package body TP7.Graph is
             False);
          Gtkada.Handlers.Return_Callback.Connect
            (Area_Draw,
-            Gtk.Widget.Signal_Draw,
-            Gtkada.Handlers.Return_Callback.To_Marshaller (On_Draw_Event'Access));
+            Gtk.Widget.Signal_Expose_Event,
+            Gtkada.Handlers.Return_Callback.To_Marshaller (On_Expose_Event'Access));
          TP7.Get_Key_Event (KPEH);
          if KPEH /= null then
             Gtkada.Handlers.Return_Callback.Connect
@@ -819,10 +810,10 @@ package body TP7.Graph is
       if Pixel <= IntPalette.Size - 1 then
          Gdk.Threads.Enter;
          Cairo.Move_To (Cr, GDouble (X), GDouble (Y));
-         Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (Pixel));
+         Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (Pixel));
          Cairo.Line_To (Cr, GDouble (X + 1), GDouble (Y + 1));
          Cairo.Stroke (Cr);
-         Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntColor));
+         Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
          Win_Draw.Queue_Draw;
          Gdk.Threads.Leave;
       end if;
@@ -1002,9 +993,9 @@ package body TP7.Graph is
    begin
       Gdk.Threads.Enter;
       Cairo.Rectangle (Cr, GDouble (X1), GDouble (Y1), GDouble (X2 - X1), GDouble (Y2 - Y1));
-      Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntFillInfo.Color));
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
       Cairo.Fill (Cr);
-      Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntColor));
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
       Cairo.Stroke (Cr);
       Win_Draw.Queue_Draw;
       Gdk.Threads.Leave;
@@ -1017,9 +1008,9 @@ package body TP7.Graph is
    begin
       Gdk.Threads.Enter;
       Cairo.Rectangle (Cr, GDouble (X1), GDouble (Y1), GDouble (X2 - X1), GDouble (Y2 - Y1));
-      Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntFillInfo.Color));
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
       Cairo.Fill (Cr);
-      Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntColor));
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
       Cairo.Move_To (Cr, GDouble (X2), GDouble (Y2));
       Cairo.Line_To (Cr, GDouble (X1), GDouble (Y2));
       Cairo.Line_To (Cr, GDouble (X1), GDouble (Y2));
@@ -1061,9 +1052,9 @@ package body TP7.Graph is
       for Ind in 2 .. Positive (NumPoints) loop
          Cairo.Line_To (Cr, GDouble (PolyPoints (Ind).X), GDouble (PolyPoints (Ind).Y));
       end loop;
-      Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntFillInfo.Color));
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
       Cairo.Fill (Cr);
-      Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntColor));
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
       Cairo.Stroke (Cr);
       Win_Draw.Queue_Draw;
       Gdk.Threads.Leave;
@@ -1256,9 +1247,9 @@ package body TP7.Graph is
          Cairo.Translate (Cr, GDouble (X), GDouble (Y));
          Cairo.Scale (Cr, GDouble (XRadius), GDouble (YRadius));
          Cairo.Arc (Cr, 0.0, 0.0, 1.0, 0.0, GDouble (2 * Pi));
-         Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntFillInfo.Color));
+         Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
          Cairo.Fill (Cr);
-         Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntColor));
+         Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
          Cairo.Restore (Cr);
       end if;
       Cairo.Stroke (Cr);
@@ -1303,9 +1294,9 @@ package body TP7.Graph is
          GDouble (360 - EndAngle) * Pi / 180.0,
          GDouble (360 - StAngle) * Pi / 180.0);
       Cairo.Line_To (Cr, GDouble (X), GDouble (Y));
-      Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntFillInfo.Color));
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
       Cairo.Fill (Cr);
-      Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntColor));
+      Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
       Cairo.Stroke (Cr);
       Win_Draw.Queue_Draw;
       Gdk.Threads.Leave;
@@ -1346,9 +1337,9 @@ package body TP7.Graph is
             GDouble (360 - EndAngle) * Pi / 180.0,
             GDouble (360 - StAngle) * Pi / 180.0);
          Cairo.Line_To (Cr, 0.0, 0.0);
-         Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntFillInfo.Color));
+         Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntFillInfo.Color));
          Cairo.Fill (Cr);
-         Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntColor));
+         Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
          Cairo.Restore (Cr);
       end if;
       Cairo.Stroke (Cr);
@@ -1362,9 +1353,9 @@ package body TP7.Graph is
       if ColorNum <= IntPalette.Size - 1 then
          IntBkColor := ColorNum;
          Gdk.Threads.Enter;
-         Gtk.Widget.Override_Background_Color
+         Gtk.Widget.Modify_Bg
            (Gtk.Widget.Gtk_Widget (Area_Draw),
-            Gtk.Enums.Gtk_State_Flag_Normal,
+            Gtk.Enums.State_Normal,
             IntColorPalette.Colors (IntBkColor));
          Win_Draw.Queue_Draw;
          Gdk.Threads.Leave;
@@ -1376,7 +1367,7 @@ package body TP7.Graph is
       if Color <= IntColorPalette.Size - 1 then
          IntColor := Color;
          Gdk.Threads.Enter;
-         Gdk.Cairo.Set_Source_RGBA (Cr, IntColorPalette.Colors (IntColor));
+         Gdk.Cairo.Set_Source_Color (Cr, IntColorPalette.Colors (IntColor));
          Gdk.Threads.Leave;
       end if;
    end SetColor;
@@ -1471,7 +1462,8 @@ package body TP7.Graph is
    end GetMaxColor;
 
    procedure SetRGBPalette (ColorNum, RedValue, GreenValue, BlueValue : Integer) is
-   --CRGB : aliased rgbcolor;
+      --CRGB : aliased rgbcolor;
+      aColor : Gdk.Color.Gdk_Color;
    begin
       if ColorNum <= IntPalette.Size - 1 then
          --        CRGB.Red := Word(RedValue);
@@ -1480,11 +1472,12 @@ package body TP7.Graph is
          --        AnimateEntry(IntCWind, ColorNum, CRGB'access);
          --        ActivatePalette(IntCWind);
          Gdk.Threads.Enter;
-         IntColorPalette.Colors (Word (ColorNum))  :=
-           (GDouble (RedValue),
-            GDouble (GreenValue),
-            GDouble (BlueValue),
-            1.0);
+         Gdk.Color.Set_Rgb
+           (aColor,
+            GUInt16 (RedValue),
+            GUInt16 (GreenValue),
+            GUInt16 (BlueValue));
+         IntColorPalette.Colors (Word (ColorNum))  := aColor;
          -- TBF activation
          Gdk.Threads.Leave;
       end if;

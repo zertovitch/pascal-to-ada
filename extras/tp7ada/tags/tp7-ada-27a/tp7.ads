@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (spécification)       : tp7.ads
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 3.0a
--- DATE DE LA DERNIERE MISE A JOUR  : 24 décembre 2013
+-- VERSION DU CSU                   : 2.6a
+-- DATE DE LA DERNIERE MISE A JOUR  : 4 mai 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -11,9 +11,9 @@
 -- FONCTIONS LOCALES DU CSU         :
 --
 --
--- NOTES                            : Ada 2005, GTKAda 3.4.2
+-- NOTES                            :
 --
--- COPYRIGHT                        : (c) Pascal Pignard 2002-2013
+-- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
@@ -24,7 +24,7 @@ private with Ada.Characters.Latin_1;
 private with Ada.Text_IO;
 private with Ada.Finalization;
 private with GNAT.OS_Lib;
-private with Gdk;
+private with Gdk.Window;
 private with Gtk.Widget;
 private with Gtk.Text_Tag;
 private with Gtkada.Handlers;
@@ -189,7 +189,7 @@ private
      (Event_Handler : out Gtkada.Handlers.Return_Callback.Event_Marshaller.Handler);
    procedure Get_Key_Event
      (Event_Handler : out Gtkada.Handlers.Return_Callback.Event_Marshaller.Handler);
-   procedure Set_Graph (Window : Gdk.Gdk_Window);
-   procedure Get_Graph (Window : out Gdk.Gdk_Window);
+   procedure Set_Graph (Window : Gdk.Window.Gdk_Window);
+   procedure Get_Graph (Window : out Gdk.Window.Gdk_Window);
 
 end TP7;

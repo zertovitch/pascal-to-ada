@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7-crt.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 2.4b
--- DATE DE LA DERNIERE MISE A JOUR  : 12 janvier 2014
+-- VERSION DU CSU                   : 2.4a
+-- DATE DE LA DERNIERE MISE A JOUR  : 5 février 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -13,7 +13,7 @@
 --
 -- NOTES                            :
 --
--- COPYRIGHT                        : (c) Pascal Pignard 2002-2014
+-- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
@@ -122,7 +122,7 @@ package body TP7.Crt is
 
    procedure Delay1 (MS : Word) is
    begin
-      delay Duration (MS) / 1000.0;
+      delay Duration (MS / 1000);
    end Delay1;
 
    procedure Sound (Hz : Word) is

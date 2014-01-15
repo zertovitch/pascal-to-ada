@@ -215,7 +215,6 @@ procedure BGIDemo is
       --GraphMode := IBM8514Hi;
       --$ELSE
       GraphDriver := Detect;                -- use autodetection
-      GraphMode   := 0;
       --$ENDIF
 
       InitGraph (GraphDriver, GraphMode, RepertoireBGI);

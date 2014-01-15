@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 3.0a
--- DATE DE LA DERNIERE MISE A JOUR  : 24 décembre 2013
+-- VERSION DU CSU                   : 2.7a
+-- DATE DE LA DERNIERE MISE A JOUR  : 18 juin 2012
 -- ROLE DU CSU                      : Unité d'émulation Turbo Pascal 7.0.
 --
 --
@@ -11,9 +11,9 @@
 -- FONCTIONS LOCALES DU CSU         :
 --
 --
--- NOTES                            : Ada 2005, GTKAda 3.4.2
+-- NOTES                            : Ada 2005, GTKAda 2.24.2
 --
--- COPYRIGHT                        : (c) Pascal Pignard 2002-2013
+-- COPYRIGHT                        : (c) Pascal Pignard 2002-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
@@ -40,7 +40,6 @@ with Gdk.Types;
 with Gdk.Event;
 with Gtkada.Dialogs;
 with Glib.Convert;
-with Interfaces.C.Strings;
 
 package body TP7 is
 
@@ -313,25 +312,8 @@ package body TP7 is
       return   Boolean
    is
       pragma Unreferenced (Object);
-      function Get_String (Event : Gdk.Event.Gdk_Event) return String is
-         Event_Type : constant Gdk.Event.Gdk_Event_Type := Gdk.Event.Get_Event_Type (Event);
-         use type Gdk.Event.Gdk_Event_Type, Interfaces.C.Strings.chars_ptr;
-      begin
-         if Event_Type = Gdk.Event.Key_Press or else Event_Type = Gdk.Event.Key_Release then
-            declare
-               Str : constant Interfaces.C.Strings.chars_ptr := Event.Key.String;
-            begin
-               if Str = Interfaces.C.Strings.Null_Ptr then
-                  return "";
-               end if;
-               return Interfaces.C.Strings.Value (Str);
-            end;
-         end if;
-         raise Constraint_Error;
-      end Get_String;
-
       Key : constant Gdk.Types.Gdk_Key_Type := Gdk.Event.Get_Key_Val (Event);
-      Ch  : constant String                 := Get_String (Event);
+      Ch  : constant String                 := Gdk.Event.Get_String (Event);
       --        use type Ada.Text_IO.Count;
       use Gdk.Types.Keysyms;
       use type Gdk.Types.Gdk_Key_Type;
@@ -526,7 +508,7 @@ package body TP7 is
          Index,
          Glib.Convert.Locale_To_UTF8 (To_String (S)),
          IntTag);
-      Gtk.Text_View.Scroll_Mark_Onscreen (Aera_Text, IntCursorMark);
+      Gtk.Text_View.Scroll_To_Mark (Aera_Text, IntCursorMark);
       Gtk.Text_Buffer.Place_Cursor (Gtk.Text_View.Get_Buffer (Aera_Text), Index);
       Gdk.Threads.Leave;
    end Put;
@@ -782,14 +764,14 @@ package body TP7 is
       Event_Handler := On_Key_Press_Event'Access;
    end Get_Key_Event;
 
-   IntWinGraph : Gdk.Gdk_Window := null;
+   IntWinGraph : Gdk.Window.Gdk_Window := null;
 
-   procedure Set_Graph (Window : Gdk.Gdk_Window) is
+   procedure Set_Graph (Window : Gdk.Window.Gdk_Window) is
    begin
       IntWinGraph := Window;
    end Set_Graph;
 
-   procedure Get_Graph (Window : out Gdk.Gdk_Window) is
+   procedure Get_Graph (Window : out Gdk.Window.Gdk_Window) is
    begin
       Window := IntWinGraph;
    end Get_Graph;

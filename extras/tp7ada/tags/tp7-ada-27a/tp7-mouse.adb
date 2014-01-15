@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- NOM DU CSU (corps)               : tp7-mouse.adb
 -- AUTEUR DU CSU                    : Pascal Pignard
--- VERSION DU CSU                   : 3.0a
--- DATE DE LA DERNIERE MISE A JOUR  : 24 décembre 2013
+-- VERSION DU CSU                   : 1.1a
+-- DATE DE LA DERNIERE MISE A JOUR  : 6 septembre 2012
 -- ROLE DU CSU                      : Unité d'émulation de la souris DOS.
 --
 --
@@ -11,9 +11,9 @@
 -- FONCTIONS LOCALES DU CSU         :
 --
 --
--- NOTES                            : Ada 2005, GTKAda 3.4.2
+-- NOTES                            : Ada 2005, GTKAda 2.24.2
 --
--- COPYRIGHT                        : (c) Pascal Pignard 1988-2013
+-- COPYRIGHT                        : (c) Pascal Pignard 1988-2012
 -- LICENCE                          : CeCILL V2 (http://www.cecill.info)
 -- CONTACT                          : http://blady.pagesperso-orange.fr
 -------------------------------------------------------------------------------
@@ -25,7 +25,6 @@ with Gdk.Window;
 with Gdk.Types;
 with Gdk.Threads;
 with TP7.System;
-with Ada.Unchecked_Conversion;
 
 package body TP7.Mouse is
 
@@ -38,7 +37,6 @@ package body TP7.Mouse is
    type ButtonsState is array (1 .. GTKMaxButton) of ButtonState;
    IntButtons                 : ButtonsState;
    IntVisible                 : Integer;
-   IntCursor                  : Integer;
    IntPositionX, IntPositionY : Glib.Gint;
    IntScroll                  : Integer;
    IntWindow                  : Gdk.Gdk_Window;
@@ -53,17 +51,15 @@ package body TP7.Mouse is
    ---------------
 
    function MouseInit return Boolean is
-      use type Gdk.Gdk_Window;
+      use type Gdk.Window.Gdk_Window;
    begin
       IntButtons   := (others => (False, False, False, False, 0, 0, 0.0, 0.0, 0.0, 0.0));
-      IntVisible   := 0;
-      IntCursor    := StandardCursor;
+      IntVisible   := -1;
       IntPositionX := 0;
       IntPositionY := 0;
       IntScroll    := 0;
       -- Get back the graph window to set the cursor
       TP7.Get_Graph (IntWindow);
-      HideMouse; -- Mouse hidden by default
       return IntWindow /= null;
    end MouseInit;
 
@@ -84,16 +80,11 @@ package body TP7.Mouse is
    ---------------
 
    procedure HideMouse is
-      LCursor : Gdk.Gdk_Cursor;
    begin
-      IntVisible := IntVisible - 1;
-      if IntVisible = -1 then
-         Gdk.Threads.Enter;
-         Gdk.Cursor.Gdk_New (LCursor, Gdk.Cursor.Blank_Cursor);
-         Gdk.Window.Set_Cursor (IntWindow, LCursor);
-         Gdk.Cursor.Unref (LCursor);
-         Gdk.Threads.Leave;
+      if Debug then
+         TP7.System.Writeln ("La fonction HideMouse n'est pas définie !");
       end if;
+      IntVisible := IntVisible - 1;
    end HideMouse;
 
    ---------------
@@ -101,17 +92,11 @@ package body TP7.Mouse is
    ---------------
 
    procedure ShowMouse is
-      LCursor : Gdk.Gdk_Cursor;
-      function Conv is new Ada.Unchecked_Conversion (Integer, Gdk.Cursor.Gdk_Cursor_Type);
    begin
-      IntVisible := IntVisible + 1;
-      if IntVisible = 0 then
-         Gdk.Threads.Enter;
-         Gdk.Cursor.Gdk_New (LCursor, Conv (IntCursor * 2));
-         Gdk.Window.Set_Cursor (IntWindow, LCursor);
-         Gdk.Cursor.Unref (LCursor);
-         Gdk.Threads.Leave;
+      if Debug then
+         TP7.System.Writeln ("La fonction ShowMouse n'est pas définie !");
       end if;
+      IntVisible := IntVisible + 1;
    end ShowMouse;
 
    -------------
@@ -121,7 +106,7 @@ package body TP7.Mouse is
    function GetXPos return Integer is
       X, Y : Glib.Gint;
       Mask : Gdk.Types.Gdk_Modifier_Type;
-      win  : Gdk.Gdk_Window;
+      win  : Gdk.Window.Gdk_Window;
    begin
       delay 0.01;
       Gdk.Threads.Enter;
@@ -137,7 +122,7 @@ package body TP7.Mouse is
    function GetYPos return Integer is
       X, Y : Glib.Gint;
       Mask : Gdk.Types.Gdk_Modifier_Type;
-      win  : Gdk.Gdk_Window;
+      win  : Gdk.Window.Gdk_Window;
    begin
       delay 0.01;
       Gdk.Threads.Enter;
@@ -153,7 +138,7 @@ package body TP7.Mouse is
    function GetStatus return Integer is
       X, Y : Glib.Gint;
       Mask : Gdk.Types.Gdk_Modifier_Type;
-      win  : Gdk.Gdk_Window;
+      win  : Gdk.Window.Gdk_Window;
       use type Gdk.Types.Gdk_Modifier_Type;
    begin
       delay 0.01;
@@ -180,18 +165,15 @@ package body TP7.Mouse is
    ----------------------
 
    procedure MouseNewPosition (NouvX, NouvY : Integer) is
-      --        procedure Move_Pointer (x, Y : Glib.Gint);
-      --        pragma Import (C, Move_Pointer, "ada_gdk_move_pointer");
+      procedure Move_Pointer (x, Y : Glib.Gint);
+      pragma Import (C, Move_Pointer, "ada_gdk_move_pointer");
       XW, YW : Glib.Gint;
-      --        Ok     : Boolean;
+      Ok     : Boolean;
       use type Glib.Gint;
    begin
       Gdk.Threads.Enter;
-      Gdk.Window.Get_Origin (IntWindow, XW, YW);
-      --        Move_Pointer (XW + Glib.Gint (NouvX), YW + Glib.Gint (NouvY));
-      if Debug then
-         TP7.System.Writeln ("La fonction MouseNewPosition n'est pas définie !");
-      end if;
+      Gdk.Window.Get_Origin (IntWindow, XW, YW, Ok);
+      Move_Pointer (XW + Glib.Gint (NouvX), YW + Glib.Gint (NouvY));
       Gdk.Threads.Leave;
    end MouseNewPosition;
 
@@ -310,17 +292,13 @@ package body TP7.Mouse is
    ------------------------
 
    procedure MouseSetGraphBlock (Cursor : Integer) is
-      LCursor : Gdk.Gdk_Cursor;
-      function Conv is new Ada.Unchecked_Conversion (Integer, Gdk.Cursor.Gdk_Cursor_Type);
+      LCursor : Gdk.Cursor.Gdk_Cursor;
    begin
-      IntCursor := Cursor;
-      if IntVisible >= 0 then
-         Gdk.Threads.Enter;
-         Gdk.Cursor.Gdk_New (LCursor, Conv (Cursor * 2));
-         Gdk.Window.Set_Cursor (IntWindow, LCursor);
-         Gdk.Cursor.Unref (LCursor);
-         Gdk.Threads.Leave;
-      end if;
+      Gdk.Threads.Enter;
+      Gdk.Cursor.Gdk_New (LCursor, Gdk.Cursor.Gdk_Cursor_Type'Val (Cursor));
+      Gdk.Window.Set_Cursor (IntWindow, LCursor);
+      Gdk.Cursor.Unref (LCursor);
+      Gdk.Threads.Leave;
    end MouseSetGraphBlock;
 
    procedure MouseSetGraphBlock
@@ -355,7 +333,7 @@ package body TP7.Mouse is
    function MouseXMotionCount return Integer is
       X, Y : Glib.Gint;
       Mask : Gdk.Types.Gdk_Modifier_Type;
-      win  : Gdk.Gdk_Window;
+      win  : Gdk.Window.Gdk_Window;
       use type Glib.Gint;
    begin
       Gdk.Threads.Enter;
@@ -373,7 +351,7 @@ package body TP7.Mouse is
    function MouseYMotionCount return Integer is
       X, Y : Glib.Gint;
       Mask : Gdk.Types.Gdk_Modifier_Type;
-      win  : Gdk.Gdk_Window;
+      win  : Gdk.Window.Gdk_Window;
       use type Glib.Gint;
    begin
       Gdk.Threads.Enter;
@@ -408,15 +386,12 @@ package body TP7.Mouse is
       pragma Unreferenced (Object);
       use type Gdk.Event.Gdk_Event_Type;
       LButtonNum : Integer;
-      Dir        : Gdk.Event.Gdk_Scroll_Direction;
    begin
       if Gdk.Event.Get_Event_Type (Event) = Gdk.Event.Button_Press then
-         LButtonNum                      := Integer (Gdk.Event.Get_Button (Event));
-         IntButtons (LButtonNum).Pressed := True;
-         Gdk.Event.Get_Coords
-           (Event,
-            IntButtons (LButtonNum).LastXPress,
-            IntButtons (LButtonNum).LastYPress);
+         LButtonNum                         := Integer (Gdk.Event.Get_Button (Event));
+         IntButtons (LButtonNum).Pressed    := True;
+         IntButtons (LButtonNum).LastXPress := Gdk.Event.Get_X (Event);
+         IntButtons (LButtonNum).LastYPress := Gdk.Event.Get_Y (Event);
          if IntButtons (LButtonNum).Press_Count < Integer'Last then
             IntButtons (LButtonNum).Press_Count := IntButtons (LButtonNum).Press_Count + 1;
          else
@@ -424,12 +399,10 @@ package body TP7.Mouse is
          end if;
       end if;
       if Gdk.Event.Get_Event_Type (Event) = Gdk.Event.Button_Release then
-         LButtonNum                       := Integer (Gdk.Event.Get_Button (Event));
-         IntButtons (LButtonNum).Released := True;
-         Gdk.Event.Get_Coords
-           (Event,
-            IntButtons (LButtonNum).LastXRelease,
-            IntButtons (LButtonNum).LastYRelease);
+         LButtonNum                           := Integer (Gdk.Event.Get_Button (Event));
+         IntButtons (LButtonNum).Released     := True;
+         IntButtons (LButtonNum).LastXRelease := Gdk.Event.Get_X (Event);
+         IntButtons (LButtonNum).LastYRelease := Gdk.Event.Get_Y (Event);
          if IntButtons (LButtonNum).Release_Count < Integer'Last then
             IntButtons (LButtonNum).Release_Count := IntButtons (LButtonNum).Release_Count + 1;
          else
@@ -443,8 +416,7 @@ package body TP7.Mouse is
          IntButtons (Integer (Gdk.Event.Get_Button (Event))).TripleClic   := True;
       end if;
       if Gdk.Event.Get_Event_Type (Event) = Gdk.Event.Scroll then
-         Gdk.Event.Get_Scroll_Direction (Event, Dir);
-         IntScroll := To_Integer (Dir);
+         IntScroll := To_Integer (Gdk.Event.Get_Direction (Event));
       end if;
       return False;
    end On_Mouse_Event;

@@ -45,7 +45,7 @@ package TP7.Mouse is
    FirstCursor    : constant := 0;
    LastCursor     : constant := 152 / 2;
 
-   -- Reset mouse (hidden by default) and give the its installed status
+   -- Reset mouse (hiden by default) and give the its installed status
    function MouseInit return Boolean;
    -- Returns the number of buttons
    function NbrButton return Integer;
