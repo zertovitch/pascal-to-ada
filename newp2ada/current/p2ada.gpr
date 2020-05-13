@@ -1,8 +1,34 @@
-project P2Ada is -- project file for GNAT & GNAT Programming Studio
+--  Project file for GNAT/GCC or the GNAT Programming Studio (GPS)
+--  Build me with "gprbuild -p -P p2ada", or open me with GPS
+--
+project P2Ada is
 
    for Main use ("p2ada.adb", "bp2p.adb");
    for Object_Dir use "acu";
    for Exec_Dir use ".";
+
+   package Compiler is
+      for Default_Switches ("ada") use (
+                "-gnato",       --  Enable overflow checking in STRICT (-gnato1) mode
+                "-g",           --  Debug information 
+                "-gnatwa",      --  Warnings: all standards info/warnings
+                "-gnatVa",      --  Turn on all validity checking options
+                "-fno-inline",
+                "-fstack-check",
+                "-gnatec=" & project'Project_Dir & "debug.pra"
+      );
+   end Compiler;
+
+   package Binder is
+      --  -Es: Store tracebacks in exception occurrences, and enable symbolic tracebacks
+      for Default_Switches ("ada") use ("-Es");
+   end Binder;
+
+   package Builder is
+      --  "If -j0 is used, then the maximum number of simultaneous compilation
+      --   jobs is the number of core processors on the platform."
+      for Default_Switches ("ada") use ("-j0");
+   end Builder;
 
 end P2Ada;
 

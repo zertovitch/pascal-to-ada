@@ -8,7 +8,7 @@
 --  - Version of PP developed under Pascal/Z V4.0 or later by Peter Grogono.
 --
 --  - Very minor modifications for Turbo Pascal made by Willett Kempton
---  March 1984 and Oct 84.  Runs under 8-bit Turbo or 16-bit Turbo.
+--      March 1984 and Oct 84.  Runs under 8-bit Turbo or 16-bit Turbo.
 --
 --  - Toad Hall tweak, rewrite for TP 5, 28 Nov 89
 --
@@ -358,7 +358,7 @@ procedure BP2P is
     curr_acceptation: Boolean;
     curr_short_circuit: Boolean;
 
-    procedure Directive_in_a_comment(s: in out Symbol) is
+    procedure Directive_in_a_comment (s: Symbol) is
       i, fin: Natural;
       type directive is (
         none,
@@ -737,16 +737,13 @@ procedure BP2P is
       end if;
     end LShift;
 
-    procedure InsertSpace (
-          Symbol : in out Symbolinfo ) is 
+    procedure InsertSpace (Symbol : Symbolinfo) is 
       --  Insert space if room on line 
     begin
       if  Currlinepos < MAXLINESIZE then
         Put(OutFile, Blank);
-
-        Currlinepos:= Currlinepos + 1;
-        if  (Symbol.Crsbefore = 0)  and  (Symbol.Spacesbefore > 0)
-            then
+        Currlinepos := Currlinepos + 1;
+        if  (Symbol.Crsbefore = 0)  and  (Symbol.Spacesbefore > 0) then
           Symbol.Spacesbefore:= Symbol.Spacesbefore -1; -- !!@
         end if;
       end if;
@@ -982,7 +979,7 @@ procedure BP2P is
         s1.value(1):= '#';
         s2.length:= 3;
         declare
-          scode: String:= Natural'image(1000+code);
+          scode : constant String := Natural'image (1000 + code);
         begin
           s2.value(1..3):= scode( scode'last-2 .. scode'last );
         end;

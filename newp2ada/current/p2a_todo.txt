@@ -7,3 +7,4 @@
 - translate WriteLn([String]) as "Put_Line([String]);"
     instead of "Put[String]; New_Line;"
 - header for Pascal examples, catalog
+- Delphi's raise statement

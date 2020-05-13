@@ -98,7 +98,7 @@ PACKAGE BODY PascalHelp IS
 
   function Current_column return Natural is
   begin
-    return Natural(Pascal_IO.YY_begin_column);
+    return Pascal_IO.YY_begin_column;
   end Current_column;
 
   -- 22-Dec-2002: Avoids commenting out outputs after comment on same line

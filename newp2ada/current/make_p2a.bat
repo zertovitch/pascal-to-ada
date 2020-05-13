@@ -1,13 +1,17 @@
 @echo off
 
-echo -- Option: [%1]
+echo --  Option: [%1]
 echo --
-echo -- make_p2a: option -f recreates sources from the pascal.y, pascal.l files
+echo --  make_p2a: option -f recreates sources from the pascal.y, pascal.l files
+echo --
+echo --  The option -f is ONLY needed if you make changes to the Pascal
+echo --  grammar in pascal.y, pascal.l .
 echo --
 
 if not "%1"=="-f" goto comp
 rem
 echo 1) Compile AYACC/AFLEX files to Ada sources
+echo    NB: the ayacc and aflex tools are included with the p2ada distribution.
 rem
 cd lypascal
 echo .
