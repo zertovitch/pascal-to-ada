@@ -337,10 +337,10 @@ package body Parse_Table is
     begin
 	Goto_File.Write_Line(");");
 	Goto_File.Write_Line("--  The offset vector");
-	Goto_File.Write("GOTO_OFFSET : array (0..");
+	Goto_File.Write("  Goto_Offset : array (0 ..");
 	Goto_File.Write(Parse_State'Image(Goto_Offset.all'Last) & ')');
 	Goto_File.Write_Line(" of Integer :=");
-	Goto_File.Write("(");
+	Goto_File.Write("  (");
 	for I in Goto_Offset.all'First .. Goto_Offset.all'Last-1 loop
 	    Goto_File.Write(Trim(Integer'Image(Goto_Offset(I)),left) & ",");
 	    if I mod 17 = 0 then Goto_File.Write_Line(""); end if;
@@ -351,13 +351,13 @@ package body Parse_Table is
         Goto_File.Close_Write; 
 
 	Shift_Reduce_File.Write_Line(");");
-	Shift_Reduce_File.Write_Line("--  The offset vector");
-	Shift_Reduce_File.Write("SHIFT_REDUCE_OFFSET : array (0..");
+	Shift_Reduce_File.Write_Line("  --  The offset vector");
+	Shift_Reduce_File.Write("  Shift_Reduce_Offset : array (0 ..");
 	Shift_Reduce_File.Write
 	     (Parse_State'Image(Action_Offset.all'Last) & ')');
 
 	Shift_Reduce_File.Write_Line(" of Integer :=");
-	Shift_Reduce_File.Write("(");
+	Shift_Reduce_File.Write("  (");
 
 	for I in Action_Offset.all'First..Action_Offset.all'Last-1
 	loop

@@ -272,7 +272,7 @@ package body Output_File is
         end loop;
 
         -- Copy declarations and procedures needed in the parse template
-        Put_Line (Outfile,"        DEBUG : constant boolean := " &
+        Put_Line (Outfile,"       debug : constant Boolean := " &
                           Boolean'Image (Options.Debug) & ';');
 
         -- Consume Template Up To User Action Routines.
