@@ -123,8 +123,9 @@ Options:
 How to change P2Ada for yet another Pascal dialect ?
 ====================================================
 
-The core translator is in a grammar-based form. The files
-are in the LYPascal directory:
+The core translator is in a grammar-based form, of the YACC / Lex
+(also known as Bison) system. The grammar and lexer files are located
+in the lypascal directory:
 
   pascal.l : lexer file (for (af)Lex)
   pascal.y : grammar file (for (a)Yacc).
@@ -177,20 +178,24 @@ Last but important remarks :
   couldn't in (Turbo-)Pascal! See "strings" subdirectory.
 
 * Combining Mod2Pas to P2Ada has been experienced with success to
-  translate Modula-2 to Ada. Mod2Pas is available at
+  translate Modula-2 to Ada. Mod2Pas is (or was...) available at
   ftp://cs.ru.ac.za/pub/coco/MOD2PAS.ZIP or
   http://www.scifac.ru.ac.za/cspt/
 
 * Some success stories:
   - MAS, Modula-2 Algebra System, 73 kSlocs
-  - Unzip from Info-Zip
+  - Unzip from Info-Zip and a BZip2 decoder -
+      see the Zip-Ada project: https://unzip-ada.sourceforge.io/
   - Numerical Recipes in Pascal
       whose sources can be downloaded in the nrpas13.zip archive -
       check http://www.google.com/search?q=nrpas13.zip
-  - TeXCAD - http://www.mysunrise.ch/users/gdm/texcad.htm
+  - Selected ALGLIB mathematical functions -
+      see https://mathpaqs.sourceforge.io/
+  - TeXCAD: https://texcad.sourceforge.io/
+  - HAC (HAC Ada Compiler): https://hacadacompiler.sourceforge.io/
 
 ______________________________________________________________________
-Gautier de Montmollin, 3-Dec-2006
+Gautier de Montmollin, 4-Jan-2021
 Pascal Pignard, 21-Aug-2010
 http://sourceforge.net/projects/p2ada/
 

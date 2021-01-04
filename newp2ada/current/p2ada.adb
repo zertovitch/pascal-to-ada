@@ -7,7 +7,7 @@
 -- Revision 1.1  1997/08/23  07:13:25  nestor
 -- Martin C. Carlisle's original version, standard Pascal
 --
-WITH YYParse;
+with YYParse;
 
 -- p2ada
 --
@@ -27,7 +27,7 @@ with Ada.Text_IO;                       use Ada.Text_IO;
 with Pascal_IO;
 with P2Ada_Definition_info;
 
-PROCEDURE P2Ada IS
+procedure P2Ada is
    Inp_Opened  : Boolean := False;
    Out_Opened  : Boolean := False;
 
@@ -41,7 +41,8 @@ PROCEDURE P2Ada IS
     Put_Line( Standard_Error, "  - the top-level definitions of a program, considered as a code snippet." );
   end Syntax;
 
-BEGIN
+begin
+  Put_Line (Standard_Error, "Welcome to P2Ada, the Pascal to Ada translator. Type ""p2ada -h"" for help.");
   P2Ada_Definition_info.Load_Alias ("alias.txt");
 
   for i in 1..Argument_Count loop
@@ -130,4 +131,4 @@ BEGIN
      pascal_io.Close_Output;
    end if;
 
-END p2ada;
+end p2ada;
