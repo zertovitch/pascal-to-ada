@@ -1,23 +1,30 @@
 #! /usr/bin/env bash
 
-# Raw makeinstall.sh for Linux users
+# Raw makeinstall for Linux users
 
 echo "Make & install aflex"
+
 cd ./aflex/current
 gprbuild -p -P aflex
+
 chmod +x aflex
-sudo mv aflex /usr/local/bin
+sudo ln -s -f $PWD/aflex /usr/local/bin/aflex
 
 echo "Make & install ayacc"
+
 cd ../../ayacc/current
 gprbuild -p -P ayacc
+
 chmod +x ayacc
-sudo mv ayacc /usr/local/bin
+sudo ln -s -f $PWD/ayacc /usr/local/bin/ayacc
 
 echo "Make & install newp2ada"
+
 cd ../../newp2ada/current
 gprbuild -p -P p2ada
+
 chmod +x p2ada
 chmod +x bp2p
-sudo mv p2ada /usr/local/bin
-sudo mv bp2p  /usr/local/bin
+
+sudo ln -s -f $PWD/p2ada /usr/local/bin/p2ada
+sudo ln -s -f $PWD/bp2p  /usr/local/bin/bp2p
