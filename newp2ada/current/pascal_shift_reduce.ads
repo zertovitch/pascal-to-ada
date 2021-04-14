@@ -1835,9 +1835,9 @@ package Pascal_Shift_Reduce is
 -- State  865
 ,(-1,-269)
 );
---  The offset vector
-SHIFT_REDUCE_OFFSET : array (0.. 865) of Integer :=
-( 0,
+  --  The offset vector
+  Shift_Reduce_Offset : array (0 .. 865) of Integer :=
+  ( 0,
  3, 4, 5, 8, 9, 10, 12, 13, 15, 17, 18, 20, 21, 22, 23, 25,
  26, 27, 34, 43, 45, 46, 47, 48, 49, 51, 53, 55, 57, 58, 60, 61,
  62, 63, 64, 65, 66, 67, 68, 70, 79, 80, 81, 82, 83, 84, 85, 87,

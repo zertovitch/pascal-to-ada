@@ -8,7 +8,8 @@ package Pascal_Tokens is
      vartype : const_type;
   end record;
 
-    YYLVal, YYVal : YYSType; 
+    YYLVal, YYVal : YYSType;
+
     type Token is
         (End_Of_Input, Error, Absolute_T, And_T,
          And_Then_T, Ampersand_T, Array_T,
