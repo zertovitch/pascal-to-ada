@@ -217,10 +217,10 @@ program NPTestA;
       t3 = record i,j: t2 end;
       t4 = record a,b: t3; end;
 
-      aa = record a: integer; end;
-      aaa = record a: aa; end;
-      aaaa = record a: aaa; end;
-      aaaaa = record a: aaaa; end;
+      R = record a : Integer; end;
+      RR = record a : R; end;
+      RRR = record a : RR; end;
+      RRRR = record a : RRR; end;
 
     var
       o1,o11,o12,o13,o14: Object_1;
@@ -233,7 +233,7 @@ program NPTestA;
       u123: t3;
       ru4: record u,v: t4; end;
 
-      vaaaaa: aaaaa;
+      aaaa : RRRR;
 
     procedure x_pos; begin end;
 
@@ -258,10 +258,10 @@ program NPTestA;
       end
     end;
 
-    vaaaaa.a.a.a.a:= 4503;
-    WriteLn('WITH vaaaaa,a,a,a DO a:= 10312;');
-    with vaaaaa,a,a,a do a:= 10312;
-    WriteLn('vaaaaa.a.a.a.a = [10312] ',vaaaaa.a.a.a.a:0);
+    WriteLn ('WITH aaaa, a, a, a DO a := 10312;');
+    aaaa.a.a.a.a := 4503;  {should be overwritten by next statement}
+    with aaaa, a, a, a do a := 10312;
+    WriteLn ('aaaa.a.a.a.a = [should be 10312] ', aaaa.a.a.a.a:0);
 
     with u3 do i[2].x:= 2;
     with u123,o1,o3 do { <-- 3 different types }
@@ -277,22 +277,25 @@ program NPTestA;
   end;
 
   procedure WITH_and_hiding;
-    type R = record c: Integer end;
-    var a,b: R; c: Integer;
+    type
+      R = record c : Integer end;
+    var
+      a, b : R;
+      c : Integer;
   begin
-    c:= 0;
-    a.c:= 0;
-    b.c:= 0;
-    with a,b do
-      { c could be c, a.c or b.c }
-      c:= 1;
-    Write('WITH and hiding. c=',c:0,' a.c=',a.c:0,' b.c=',b.c:0);
-    WriteLn(' TP6: 0,0,1');
-    with b,a do
-      { c could be c, a.c or b.c }
-      c:= 2;
-    Write('WITH and hiding. c=',c:0,' a.c=',a.c:0,' b.c=',b.c:0);
-    WriteLn(' TP6: 0,2,1');
+    c := 0;
+    a.c := 0;
+    b.c := 0;
+    with a, b do
+      { b.c hides a.c, which hides c }
+      c := 1;
+    Write ('WITH and hiding. (c=', c:0, ', a.c=', a.c:0, ', b.c=', b.c:0);
+    WriteLn (')   TP6 and FPC 3.0.2 produce: (0, 0, 1)');
+    with b, a do
+      { a.c hides b.c, which hides c }
+      c := 2;
+    Write ('WITH and hiding. (c=', c:0, ', a.c=', a.c:0, ', b.c=', b.c:0);
+    WriteLn (')   TP6 and FPC 3.0.2 produce: (0, 2, 1)')
   end;
 
   var x: Double;
