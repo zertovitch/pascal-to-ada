@@ -20,7 +20,8 @@ ayacc.exe pascal.y off off on off>..\ayacc.log
 type ..\ayacc.log
 rem
 if exist yargla.a del yargla.a
-ren pascal.a yargla.a
+if exist pascal.a   ren pascal.a yargla.a
+if exist pascal.ada ren pascal.ada yargla.a
 rem
 echo .
 echo 1.2) Running aflex.exe

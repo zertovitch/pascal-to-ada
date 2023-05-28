@@ -7,10 +7,20 @@
 -- Revision 1.1  1997/08/23  08:39:16  nestor
 -- Martin C. Carlisle's original version, standard Pascal
 --
-with ada.text_io;
-procedure YYError (S : IN String) IS
+
+with Pascal_IO;
+with Ada.Text_IO;
+
+procedure YYError (S : in String) is
   syntax_error : exception;
 begin
-  ada.text_IO.put_line(s);
+  Ada.Text_IO.Put_Line (S);
+  Ada.Text_IO.New_Line;
+  Ada.Text_IO.Put_Line
+    ("Syntax error in Pascal source, line number:" &
+     Pascal_IO.Input_Line'Image);
+  --  ^ NB: the function `Pascal_IO.Input_Line` is generated
+  --  or is working correctly *only* when AFlex has been called
+  --  with the `-E` option.
   raise syntax_error;
 end YYError;

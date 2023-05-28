@@ -7,4 +7,4 @@
 -- Revision 1.1  1997/08/23  08:36:13  nestor
 -- Martin C. Carlisle's original version, standard Pascal
 --
-procedure YYError (S : IN String);
+procedure YYError (S : in String);
