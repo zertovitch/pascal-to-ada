@@ -1,0 +1,5 @@
+objp2ada/current/bin
+objp2ada/current/obj
+objp2ada/current/tests/nptest?.adb
+objp2ada/current/tests/nptest2.*
+objp2ada/current/tests/test.ada

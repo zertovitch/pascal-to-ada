@@ -1,0 +1,20 @@
+with "shared.gpr";
+
+project ObjP2Ada is
+
+   for Languages use ("Ada");
+   for Source_Dirs use ("src", "gen");
+   for Object_Dir use "obj";
+   for Exec_Dir use "bin";
+   for Create_Missing_Dirs use "True";
+
+   for Main use ("p2ada.adb", "bp2p.adb");
+
+   package Builder  renames Shared.Builder;
+   package Compiler renames Shared.Compiler;
+   package Binder   renames Shared.Binder;
+   package Linker   renames Shared.Linker;
+   package Pretty_Printer renames Shared.Pretty_Printer;
+
+end ObjP2Ada;
+

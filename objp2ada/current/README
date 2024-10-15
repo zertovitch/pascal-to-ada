@@ -14,15 +14,13 @@ build them from the sources (see aflex and ayacc README).
 ## BUILD
 
      - go to p2ada directory
-     - create acu directory for object files
      - run "make" and "make test.ada"
-     - move the executables in a reachable directory
 
 ## USAGE
 
 The syntax is, as "p2ada -h" will tell you:
 
-Syntax: P2Ada [input_file] {-Iimports} [-Eexports] [-ooutput_file]
+Syntax: p2ada [input_file] {-Iimports} [-Eexports] [-ooutput_file]
 
 The file 'exports' is produced with the definitions of:
   - the 'interface' part of Borland/UCSD Pascal 'unit'
@@ -77,6 +75,9 @@ None.
 Get help from http://sourceforge.net/projects/p2ada
 
 ## REALEASE NOTES
+
+- release current (2024 Oct 17):
+. Add convenient GPR project file and change folder structure.
 
 - release svn revision 16 (2010 Aug 21):
 . pascal.l (1.1b):

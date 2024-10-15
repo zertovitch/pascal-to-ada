@@ -1600,7 +1600,7 @@ PACKAGE BODY PascalHelp IS
    Method_List : Unbounded_String := Null_Unbounded_String;
    -- True if object declaration
    Object_Flag : Boolean := False;
-   Object_Level : Levels;
+   Object_Level : Levels := 0;
    function Package_If_Object (Name : Unbounded_String) return Unbounded_String is
    begin
       if Object_Flag then
