@@ -1,0 +1,85 @@
+abstract project Shared is
+
+   type OS_Type is ("Linux", "Windows", "macOS", "auto");
+   Target_OS : OS_Type := external ("Target_OS", "auto");
+
+   Target_Triplet := Project'Target;
+   case Target_OS is
+      when "auto" =>
+         case Target_Triplet is
+           when "x86_64-linux" =>
+              Target_OS := "Linux";
+           when "i686-pc-mingw32" =>
+              Target_OS := "Windows";
+           when "x86_64-darwin" =>
+              Target_OS := "macOS";
+           when others =>
+              null;
+           end case;
+      when others =>
+         null;
+   end case;
+   for Warning_Message use "Target OS: " & Target_OS;
+
+   type Build_Mode_Type is
+     ("Profiling", "Optimizing", "Debugging", "Release");
+   Build_Mode : Build_Mode_Type := external ("BUILD_MODE", "Debugging");
+
+   package Builder is
+   end Builder;
+
+   package Compiler is
+      --  Common options used for all build modes
+      Common_Options := ("-gnatW8", "-gnatU", "-gnatf");
+      case Build_Mode is
+         when "Profiling" =>
+            for Switches ("ada") use Common_Options & ("-g", "-pg");
+
+         when "Optimizing" | "Release" =>
+            for Switches ("ada") use Common_Options & ("-gnatp", "-gnatn", "-O2");
+
+         when "Debugging" =>
+            for Switches ("ada") use Common_Options & ("-gnatVaep", "-gnatw.eDH.Y.N",
+                                                       "-fstack-check", "-g", "-gnato", "-gnatE", "-gnata", "-gnateA",
+                                                       "-gnateE", "-gnateF", "-gnateV", "-Wall");
+            for Local_Configuration_Pragmas use "pragma_debug.adc";
+      end case;
+   end Compiler;
+
+   package Binder is
+      case Build_Mode is
+         when "Profiling" | "Optimizing" | "Debugging" =>
+            for Switches ("ada") use ("-Es");
+
+         when "Release" =>
+            null;
+      end case;
+   end Binder;
+
+   package Linker is
+      case Build_Mode is
+         when "Profiling" =>
+            for Switches ("ada") use ("-g", "-pg");
+
+         when "Debugging" =>
+            for Switches ("ada") use ("-g");
+
+         when "Optimizing" | "Release" =>
+            null;
+      end case;
+
+      case Target_OS is
+         when "macOS" =>
+            for Switches ("Ada")
+              use Linker'Switches ("Ada") & ("-Wl,-no_pie");
+
+         when others =>
+            null;
+      end case;
+   end Linker;
+
+   package Pretty_Printer is
+      for Switches ("ada") use ("-M120", "-W8", "--comments-unchanged");
+   end Pretty_Printer;
+
+end Shared;

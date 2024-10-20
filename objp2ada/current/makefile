@@ -1,26 +1,26 @@
-# Minimal or complete checks
-#CFLAGS = -m -gnatf -g
-CFLAGS = -m -gnatEfowa -gnatVa -fstack-check -g
+# aflex and ayacc must have been made in their respective directory and copy or link here or adapt following paths
+AFLEX_PATH = .
+AYACC_PATH = .
 
-# aflex and ayacc must have been made in their respective directory and copy or link here
+VPATH = src:gen:tests
 
 all : p2ada bp2p
 
 test.ada : nptest0.adb nptest1.adb nptest2.adb nptest3.adb nptest4.adb \
 nptest5.adb nptest6.adb nptest7.adb nptest8.adb nptest9.adb nptesta.adb \
-nptestb.adb nptestc.adb nptestd.adb npteste.adb nptestf.adb p2ada bp2p
-	cat nptest?.adb > test.ada
+nptestb.adb nptestc.adb nptestd.adb npteste.adb nptestf.adb
+	cd tests; cat nptest?.adb > test.ada
 
-pascal_dfa.adb pascal_dfa.ads pascal_io.adb pascal_io.ads yylex.adb : pascal.l aflex
-	./aflex -i -E pascal.l
+pascal_dfa.adb pascal_dfa.ads pascal_io.adb pascal_io.ads yylex.adb : pascal.l
+	cd gen; $(AFLEX_PATH)/aflex -i -E pascal.l
 #	./aflex -i -d -E pascal.l
-	gnatchop -w pascal_io.a pascal_dfa.a pascal.a
+	cd gen; gnatchop -w pascal.ada
 
-pascal_goto.ads pascal_shift_reduce.ads pascal_tokens.ads yyparse.adb : pascal.y ayacc
+pascal_goto.ads pascal_shift_reduce.ads pascal_tokens.ads yyparse.adb : pascal.y
 # ayacc file.y C_LEX DEBUG Summary Verbose Error_Recovery
-	./ayacc pascal.y off off
+	cd gen; $(AYACC_PATH)/ayacc pascal.y off off
 #	./ayacc pascal.y off on on on
-	gnatchop -w pascal.a
+	cd gen; gnatchop -w pascal.ada
 
 p2ada : p2ada.adb p2ada_definition_info.adb p2ada_definition_info.ads \
  p2ada_keywords.adb p2ada_keywords.ads p2ada_options.ads \
@@ -28,44 +28,52 @@ p2ada : p2ada.adb p2ada_definition_info.adb p2ada_definition_info.ads \
  pascal_shift_reduce.ads pascal_tokens.ads pascalhelp.adb pascalhelp.ads \
  pascalyylex.ads yy_sizes.ads yyerror.adb yyerror.ads yylex.adb \
  yyparse.adb yyparse.ads yyroutines.adb yyroutines.ads
-	gnatmake $(CFLAGS) -D acu p2ada
+	gprbuild -P objp2ada p2ada
 
 bp2p : bp2p.adb
-	gnatmake $(CFLAGS) -D acu bp2p
+	gprbuild -P objp2ada bp2p
 
-nptest0.adb : nptest0.pas p2ada
-	./p2ada nptest0.pas > nptest0.adb
-nptest1.adb : nptest1.pas p2ada bp2p
+clean_p2ada :
+	-cd gen; rm pascal_dfa.adb pascal_dfa.ads pascal_io.adb pascal_io.ads yylex.adb pascal.ada
+	-cd gen; rm pascal_goto.ads pascal_shift_reduce.ads pascal_tokens.ads yyparse.adb pascal.ada
+	-cd bin; rm p2ada bp2p
+
+clean_tests :
+	-cd tests; rm nptest?.adb nptest2.* test.ada
+
+nptest0.adb : nptest0.pas
+	cd tests; ../bin/p2ada nptest0.pas > nptest0.adb
+nptest1.adb : nptest1.pas
 # add \$ before $ when option is like -$x+/-
-	./bp2p nptest1.pas -dcoucou -\$$z+ | ./p2ada > nptest1.adb
-nptest2.adb : nptest2.pas p2ada
-	rm -f nptest2.def nptest2.ads
-	./p2ada nptest2.pas -enptest2.def > nptest2.adb
-	-gnatchop -w nptest2.adb
-nptest3.adb : nptest3.pas p2ada bp2p
-	./bp2p nptest3.pas -dwindows | ./p2ada > nptest3.adb
-nptest4.adb : nptest4.pas p2ada
-	./p2ada nptest4.pas > nptest4.adb
-nptest5.adb : nptest5.pas p2ada bp2p
-	./bp2p nptest5.pas | ./p2ada > nptest5.adb
-nptest6.adb : nptest6.pas p2ada
-	./p2ada nptest6.pas > nptest6.adb
-nptest7.adb : nptest7.pas p2ada
-	./p2ada nptest7.pas > nptest7.adb
-nptest8.adb : nptest8.pas p2ada
-	./p2ada nptest8.pas > nptest8.adb
-nptest9.adb : nptest9.pas p2ada
-	./p2ada nptest9.pas > nptest9.adb
-nptesta.adb : nptesta.pas p2ada
-	./p2ada nptesta.pas > nptesta.adb
-nptestb.adb : nptestb.pas nptest2.adb p2ada
-#	./p2ada nptestb.pas > nptestb.adb
-	./p2ada nptestb.pas -inptest2.def > nptestb.adb
-nptestc.adb : nptestc.pas p2ada
-	./p2ada nptestc.pas > nptestc.adb
-nptestd.adb : nptestd.pas p2ada
-	./p2ada nptestd.pas > nptestd.adb
-npteste.adb : npteste.pas p2ada
-	./p2ada npteste.pas > npteste.adb
-nptestf.adb : nptestf.pas p2ada
-	./p2ada nptestf.pas > nptestf.adb
+	cd tests; ../bin/bp2p nptest1.pas -dcoucou -\$$z+ | ../bin/p2ada > nptest1.adb
+nptest2.adb : nptest2.pas
+	-cd tests; rm nptest2.def nptest2.ads
+	cd tests; ../bin/p2ada nptest2.pas -enptest2.def > nptest2.adb
+	-cd tests; gnatchop -w nptest2.adb
+nptest3.adb : nptest3.pas
+	cd tests; ../bin/bp2p nptest3.pas -dwindows | ../bin/p2ada > nptest3.adb
+nptest4.adb : nptest4.pas
+	cd tests; ../bin/p2ada nptest4.pas > nptest4.adb
+nptest5.adb : nptest5.pas
+	cd tests; ../bin/bp2p nptest5.pas | ../bin/p2ada > nptest5.adb
+nptest6.adb : nptest6.pas
+	cd tests; ../bin/p2ada nptest6.pas > nptest6.adb
+nptest7.adb : nptest7.pas
+	cd tests; ../bin/p2ada nptest7.pas > nptest7.adb
+nptest8.adb : nptest8.pas
+	cd tests; ../bin/p2ada nptest8.pas > nptest8.adb
+nptest9.adb : nptest9.pas
+	cd tests; ../bin/p2ada nptest9.pas > nptest9.adb
+nptesta.adb : nptesta.pas
+	cd tests; ../bin/p2ada nptesta.pas > nptesta.adb
+nptestb.adb : nptestb.pas nptest2.adb
+#	cd tests; ../bin/p2ada nptestb.pas > nptestb.adb
+	cd tests; ../bin/p2ada nptestb.pas -inptest2.def > nptestb.adb
+nptestc.adb : nptestc.pas
+	cd tests; ../bin/p2ada nptestc.pas > nptestc.adb
+nptestd.adb : nptestd.pas
+	cd tests; ../bin/p2ada nptestd.pas > nptestd.adb
+npteste.adb : npteste.pas
+	cd tests; ../bin/p2ada npteste.pas > npteste.adb
+nptestf.adb : nptestf.pas
+	cd tests; ../bin/p2ada nptestf.pas > nptestf.adb
